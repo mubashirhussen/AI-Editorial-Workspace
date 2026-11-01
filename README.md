@@ -139,6 +139,7 @@ ai-editorial-workspace/
 │   └── .env.example
 ├── docs/
 │   ├── ARCHITECTURE.md                 # System architecture, Mermaid diagrams, and design rationale
+│   ├── EDITORIAL_VERSION_CONTROL.md    # Editorial version history, visual text diffs, and non-destructive restore
 │   ├── EDITORIAL_STYLE_INTELLIGENCE.md # Editorial style profiles, tone audits, and compliance scoring
 │   ├── RESEARCH_INTELLIGENCE.md        # Research intelligence, entity extraction, and knowledge graph
 │   ├── MULTI_TENANCY.md                # Multi-tenant workspace, RBAC permissions, and JWT security

@@ -21,7 +21,8 @@ import {
   FileText,
   Clock,
   Layers,
-  ChevronDown
+  ChevronDown,
+  History
 } from 'lucide-react';
 import { writingService } from '../services/writingService';
 import { WritingIssue, WritingMetrics, WritingDraft, DraftComparisonResponse } from '../types';
@@ -32,6 +33,7 @@ import { Button } from '../components/common/Button';
 import { Input } from '../components/common/Input';
 import { Badge } from '../components/common/Badge';
 import { StyleIntelligencePanel } from '../components/writing/StyleIntelligencePanel';
+import { VersionHistoryPanel } from '../components/version_control/VersionHistoryPanel';
 
 export const WritingPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,6 +58,7 @@ export const WritingPage: React.FC = () => {
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   
@@ -407,6 +410,17 @@ export const WritingPage: React.FC = () => {
           >
             {showCompare ? 'Hide Comparison' : 'Compare Original vs Revised'}
           </Button>
+
+          {activeDraftId && (
+            <Button
+              onClick={() => setIsHistoryOpen(true)}
+              variant="outline"
+              size="sm"
+              leftIcon={<History className="w-3.5 h-3.5 text-blue-600" />}
+            >
+              Version History
+            </Button>
+          )}
 
           <Button
             onClick={handleSaveDraft}
@@ -762,6 +776,21 @@ export const WritingPage: React.FC = () => {
         onConfirm={confirmDeleteDraft}
         onCancel={() => setDeleteDraftId(null)}
       />
+
+      {/* Version History Drawer */}
+      {activeDraftId && (
+        <VersionHistoryPanel
+          documentType="WRITING_DRAFT"
+          documentId={activeDraftId}
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onVersionRestored={(newContent) => {
+            setText(newContent);
+            setSavedContent(newContent);
+            handleAnalyze(newContent);
+          }}
+        />
+      )}
     </div>
   );
 };

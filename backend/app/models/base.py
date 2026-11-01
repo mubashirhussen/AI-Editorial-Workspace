@@ -437,3 +437,29 @@ class EditorialStyleProfile(Base):
     drafts = relationship("WritingDraft", back_populates="style_profile")
 
 
+
+class EditorialVersion(Base):
+    """
+    Immutable version snapshot capturing change history for research briefs,
+    writing drafts, and editorial newsletter outputs.
+    """
+    __tablename__ = "editorial_versions"
+    __table_args__ = (
+        Index("ix_editorial_versions_doc", "document_type", "document_id", "version_number"),
+        Index("ix_editorial_versions_created", "document_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    document_type = Column(String(50), nullable=False, index=True)  # WRITING_DRAFT, RESEARCH_BRIEF, EDITORIAL_OUTPUT
+    document_id = Column(String(36), nullable=False, index=True)
+    version_number = Column(Integer, nullable=False)
+    title = Column(String(255), nullable=True)
+    content_snapshot = Column(Text, nullable=False)
+    change_summary = Column(Text, default="", nullable=False)
+    change_type = Column(String(50), default="MANUAL_EDIT", nullable=False)  # INITIAL, MANUAL_EDIT, AI_REVISION, SUGGESTION_ACCEPTED, SUGGESTION_REJECTED, RESTORE
+    created_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    organization = relationship("Organization")
+    creator = relationship("User")

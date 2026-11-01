@@ -7,6 +7,7 @@ from backend.app.schemas.research import ProjectCreate, ProjectUpdate
 from backend.app.schemas.source import SourceCreate
 from backend.app.services.research.extraction_service import extraction_service
 from backend.app.services.research.synthesis_service import synthesis_service
+from backend.app.services.version_control.version_service import version_service
 from backend.app.services.ai_service import ai_service
 
 logger = logging.getLogger(__name__)
@@ -325,6 +326,20 @@ class ResearchService:
         project.status = "COMPLETED"
         db.commit()
         db.refresh(brief_record)
+
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="RESEARCH_BRIEF",
+                document_id=brief_record.id,
+                content=brief_record.executive_summary or "",
+                title=brief_record.title,
+                change_type="INITIAL",
+                change_summary="Initial research synthesis brief generated"
+            )
+        except Exception:
+            pass
+
         return brief_record
 
     async def generate_research_brief(self, db: Session, project_id: str) -> ResearchBrief:

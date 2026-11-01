@@ -12,6 +12,7 @@ from backend.app.schemas.editorial import (
 )
 from backend.app.services.ai_service import ai_service
 from backend.app.services.editorial.export_service import export_service
+from backend.app.services.version_control.version_service import version_service
 
 logger = logging.getLogger("editorial_workspace")
 
@@ -163,6 +164,28 @@ class EditorialService:
         db.add(editorial)
         db.commit()
         db.refresh(editorial)
+
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="WRITING_DRAFT",
+                document_id=draft.id,
+                content=draft.revised_content,
+                title=draft.title,
+                change_type="INITIAL",
+                change_summary="Initial draft generated from research brief"
+            )
+            version_service.create_snapshot(
+                db=db,
+                document_type="EDITORIAL_OUTPUT",
+                document_id=editorial.id,
+                content=editorial.content,
+                title=editorial.headline,
+                change_type="INITIAL",
+                change_summary="Initial editorial newsletter generated"
+            )
+        except Exception:
+            pass
 
         return editorial
 
@@ -373,6 +396,20 @@ class EditorialService:
         db.add(editorial)
         db.commit()
         db.refresh(editorial)
+
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="EDITORIAL_OUTPUT",
+                document_id=editorial.id,
+                content=editorial.content,
+                title=editorial.headline,
+                change_type="INITIAL",
+                change_summary="Initial editorial output created"
+            )
+        except Exception:
+            pass
+
         return editorial
 
     def get_editorial(self, db: Session, editorial_id: str) -> EditorialOutput:
@@ -389,6 +426,7 @@ class EditorialService:
 
     def update_editorial(self, db: Session, editorial_id: str, data: EditorialUpdateRequest) -> EditorialOutput:
         editorial = self.get_editorial(db, editorial_id)
+        old_content = editorial.content
         if data.headline is not None:
             editorial.headline = data.headline.strip()
         if data.content is not None:
@@ -398,6 +436,21 @@ class EditorialService:
             editorial.status = data.status
         db.commit()
         db.refresh(editorial)
+
+        if data.content is not None and data.content != old_content:
+            try:
+                version_service.create_snapshot(
+                    db=db,
+                    document_type="EDITORIAL_OUTPUT",
+                    document_id=editorial.id,
+                    content=editorial.content,
+                    title=editorial.headline,
+                    change_type="MANUAL_EDIT",
+                    change_summary="Manual editorial update"
+                )
+            except Exception:
+                pass
+
         return editorial
 
     def delete_editorial(self, db: Session, editorial_id: str) -> None:

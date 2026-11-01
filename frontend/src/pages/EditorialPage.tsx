@@ -46,6 +46,7 @@ import { EditorialReviewPanel } from '../components/editorial/EditorialReviewPan
 import { EditorialToolbar } from '../components/editorial/EditorialToolbar';
 import { SourceReferences } from '../components/editorial/SourceReferences';
 import { ExportMenu } from '../components/editorial/ExportMenu';
+import { VersionHistoryPanel } from '../components/version_control/VersionHistoryPanel';
 
 export const EditorialPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -86,6 +87,7 @@ export const EditorialPage: React.FC = () => {
   const [exportData, setExportData] = useState<EditorialExportResponse | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [deleteEditorialId, setDeleteEditorialId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const isDirty = content !== savedContent;
 
@@ -392,6 +394,7 @@ export const EditorialPage: React.FC = () => {
             onSave={handleSaveArticle}
             onExport={handleExport}
             onAnalyzeWriting={handleOpenInWritingAssistant}
+            onOpenHistory={activeEditorial ? () => setIsHistoryOpen(true) : undefined}
             isSaving={isSaving}
             hasContent={Boolean(content.trim())}
           />
@@ -599,6 +602,21 @@ export const EditorialPage: React.FC = () => {
         onConfirm={confirmDeleteEditorial}
         onCancel={() => setDeleteEditorialId(null)}
       />
+
+      {/* Version History Drawer */}
+      {activeEditorial && (
+        <VersionHistoryPanel
+          documentType="EDITORIAL_OUTPUT"
+          documentId={activeEditorial.id}
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onVersionRestored={(newContent) => {
+            setContent(newContent);
+            setSavedContent(newContent);
+            setActiveEditorial({ ...activeEditorial, content: newContent });
+          }}
+        />
+      )}
     </div>
   );
 };

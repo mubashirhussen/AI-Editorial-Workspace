@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit3, Download, Save, RefreshCw, PenTool, CheckCircle2 } from 'lucide-react';
+import { Eye, Edit3, Download, Save, RefreshCw, PenTool, CheckCircle2, History } from 'lucide-react';
 import { Button } from '../common/Button';
 
 export interface EditorialToolbarProps {
@@ -8,6 +8,7 @@ export interface EditorialToolbarProps {
   onSave: () => void;
   onExport: () => void;
   onAnalyzeWriting: () => void;
+  onOpenHistory?: () => void;
   isSaving?: boolean;
   hasContent?: boolean;
 }
@@ -18,6 +19,7 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
   onSave,
   onExport,
   onAnalyzeWriting,
+  onOpenHistory,
   isSaving = false,
   hasContent = false,
 }) => {
@@ -62,6 +64,18 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
+        {onOpenHistory && (
+          <Button
+            onClick={onOpenHistory}
+            disabled={!hasContent}
+            variant="outline"
+            size="sm"
+            leftIcon={<History className="w-3.5 h-3.5 text-blue-600" />}
+          >
+            Version History
+          </Button>
+        )}
+
         <Button
           onClick={onAnalyzeWriting}
           disabled={!hasContent}
@@ -96,4 +110,3 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
     </div>
   );
 };
-

@@ -14,6 +14,7 @@ from backend.app.models.base import (
     ResearchContradiction,
     ResearchTrend,
     EditorialStyleProfile,
+    EditorialVersion,
     User,
     Organization,
     OrganizationMembership,
@@ -38,6 +39,7 @@ __all__ = [
     "ResearchContradiction",
     "ResearchTrend",
     "EditorialStyleProfile",
+    "EditorialVersion",
     "User",
     "Organization",
     "OrganizationMembership",
@@ -45,4 +47,3 @@ __all__ = [
     "generate_uuid",
     "utc_now",
 ]
-

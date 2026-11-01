@@ -6,6 +6,7 @@ from backend.app.schemas.writing import DraftCreate, DraftUpdate, WritingAnalysi
 from backend.app.services.writing_analysis_service import writing_analysis_service
 from backend.app.services.metrics_service import metrics_service
 from backend.app.utils.text_processing import replace_text_safely
+from backend.app.services.version_control.version_service import version_service
 
 class WritingService:
     def create_draft(self, db: Session, data: DraftCreate) -> WritingDraft:
@@ -19,6 +20,20 @@ class WritingService:
         db.add(draft)
         db.commit()
         db.refresh(draft)
+
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="WRITING_DRAFT",
+                document_id=draft.id,
+                content=draft.revised_content,
+                title=draft.title,
+                change_type="INITIAL",
+                change_summary="Initial draft creation"
+            )
+        except Exception:
+            pass
+
         return draft
 
     def get_draft(self, db: Session, draft_id: str) -> WritingDraft:
@@ -29,6 +44,8 @@ class WritingService:
 
     def update_draft(self, db: Session, draft_id: str, data: DraftUpdate) -> WritingDraft:
         draft = self.get_draft(db, draft_id)
+        old_content = draft.revised_content
+
         if data.title is not None:
             draft.title = data.title.strip()
         if data.revised_content is not None:
@@ -39,15 +56,32 @@ class WritingService:
             draft.status = data.status
         db.commit()
         db.refresh(draft)
+
+        if data.revised_content is not None and data.revised_content != old_content:
+            try:
+                version_service.create_snapshot(
+                    db=db,
+                    document_type="WRITING_DRAFT",
+                    document_id=draft.id,
+                    content=draft.revised_content,
+                    title=draft.title,
+                    change_type="MANUAL_EDIT",
+                    change_summary="Manual draft edit"
+                )
+            except Exception:
+                pass
+
         return draft
 
     async def analyze_and_store(self, db: Session, req: WritingAnalysisRequest) -> WritingAnalysisResponse:
         # If draft_id is not given, create one automatically
         draft = None
+        is_new = False
         if req.draft_id:
             draft = db.query(WritingDraft).filter(WritingDraft.id == req.draft_id).first()
 
         if not draft:
+            is_new = True
             draft = WritingDraft(
                 project_id=req.project_id,
                 title=req.title or "Editorial Draft",
@@ -60,9 +94,25 @@ class WritingService:
             db.refresh(draft)
         else:
             # If draft already exists and text was edited, update revised_content
-            draft.revised_content = req.text
-            draft.status = "analyzed"
-            db.commit()
+            if draft.revised_content != req.text:
+                draft.revised_content = req.text
+                draft.status = "analyzed"
+                db.commit()
+                db.refresh(draft)
+
+        if is_new:
+            try:
+                version_service.create_snapshot(
+                    db=db,
+                    document_type="WRITING_DRAFT",
+                    document_id=draft.id,
+                    content=draft.revised_content,
+                    title=draft.title,
+                    change_type="INITIAL",
+                    change_summary="Initial draft created from analysis"
+                )
+            except Exception:
+                pass
 
         # Delete previous pending suggestions for this draft to re-evaluate fresh
         db.query(WritingSuggestion).filter(
@@ -140,6 +190,19 @@ class WritingService:
         db.commit()
         db.refresh(draft)
 
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="WRITING_DRAFT",
+                document_id=draft.id,
+                content=draft.revised_content,
+                title=draft.title,
+                change_type="SUGGESTION_ACCEPTED",
+                change_summary=f"Accepted suggestion: {suggestion.category} ('{suggestion.original_text[:25]}' -> '{replacement[:25]}')"
+            )
+        except Exception:
+            pass
+
         new_metrics = metrics_service.calculate_metrics(draft.revised_content)
 
         return {
@@ -203,6 +266,20 @@ class WritingService:
         draft.revised_content = current_content
         db.commit()
         db.refresh(draft)
+
+        if applied_count > 0:
+            try:
+                version_service.create_snapshot(
+                    db=db,
+                    document_type="WRITING_DRAFT",
+                    document_id=draft.id,
+                    content=draft.revised_content,
+                    title=draft.title,
+                    change_type="SUGGESTION_ACCEPTED",
+                    change_summary=f"Accepted all suggestions ({applied_count} applied)"
+                )
+            except Exception:
+                pass
 
         new_metrics = metrics_service.calculate_metrics(draft.revised_content)
 
