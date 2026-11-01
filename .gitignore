@@ -44,3 +44,5 @@ test-results/
 # System Files
 .DS_Store
 Thumbs.db
+frontend/.vite/
+.vite/
