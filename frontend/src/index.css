@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Writing highlight styles */
+.highlight-long_sentence {
+  background-color: rgba(254, 215, 170, 0.45);
+  border-bottom: 2px solid #f97316;
+}
+.highlight-passive_voice {
+  background-color: rgba(187, 247, 208, 0.45);
+  border-bottom: 2px solid #22c55e;
+}
+.highlight-filler {
+  background-color: rgba(233, 213, 255, 0.5);
+  border-bottom: 2px solid #a855f7;
+}
+.highlight-jargon {
+  background-color: rgba(191, 219, 254, 0.45);
+  border-bottom: 2px solid #3b82f6;
+}
+.highlight-complexity {
+  background-color: rgba(254, 202, 202, 0.45);
+  border-bottom: 2px solid #ef4444;
+}
+.highlight-repetition {
+  background-color: rgba(253, 230, 138, 0.45);
+  border-bottom: 2px solid #eab308;
+}
+

@@ -1,0 +1,100 @@
+name: Security & Secret Audits
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Secrets & Vulnerability Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check for Accidentally Committed Environment Files
+        run: |
+          echo "Scanning for forbidden .env files in Git tree..."
+          FORBIDDEN_FILES=(".env" "backend/.env" "frontend/.env")
+          FOUND=0
+          for file in "${FORBIDDEN_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "::error file=$file::Forbidden environment file committed to repository: $file"
+              FOUND=1
+            fi
+          done
+          if [ $FOUND -eq 1 ]; then
+            echo "Critical security failure: .env files must never be tracked by Git."
+            exit 1
+          fi
+          echo "No forbidden .env files found."
+
+      - name: Secret Pattern Scanner
+        run: |
+          echo "Scanning tracked codebase for exposed credential signatures..."
+          # Regex patterns for OpenAI API keys, AWS Access Keys, and private keys
+          PATTERNS=(
+            "sk-[a-zA-Z0-9]{32,}"
+            "AKIA[0-9A-Z]{16}"
+            "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
+          )
+          
+          LEAK_FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            MATCHES=$(grep -rEi --exclude-dir={.git,node_modules,venv,dist} "$pattern" . || true)
+            if [ -n "$MATCHES" ]; then
+              echo "::error::Potential credential leak detected matching pattern: $pattern"
+              echo "$MATCHES"
+              LEAK_FOUND=1
+            fi
+          done
+
+          if [ $LEAK_FOUND -eq 1 ]; then
+            echo "Security check failed: Secret signature detected in repository files."
+            exit 1
+          fi
+          echo "Zero exposed credential patterns detected."
+
+      - name: Set up Node.js for Dependency Audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend Dependency Vulnerability Audit
+        run: |
+          echo "Auditing frontend production dependencies..."
+          cd frontend
+          npm audit --audit-level=high || echo "::warning::High-level dependency vulnerabilities flagged by npm audit."
+
+      - name: Set up Python for Dependency Audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Backend Dependency Vulnerability Audit
+        run: |
+          echo "Auditing backend dependencies via pip-audit..."
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r backend/requirements.txt || echo "::warning::Known vulnerabilities flagged by pip-audit."
+
+      - name: Security Disclaimer Notice
+        run: |
+          echo "=========================================================================="
+          echo "NOTICE: Automated secret pattern scanning and CVE vulnerability audits"
+          echo "provide defense-in-depth, but cannot guarantee 100% security against zero-day"
+          echo "exploits, multi-hop SSRF logic bugs, or novel token formats. Manual code review"
+          echo "and least-privilege credential scoping remain mandatory."
+          echo "=========================================================================="
+

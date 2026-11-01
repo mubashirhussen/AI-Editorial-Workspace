@@ -1,0 +1,271 @@
+import httpx
+import logging
+import ipaddress
+import socket
+from urllib.parse import urlparse, urljoin
+from typing import Dict, Any, Optional
+import trafilatura
+from bs4 import BeautifulSoup
+from backend.app.core.config import settings
+from backend.app.utils.security import is_safe_url
+
+logger = logging.getLogger(__name__)
+
+class ResearchExtractionService:
+    """
+    Robust, secure content extraction engine.
+    Implements SSRF defense, per-redirect hop validation, payload bounds,
+    and a dual-layer Trafilatura + BeautifulSoup extraction pipeline.
+    """
+
+    def validate_url(self, url: str) -> Optional[str]:
+        """Validates that a URL is HTTP/HTTPS and passes SSRF checks."""
+        if not url or not isinstance(url, str):
+            return "URL cannot be empty."
+        parsed = urlparse(url.strip())
+        if parsed.scheme.lower() not in ("http", "https"):
+            return f"Invalid protocol '{parsed.scheme}'. Only HTTP and HTTPS URLs are accepted."
+        if not is_safe_url(url.strip()):
+            return "Security violation: Access to localhost, private IP subnets, or internal addresses is blocked."
+        return None
+
+    async def extract_url(self, url: str) -> Dict[str, Any]:
+        """
+        Extracts content from a URL with defense-in-depth security.
+        """
+        url_err = self.validate_url(url)
+        if url_err:
+            return {
+                "success": False,
+                "error": url_err,
+                "title": "",
+                "content": "",
+                "author": None,
+                "published_at": None,
+                "canonical_url": url,
+                "extraction_status": "failed"
+            }
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 AI-Editorial-Workspace/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
+        current_url = url.strip()
+        max_redirects = getattr(settings, "MAX_REDIRECTS", 4)
+        timeout_seconds = getattr(settings, "EXTRACTION_TIMEOUT_SECONDS", 12.0)
+        max_bytes = getattr(settings, "MAX_EXTRACTION_BYTES", 2_000_000)
+
+        raw_html = ""
+        final_canonical = current_url
+
+        try:
+            async with httpx.AsyncClient(timeout=timeout_seconds, verify=True) as client:
+                for redirect_hop in range(max_redirects + 1):
+                    # Validate SSRF on every redirect destination
+                    hop_err = self.validate_url(current_url)
+                    if hop_err:
+                        return {
+                            "success": False,
+                            "error": f"Redirect destination blocked: {hop_err}",
+                            "title": "",
+                            "content": "",
+                            "author": None,
+                            "published_at": None,
+                            "canonical_url": current_url,
+                            "extraction_status": "failed"
+                        }
+
+                    resp = await client.get(current_url, headers=headers, follow_redirects=False)
+
+                    if resp.is_redirect:
+                        location = resp.headers.get("Location")
+                        if not location:
+                            break
+                        current_url = urljoin(current_url, location)
+                        continue
+
+                    # Final non-redirect response reached
+                    final_canonical = str(resp.url)
+                    if resp.status_code != 200:
+                        return {
+                            "success": False,
+                            "error": f"HTTP {resp.status_code}: Website returned an error ({resp.reason_phrase}).",
+                            "title": "",
+                            "content": "",
+                            "author": None,
+                            "published_at": None,
+                            "canonical_url": final_canonical,
+                            "extraction_status": "failed"
+                        }
+
+                    content_type = resp.headers.get("content-type", "").lower()
+                    if content_type and "text/html" not in content_type and "application/xhtml" not in content_type:
+                        return {
+                            "success": False,
+                            "error": f"Unsupported content type '{content_type}'. Only HTML articles can be parsed.",
+                            "title": "",
+                            "content": "",
+                            "author": None,
+                            "published_at": None,
+                            "canonical_url": final_canonical,
+                            "extraction_status": "failed"
+                        }
+
+                    raw_html = resp.text
+                    if len(raw_html.encode("utf-8")) > max_bytes:
+                        raw_html = raw_html[:max_bytes]
+                    break
+
+        except httpx.TimeoutException:
+            return {
+                "success": False,
+                "error": "Connection timed out. The remote website took too long to respond.",
+                "title": "",
+                "content": "",
+                "author": None,
+                "published_at": None,
+                "canonical_url": current_url,
+                "extraction_status": "failed"
+            }
+        except httpx.RequestError as e:
+            return {
+                "success": False,
+                "error": f"Network error connecting to website: {str(e)}",
+                "title": "",
+                "content": "",
+                "author": None,
+                "published_at": None,
+                "canonical_url": current_url,
+                "extraction_status": "failed"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Unexpected extraction error: {str(e)}",
+                "title": "",
+                "content": "",
+                "author": None,
+                "published_at": None,
+                "canonical_url": current_url,
+                "extraction_status": "failed"
+            }
+
+        # Parsing: Trafilatura primary
+        trafilatura_extracted = None
+        trafilatura_metadata = None
+        try:
+            trafilatura_extracted = trafilatura.extract(
+                raw_html,
+                include_comments=False,
+                include_tables=True,
+                no_fallback=False
+            )
+            trafilatura_metadata = trafilatura.extract_metadata(raw_html)
+        except Exception:
+            pass
+
+        title = ""
+        author = None
+        published_at = None
+
+        if trafilatura_metadata:
+            title = trafilatura_metadata.title or ""
+            author = trafilatura_metadata.author
+            published_at = trafilatura_metadata.date
+
+        # Fallback to BeautifulSoup DOM inspection for metadata & body
+        soup = BeautifulSoup(raw_html, "html.parser")
+
+        if not title:
+            og_title = soup.find("meta", property="og:title")
+            if og_title and og_title.get("content"):
+                title = og_title["content"].strip()
+            elif soup.title and soup.title.string:
+                title = soup.title.string.strip()
+            else:
+                h1 = soup.find("h1")
+                if h1:
+                    title = h1.get_text().strip()
+
+        if not author:
+            author_meta = soup.find("meta", attrs={"name": "author"}) or soup.find("meta", property="article:author")
+            if author_meta and author_meta.get("content"):
+                author = author_meta["content"].strip()
+
+        if not published_at:
+            time_meta = soup.find("meta", property="article:published_time") or soup.find("meta", attrs={"name": "publication_date"})
+            if time_meta and time_meta.get("content"):
+                published_at = time_meta["content"].strip()
+
+        final_content = trafilatura_extracted
+        if not final_content or len(final_content.strip()) < 100:
+            for tag in soup(["script", "style", "nav", "footer", "header", "aside", "noscript", "form", "svg"]):
+                tag.extract()
+            main_element = soup.find("article") or soup.find("main") or soup.find("div", class_=lambda c: c and any(x in str(c).lower() for x in ["content", "post", "article", "entry"]))
+            if main_element:
+                paragraphs = [p.get_text().strip() for p in main_element.find_all("p")]
+                final_content = "\n\n".join([p for p in paragraphs if len(p) > 20])
+            else:
+                paragraphs = [p.get_text().strip() for p in soup.find_all("p")]
+                final_content = "\n\n".join([p for p in paragraphs if len(p) > 20])
+
+        if not final_content or len(final_content.strip()) < 50:
+            return {
+                "success": False,
+                "error": "The webpage could not be parsed for readable article content. Please paste the article text manually.",
+                "title": title or "Untitled Source",
+                "content": "",
+                "author": author,
+                "published_at": published_at,
+                "canonical_url": final_canonical,
+                "extraction_status": "failed"
+            }
+
+        if not title:
+            domain = urlparse(final_canonical).netloc or "Web Source"
+            title = f"Article from {domain}"
+
+        return {
+            "success": True,
+            "error": None,
+            "title": title,
+            "content": final_content.strip(),
+            "author": author,
+            "published_at": published_at,
+            "canonical_url": final_canonical,
+            "extraction_status": "completed"
+        }
+
+    def process_pasted_text(self, text: str, user_title: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Validates and processes manually pasted text content.
+        """
+        clean_text = (text or "").strip()
+        if len(clean_text) < 20:
+            return {
+                "success": False,
+                "error": "Pasted text is too short. Please provide at least 20 characters.",
+                "title": "",
+                "content": "",
+                "extraction_status": "failed"
+            }
+
+        title = (user_title or "").strip()
+        if not title:
+            first_line = clean_text.split("\n")[0].strip()
+            words = first_line.split()[:8]
+            title = " ".join(words) + ("..." if len(first_line.split()) > 8 else "")
+            if not title:
+                title = "Pasted Technical Document"
+
+        return {
+            "success": True,
+            "error": None,
+            "title": title,
+            "content": clean_text,
+            "extraction_status": "completed"
+        }
+
+extraction_service = ResearchExtractionService()

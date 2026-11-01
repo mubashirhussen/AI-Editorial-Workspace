@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Editorial Workspace - Dashboard</title>
+  <link rel="stylesheet" href="homepage.css" />
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">AI</div>
+      <div>
+        <div class="brand-title">Editorial AI</div>
+        <div class="brand-subtitle">Pro Workspace</div>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item active">
+        <a href="#dashboard">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#research">
+          <span>🔍</span>
+          <span>Research Assistant</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#writing">
+          <span>✍️</span>
+          <span>Writing Assistant</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#editorial">
+          <span>📰</span>
+          <span>Editorial Studio</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#projects">
+          <span>📁</span>
+          <span>Projects</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#settings">
+          <span>⚙️</span>
+          <span>Settings</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main View -->
+  <main class="main-wrapper">
+    <header class="header">
+      <div class="header-title">
+        <h1>Dashboard</h1>
+        <p>Welcome back to your AI Editorial Workspace</p>
+      </div>
+      <div class="header-actions">
+        <a href="/#research" class="btn-primary">+ New Research Project</a>
+      </div>
+    </header>
+
+    <div class="content-container">
+
+      <!-- Metric Highlights -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Active Projects</span>
+            <span class="metric-badge positive">+14%</span>
+          </div>
+          <div class="metric-value">12</div>
+          <div class="metric-sub">Across 4 research topics</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Ingested Sources</span>
+            <span class="metric-badge positive">+28%</span>
+          </div>
+          <div class="metric-value">48</div>
+          <div class="metric-sub">100% SSRF verified</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Verified Claims</span>
+            <span class="metric-badge positive">+19%</span>
+          </div>
+          <div class="metric-value">156</div>
+          <div class="metric-sub">Separated from speculation</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Editorial Drafts</span>
+            <span class="metric-badge positive">+8%</span>
+          </div>
+          <div class="metric-value">9</div>
+          <div class="metric-sub">300-500 words adherence</div>
+        </div>
+      </section>
+
+      <!-- Main Dashboard Grid -->
+      <div class="dashboard-body-grid">
+
+        <!-- Activity Feed -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Recent Editorial Activity</h2>
+          </div>
+
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon icon-blue">🔬</div>
+              <div class="activity-details">
+                <div class="activity-title">Research Brief Synthesized</div>
+                <div class="activity-desc">Open-Weights Reasoning Models & Inference Scaling</div>
+              </div>
+              <div class="activity-time">12 min ago</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon icon-green">📝</div>
+              <div class="activity-details">
+                <div class="activity-title">Newsletter Draft Exported</div>
+                <div class="activity-desc">Published as Markdown & HTML5 with 3 source citations</div>
+              </div>
+              <div class="activity-time">45 min ago</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon icon-purple">⚡</div>
+              <div class="activity-details">
+                <div class="activity-title">Writing Audit Passed</div>
+                <div class="activity-desc">Flesch Reading score increased to 68.4 (+14.2 FRE)</div>
+              </div>
+              <div class="activity-time">2 hours ago</div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon icon-amber">🛡️</div>
+              <div class="activity-details">
+                <div class="activity-title">SSRF URL Validation</div>
+                <div class="activity-desc">Successfully verified 3 external domains across 0 private hops</div>
+              </div>
+              <div class="activity-time">3 hours ago</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Stats -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Quality Metrics</h2>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-label">
+              <span>Claim Verification Rate</span>
+              <span>94%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill bg-green"></div>
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-label">
+              <span>Suggestion Acceptance</span>
+              <span>88%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill bg-blue"></div>
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-label">
+              <span>Length Adherence (300-500w)</span>
+              <span>100%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill bg-purple"></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+  </main>
+
+</body>
+</html>

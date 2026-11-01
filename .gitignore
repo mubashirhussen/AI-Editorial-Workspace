@@ -1,0 +1,46 @@
+# Environment & Credentials
+.env
+*.env
+backend/.env
+frontend/.env
+*.local
+
+# Virtual Environments
+.venv
+venv/
+backend/venv/
+.Python
+env/
+
+# Node & Package Managers
+node_modules/
+frontend/node_modules/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+
+# Databases
+*.db
+editorial.db
+backend/editorial.db
+*.sqlite3
+
+# Build Outputs
+dist/
+build/
+frontend/dist/
+
+# Test & Lint Caches
+.pytest_cache/
+.coverage
+htmlcov/
+playwright-report/
+test-results/
+
+# System Files
+.DS_Store
+Thumbs.db
