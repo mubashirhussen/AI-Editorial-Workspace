@@ -67,3 +67,4 @@ export interface RestoreVersionResponse {
   new_version: EditorialVersion;
   updated_content: string;
 }
+

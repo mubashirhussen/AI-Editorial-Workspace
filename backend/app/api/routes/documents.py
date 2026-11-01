@@ -125,3 +125,4 @@ def restore_document_version(
         new_version=new_version,
         updated_content=new_content
     )
+

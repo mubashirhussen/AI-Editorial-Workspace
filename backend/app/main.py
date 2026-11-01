@@ -34,6 +34,50 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
     logger.info("Database initialized successfully.")
+
+    # Ensure default style profile exists
+    try:
+        from backend.app.core.database import SessionLocal
+        from backend.app.models.base import EditorialStyleProfile
+        with SessionLocal() as db:
+            default_p = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.is_default == True).first()
+            if not default_p:
+                default_p = EditorialStyleProfile(
+                    id="default-style-profile-000000000000",
+                    organization_id=None,
+                    name="This Week in AI Standard",
+                    publication_name="This Week in AI",
+                    tone="Authoritative, analytical, objective",
+                    target_audience="Founders, builders, and operators",
+                    max_sentence_length=25,
+                    preferred_sentence_length=18,
+                    max_paragraph_length=75,
+                    target_flesch_score=65.0,
+                    preferred_terminology={
+                        "AI chip": "AI accelerator",
+                        "running the model": "inference",
+                        "hallucination": "model fabrication",
+                        "smart agent": "autonomous agent",
+                        "super intelligence": "AGI",
+                        "large model": "frontier model"
+                    },
+                    words_to_avoid=[
+                        "delve", "game-changer", "revolutionary", "paradigm shift",
+                        "unprecedented", "groundbreaking", "unrivaled", "pivotal"
+                    ],
+                    headline_style="Direct, analytical, hook-driven",
+                    formatting_preferences={
+                        "bold_key_takeaways": True,
+                        "bullet_summaries": True,
+                        "citation_style": "numbered_bracket"
+                    },
+                    is_default=True
+                )
+                db.add(default_p)
+                db.commit()
+    except Exception as e:
+        logger.warning(f"Could not seed default style profile: {e}")
+
     yield
     logger.info("Application shutting down.")
 

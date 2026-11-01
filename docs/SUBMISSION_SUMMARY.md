@@ -74,7 +74,7 @@ Every factual claim maintains an unbroken chain of custody:
 ---
 
 ## 9. Testing Performed
-- **Automated Backend Tests:** **25/25 automated tests passed** in 3.30 seconds via `pytest backend/tests -v`.
+- **Automated Backend Tests:** **77/77 automated tests passed** in ~21.1 seconds via `pytest backend/tests -v` (100% pass rate across all 27 phases).
   - Health check & database ping (`SELECT 1`).
   - Project lifecycle CRUD & cascade deletions.
   - Multi-hop SSRF validation against loopback, private, and metadata IPs.
@@ -86,9 +86,19 @@ Every factual claim maintains an unbroken chain of custody:
   - Cross-project security isolation.
   - Multi-format exports with XSS mitigation.
   - 16-step master end-to-end integration workflow.
-- **Backend Byte-Compilation:** `python -m compileall backend/app` verified with 0 errors.
-- **Database Migrations:** Alembic revision `fe217d474c9d (head)` verified.
-- **Frontend Production Build:** `npm run build` compiled 2,281 modules into `frontend/dist/` in 10.05s with 0 TypeScript diagnostics.
+  - Observability, telemetry, and structured validation error handling.
+  - End-to-end journey tests with deterministic provider mocks.
+  - Advanced security hardening (SSRF evasions, XSS encoding, payload size limits).
+  - Quantitative LLM evaluation benchmarks and hallucination scoring.
+  - Human-in-the-loop review workflow, approval states, and review comments.
+  - Multi-tenant organization isolation, Argon2 hashing, JWT expiration, and RBAC matrix.
+  - Research intelligence (entity extraction, claims, relationships, contradictions, trends).
+  - Publication style profiles, tone consistency, and compliance scoring.
+  - Editorial version control, text diff engine, and non-destructive version restoration.
+- **Backend Byte-Compilation:** `python -m compileall backend/app backend/tests` verified with 0 errors.
+- **Database Migrations:** Alembic revision `0d95531a1a07 (head)` verified on clean SQLite schema.
+- **Frontend Production Build:** `npm run build` compiled 2,297 modules into `frontend/dist/` in 10.04s with 0 TypeScript diagnostics.
+- **Playwright End-to-End Suite:** 6 browser automation tests passed in 22.4s.
 
 ---
 

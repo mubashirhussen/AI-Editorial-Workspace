@@ -125,3 +125,4 @@ All endpoints enforce multi-tenant isolation, returning `404 Not Found` if a ver
 
 1. **Binary Content:** The diff engine compares textual representations (markdown and plain text). Media assets or embedded attachments are referenced by URL/ID rather than binary blob comparison.
 2. **Merge Conflicts:** Restoring is an explicit document-level checkout/reversion rather than an interactive 3-way merge tool.
+

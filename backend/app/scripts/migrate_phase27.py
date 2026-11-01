@@ -146,3 +146,4 @@ if __name__ == "__main__":
     for p in db_paths:
         abs_p = os.path.abspath(p)
         migrate_db(abs_p)
+
