@@ -176,6 +176,37 @@ Before starting, ensure the following runtimes are installed on your system:
 
 ---
 
+## Quick Start with Docker Compose (Production Multi-Container Stack)
+
+Deploy the complete production stack (PostgreSQL 15 + FastAPI Backend + React/Nginx Frontend) in seconds:
+
+```bash
+# 1. Ensure environment variables are configured
+cp .env.example .env
+
+# 2. Build and launch all container services
+docker compose up -d --build
+
+# 3. Verify health of all services
+docker compose ps
+```
+
+- **Frontend Application:** [http://localhost](http://localhost) (Port 80)
+- **Backend API & Swagger:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Engine Liveness Check:** [http://localhost:8000/health/live](http://localhost:8000/health/live)
+- **Database Readiness Check:** [http://localhost:8000/health/ready](http://localhost:8000/health/ready)
+
+### Phase 7 Production Guides
+For in-depth audits, deployment topologies, and disaster recovery:
+- [Production Readiness Audit](docs/PRODUCTION_READINESS.md)
+- [Security Audit & SSRF Threat Model](docs/SECURITY_AUDIT.md)
+- [Production Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [CI/CD Pipeline Guide](docs/CI_CD_GUIDE.md)
+- [Monitoring & Observability Guide](docs/MONITORING_GUIDE.md)
+- [Database Backup & Recovery Playbook](docs/BACKUP_RECOVERY.md)
+
+---
+
 ## 6. Installation & Setup (Exact Windows PowerShell Commands)
 
 Open a **Windows PowerShell** terminal:
