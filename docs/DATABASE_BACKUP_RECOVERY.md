@@ -71,3 +71,4 @@ pg_dump -Fc -h $PGHOST -U $PGUSER -d $PGDATABASE -f backups/editorial_$(date +%Y
 # Point-in-Time Recovery
 pg_restore -clean -if-exists -h $PGHOST -U $PGUSER -d $PGDATABASE backups/editorial_20261102_043627.dump
 ```
+

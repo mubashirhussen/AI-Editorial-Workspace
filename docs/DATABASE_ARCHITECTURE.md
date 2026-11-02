@@ -95,3 +95,4 @@ erDiagram
   * Frequently associated relationships (`memberships`, `sources`, `briefs`, `suggestions`) leverage `lazy="selectin"` to eradicate $O(N)$ query cascades on collection endpoints.
 * **Pagination**:
   * Reusable pagination pattern with bounded page sizes ($1 \le \text{page\_size} \le 100$) and deterministic `created_at DESC` ordering.
+

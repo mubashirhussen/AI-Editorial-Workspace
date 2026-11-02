@@ -359,3 +359,4 @@ def downgrade() -> None:
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.drop_column('deleted_at')
         batch_op.drop_column('is_verified')
+

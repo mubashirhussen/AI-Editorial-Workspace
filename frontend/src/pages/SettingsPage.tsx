@@ -22,7 +22,12 @@ import {
   Activity,
   RefreshCw,
   Clock,
-  Terminal
+  Terminal,
+  Zap,
+  Lock,
+  Globe,
+  Sliders,
+  RotateCw
 } from 'lucide-react';
 import { apiClient } from '../services/api';
 
@@ -36,9 +41,27 @@ export const SettingsPage: React.FC = () => {
   const [healthData, setHealthData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // AI Multi-Provider State
+  const [aiConnections, setAiConnections] = useState<any[]>([]);
+  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [aiUsage, setAiUsage] = useState<any>(null);
+  const [testingConnId, setTestingConnId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<Record<string, { status: string; latency_ms?: number; message?: string }>>({});
+  const [keyInput, setKeyInput] = useState<Record<string, string>>({});
+  const [modelSelect, setModelSelect] = useState<Record<string, string>>({});
+  const [savingProvider, setSavingProvider] = useState<string | null>(null);
+  const [rotatingConnId, setRotatingConnId] = useState<string | null>(null);
+  const [newRotateKey, setNewRotateKey] = useState('');
+
   useEffect(() => {
     checkHealth();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'ai') {
+      fetchAiConfig();
+    }
+  }, [activeTab]);
 
   const checkHealth = async () => {
     try {
@@ -52,6 +75,76 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const fetchAiConfig = async () => {
+    try {
+      const [connRes, modelRes, usageRes] = await Promise.all([
+        apiClient.get('/ai/connections').catch(() => ({ data: [] })),
+        apiClient.get('/ai/models').catch(() => ({ data: [] })),
+        apiClient.get('/ai/usage/summary').catch(() => ({ data: null }))
+      ]);
+      setAiConnections(connRes.data || []);
+      setAiModels(modelRes.data || []);
+      setAiUsage(usageRes.data);
+    } catch (e) {
+      console.error('Failed to load AI config:', e);
+    }
+  };
+
+  const handleTestConnection = async (connId: string) => {
+    setTestingConnId(connId);
+    const start = performance.now();
+    try {
+      const res = await apiClient.post(`/ai/connections/${connId}/validate`);
+      const latency = Math.round(performance.now() - start);
+      setTestResult(prev => ({
+        ...prev,
+        [connId]: { status: 'success', latency_ms: latency, message: `Connected in ${latency}ms` }
+      }));
+      fetchAiConfig();
+    } catch (err: any) {
+      const latency = Math.round(performance.now() - start);
+      setTestResult(prev => ({
+        ...prev,
+        [connId]: { status: 'error', latency_ms: latency, message: err.response?.data?.detail || 'Handshake error' }
+      }));
+    } finally {
+      setTestingConnId(null);
+    }
+  };
+
+  const handleSaveConnection = async (provider: string, defaultName: string) => {
+    const rawKey = keyInput[provider];
+    if (!rawKey) return;
+    setSavingProvider(provider);
+    try {
+      await apiClient.post('/ai/connections', {
+        provider,
+        name: defaultName,
+        api_key: rawKey,
+        model: modelSelect[provider] || undefined,
+        is_default: provider === 'groq'
+      });
+      setKeyInput(prev => ({ ...prev, [provider]: '' }));
+      fetchAiConfig();
+    } catch (err: any) {
+      alert('Failed to save connection: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setSavingProvider(null);
+    }
+  };
+
+  const handleRotateKey = async (connId: string) => {
+    if (!newRotateKey.trim()) return;
+    try {
+      await apiClient.post(`/ai/connections/${connId}/rotate`, { new_api_key: newRotateKey.trim() });
+      setRotatingConnId(null);
+      setNewRotateKey('');
+      fetchAiConfig();
+    } catch (err: any) {
+      alert('Key rotation failed: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
   const handleThemeChange = (theme: 'system' | 'light' | 'dark') => {
     setThemePreference(theme);
     if (theme === 'dark') {
@@ -59,7 +152,6 @@ export const SettingsPage: React.FC = () => {
     } else if (theme === 'light') {
       document.documentElement.classList.remove('dark');
     } else {
-      // System preference
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
       } else {
@@ -76,6 +168,41 @@ export const SettingsPage: React.FC = () => {
     { id: 'database', label: 'Database & Storage', icon: Database },
   ];
 
+  const providerCatalog = [
+    {
+      id: 'groq',
+      name: 'Groq LPU Cloud',
+      category: 'Ultra-low Latency LPU',
+      badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+      description: 'Specialized Tensor Streaming Processor yielding 300+ tok/s for instant editorial generation and synthesis.',
+      defaultModel: 'openai/gpt-oss-20b'
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI (GPT-4o)',
+      category: 'Frontier Intelligence',
+      badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+      description: 'High-capability multi-modal models suitable for complex synthesis, deep analysis, and style transformation.',
+      defaultModel: 'gpt-4o-mini'
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic Claude',
+      category: 'Long-Form & Nuance',
+      badgeColor: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+      description: 'Industry-standard analytical reasoning with 200k context window and strict adherence to editorial tone.',
+      defaultModel: 'claude-3-5-sonnet-latest'
+    },
+    {
+      id: 'google_gemini',
+      name: 'Google Gemini',
+      category: 'Massive Context',
+      badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+      description: 'Frontier multimodal architecture supporting 1M+ token context windows for deep research archives.',
+      defaultModel: 'gemini-1.5-flash'
+    }
+  ];
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Title */}
@@ -85,7 +212,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Sub-nav Left Column matching Untitled UI Reference */}
+        {/* Sub-nav Left Column */}
         <div className="space-y-4">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -104,62 +231,51 @@ export const SettingsPage: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-xl transition-all ${
                     isActive
-                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-2.5">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />}
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* Right Settings Body */}
-        <div className="md:col-span-3 space-y-8">
+        {/* Content Column */}
+        <div className="md:col-span-3 space-y-6">
           {activeTab === 'appearance' && (
-            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-8">
-              {/* Section Header */}
+            <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
               <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">Appearance</h2>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Appearance & Interface</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Change how Editorial AI looks and feels in your browser.
+                  Customize how the AI Editorial Workspace looks and feels on your screen.
                 </p>
               </div>
 
-              {/* Interface Theme */}
+              {/* Theme Selector */}
               <div className="space-y-3">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">Interface theme</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Select or customize your UI theme.</p>
-                </div>
-
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white">Interface theme</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Select or sync with your system display preference.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                  {/* Option 1: System preference */}
-                  <div 
+                  <div
                     onClick={() => handleThemeChange('system')}
-                    className={`cursor-pointer rounded-xl border p-3 transition-all relative ${
+                    className={`cursor-pointer rounded-xl border p-3 transition-all ${
                       themePreference === 'system'
                         ? 'border-blue-600 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <div className="h-24 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden flex border border-slate-200 dark:border-slate-700">
-                      <div className="w-1/2 bg-white p-2 border-r border-slate-200">
-                        <div className="w-8 h-2 bg-slate-200 rounded mb-2" />
-                        <div className="w-12 h-1.5 bg-slate-100 rounded mb-1" />
-                        <div className="w-10 h-1.5 bg-slate-100 rounded" />
-                      </div>
-                      <div className="w-1/2 bg-slate-900 p-2">
-                        <div className="w-8 h-2 bg-slate-700 rounded mb-2" />
-                        <div className="w-12 h-1.5 bg-slate-800 rounded mb-1" />
-                        <div className="w-10 h-1.5 bg-slate-800 rounded" />
-                      </div>
+                    <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+                      <Laptop className="w-6 h-6 text-slate-500" />
                     </div>
-                    <div className="mt-2.5 flex items-center justify-between">
+                    <div className="mt-2 flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">System preference</span>
                       {themePreference === 'system' && (
                         <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
@@ -169,22 +285,18 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Option 2: Light */}
-                  <div 
+                  <div
                     onClick={() => handleThemeChange('light')}
-                    className={`cursor-pointer rounded-xl border p-3 transition-all relative ${
+                    className={`cursor-pointer rounded-xl border p-3 transition-all ${
                       themePreference === 'light'
                         ? 'border-blue-600 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <div className="h-24 rounded-lg bg-white p-2.5 border border-slate-200 overflow-hidden">
-                      <div className="w-12 h-2 bg-slate-200 rounded mb-2" />
-                      <div className="w-20 h-1.5 bg-slate-100 rounded mb-1.5" />
-                      <div className="w-16 h-1.5 bg-slate-100 rounded mb-1.5" />
-                      <div className="w-24 h-1.5 bg-slate-100 rounded" />
+                    <div className="h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center">
+                      <Sun className="w-6 h-6 text-amber-500" />
                     </div>
-                    <div className="mt-2.5 flex items-center justify-between">
+                    <div className="mt-2 flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Light</span>
                       {themePreference === 'light' && (
                         <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
@@ -194,22 +306,18 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Option 3: Dark */}
-                  <div 
+                  <div
                     onClick={() => handleThemeChange('dark')}
-                    className={`cursor-pointer rounded-xl border p-3 transition-all relative ${
+                    className={`cursor-pointer rounded-xl border p-3 transition-all ${
                       themePreference === 'dark'
                         ? 'border-blue-600 ring-2 ring-blue-500/20'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                        : 'border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    <div className="h-24 rounded-lg bg-slate-900 p-2.5 border border-slate-800 overflow-hidden">
-                      <div className="w-12 h-2 bg-slate-700 rounded mb-2" />
-                      <div className="w-20 h-1.5 bg-slate-800 rounded mb-1.5" />
-                      <div className="w-16 h-1.5 bg-slate-800 rounded mb-1.5" />
-                      <div className="w-24 h-1.5 bg-slate-800 rounded" />
+                    <div className="h-20 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center">
+                      <Moon className="w-6 h-6 text-blue-400" />
                     </div>
-                    <div className="mt-2.5 flex items-center justify-between">
+                    <div className="mt-2 flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Dark</span>
                       {themePreference === 'dark' && (
                         <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
@@ -221,31 +329,29 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Transparent Sidebar Toggle */}
+              {/* Sidebar display */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">Transparent sidebar</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Make the desktop sidebar transparent.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Make the desktop navigation bar slightly transparent.</p>
                 </div>
                 <button
                   onClick={() => setTransparentSidebar(!transparentSidebar)}
-                  className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
-                    transparentSidebar ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'
+                  className={`w-9 h-5 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                    transparentSidebar ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
                   }`}
                 >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                      transparentSidebar ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
+                  <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${
+                    transparentSidebar ? 'translate-x-4' : 'translate-x-0'
+                  }`} />
                 </button>
               </div>
 
-              {/* Sidebar Feature Dropdown */}
+              {/* Sidebar feature dropdown */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">Sidebar feature</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">What shows in the desktop sidebar.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">What shows in the desktop sidebar footer.</p>
                 </div>
                 <select
                   value={sidebarFeature}
@@ -258,7 +364,7 @@ export const SettingsPage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Tables View Selector matching Screen 2 */}
+              {/* Tables View Selector */}
               <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-xs font-bold text-slate-900 dark:text-white">Tables view</h3>
@@ -398,55 +504,10 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI Provider Telemetry & Token Usage */}
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+              {/* Telemetry Ring Buffer */}
+              <div className="pt-2 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
-                    AI Service Telemetry & Token Usage
-                  </h3>
-                  <span className="text-[11px] font-mono text-slate-500">
-                    Mode: {healthData?.ai_engine?.mode || 'Deterministic Fallback Engine'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="text-[10px] text-slate-400 uppercase">Total Operations</div>
-                    <div className="text-base font-bold text-slate-900 dark:text-white font-mono mt-0.5">
-                      {healthData?.telemetry?.ai_telemetry?.total_operations ?? 0}
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="text-[10px] text-slate-400 uppercase">Live LLM Success</div>
-                    <div className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-                      {healthData?.telemetry?.ai_telemetry?.successful_operations ?? 0}
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="text-[10px] text-slate-400 uppercase">Fallback Triggers</div>
-                    <div className="text-base font-bold text-blue-600 dark:text-blue-400 font-mono mt-0.5">
-                      {healthData?.telemetry?.ai_telemetry?.fallback_operations ?? 0}
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                    <div className="text-[10px] text-slate-400 uppercase">Tokens Consumed</div>
-                    <div className="text-base font-bold text-purple-600 dark:text-purple-400 font-mono mt-0.5">
-                      {healthData?.telemetry?.ai_telemetry?.cumulative_tokens?.total_tokens ?? 0}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 flex flex-wrap gap-4 pt-1">
-                  <span>Prompt Tokens: <strong className="font-mono text-slate-700 dark:text-slate-200">{healthData?.telemetry?.ai_telemetry?.cumulative_tokens?.prompt_tokens ?? 0}</strong></span>
-                  <span>Completion Tokens: <strong className="font-mono text-slate-700 dark:text-slate-200">{healthData?.telemetry?.ai_telemetry?.cumulative_tokens?.completion_tokens ?? 0}</strong></span>
-                  <span>Last Activity: <strong className="font-mono text-slate-700 dark:text-slate-200">{healthData?.telemetry?.last_successful_operation ? new Date(healthData.telemetry.last_successful_operation).toLocaleTimeString() : 'Ready'}</strong></span>
-                </div>
-              </div>
-
-              {/* Ring Buffer: Recent Events */}
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Terminal className="w-3.5 h-3.5 text-slate-400" />
                     Telemetry Event Buffer (Last 10 Operations)
                   </h3>
@@ -507,31 +568,228 @@ export const SettingsPage: React.FC = () => {
 
           {activeTab === 'ai' && (
             <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
-              <div className="pb-4 border-b border-slate-100 dark:border-slate-800">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">AI Engine & Model Architecture</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Dual-tier architecture: OpenAI-compatible API with zero-failure deterministic fallback.
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-blue-500" />
+                    AI Provider Integration & API Key Management
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Manage multi-provider LLM credentials, model routing, sub-second LPU acceleration, and key rotation.
+                  </p>
+                </div>
+                <button
+                  onClick={fetchAiConfig}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Refresh
+                </button>
+              </div>
+
+              {/* Usage & Telemetry Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Active Provider</span>
+                  <div className="mt-1 flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="capitalize">{healthData?.ai_engine?.provider || 'Groq LPU'}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">{healthData?.ai_engine?.model || 'openai/gpt-oss-20b'}</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Total Calls</span>
+                  <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white font-mono">
+                    {aiUsage?.total_calls || 0}
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">Recorded requests</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Tokens Processed</span>
+                  <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white font-mono">
+                    {aiUsage?.total_tokens ? aiUsage.total_tokens.toLocaleString() : '0'}
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">{aiUsage?.total_prompt_tokens || 0} in / {aiUsage?.total_completion_tokens || 0} out</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">Failover Security</span>
+                  <div className="mt-1 flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Deterministic Fallback
+                  </div>
+                  <span className="text-[10px] text-slate-500 mt-0.5 block">0% Downtime guarantee</span>
+                </div>
+              </div>
+
+              {/* Multi-Provider Cards */}
+              <div className="space-y-4 pt-2">
+                <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                  Supported AI Providers & Connections
+                </h3>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {providerCatalog.map((prov) => {
+                    const conn = aiConnections.find(c => c.provider === prov.id);
+                    const providerModels = aiModels.filter(m => m.provider === prov.id);
+                    const isConfigured = !!conn;
+                    const testStatus = conn ? testResult[conn.id] : null;
+
+                    return (
+                      <div 
+                        key={prov.id}
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-slate-800/30 space-y-3"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400 text-xs">
+                              {prov.name[0]}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white">{prov.name}</h4>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${prov.badgeColor}`}>
+                                  {prov.category}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{prov.description}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {isConfigured ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200/60">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                {conn.status === 'connected' ? 'Connected' : 'Configured'}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                Not Configured
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Connection Details or Configuration Form */}
+                        {isConfigured ? (
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs pt-1">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-400 font-mono">Credential:</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-200 bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                  {conn.masked_key}
+                                </span>
+                                <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                  <Lock className="w-2.5 h-2.5 text-emerald-500" /> AES-128
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <span>Default Model: <strong>{conn.model || prov.defaultModel}</strong></span>
+                                {conn.last_synced_at && (
+                                  <span>• Last synced {new Date(conn.last_synced_at).toLocaleTimeString()}</span>
+                                )}
+                              </div>
+                              {testStatus && (
+                                <div className={`text-[11px] font-medium flex items-center gap-1 ${
+                                  testStatus.status === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                }`}>
+                                  {testStatus.status === 'success' ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                                  {testStatus.message}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleTestConnection(conn.id)}
+                                disabled={testingConnId === conn.id}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg transition-colors"
+                              >
+                                <RefreshCw className={`w-3 h-3 ${testingConnId === conn.id ? 'animate-spin' : ''}`} />
+                                Test Handshake
+                              </button>
+                              <button
+                                onClick={() => setRotatingConnId(conn.id)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg transition-colors"
+                              >
+                                <RotateCw className="w-3 h-3 text-blue-500" />
+                                Rotate Key
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 text-xs">
+                            <input
+                              type="password"
+                              placeholder={`Paste ${prov.name} API Key...`}
+                              value={keyInput[prov.id] || ''}
+                              onChange={(e) => setKeyInput(prev => ({ ...prev, [prov.id]: e.target.value }))}
+                              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            />
+                            {providerModels.length > 0 && (
+                              <select
+                                value={modelSelect[prov.id] || prov.defaultModel}
+                                onChange={(e) => setModelSelect(prev => ({ ...prev, [prov.id]: e.target.value }))}
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none"
+                              >
+                                {providerModels.map(m => (
+                                  <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                              </select>
+                            )}
+                            <button
+                              onClick={() => handleSaveConnection(prov.id, `${prov.name} Integration`)}
+                              disabled={savingProvider === prov.id || !keyInput[prov.id]}
+                              className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl transition-colors shadow-xs"
+                            >
+                              {savingProvider === prov.id ? 'Connecting...' : 'Connect'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Rotate Key Dialog Inline */}
+                        {rotatingConnId === conn?.id && (
+                          <div className="mt-2 p-3 bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                                <Key className="w-3 h-3" /> Rotate Secret for {prov.name}
+                              </span>
+                              <button onClick={() => setRotatingConnId(null)} className="text-[10px] text-slate-400 hover:text-slate-600">Cancel</button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="password"
+                                placeholder="Enter replacement API key..."
+                                value={newRotateKey}
+                                onChange={(e) => setNewRotateKey(e.target.value)}
+                                className="flex-1 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg px-2.5 py-1 text-xs font-mono"
+                              />
+                              <button
+                                onClick={() => handleRotateKey(conn.id)}
+                                className="px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                              >
+                                Save & Encrypt
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Multi-Tier Failover Architecture Callout */}
+              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 leading-relaxed space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  Dual-Tier Failover Resilience Policy
+                </div>
+                <p className="text-[11px]">
+                  All editorial operations execute through the intelligent provider router. If the primary cloud provider experiences rate limits or network degradation, requests automatically fall back with bounded jitter retry to secondary providers and the deterministic local extraction engine.
                 </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-mono text-slate-400 uppercase">Operational Mode</span>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    {healthData?.ai_engine?.mode || 'Deterministic Fallback Engine'}
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                  <span className="text-[11px] font-mono text-slate-400 uppercase">Configured Target Model</span>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 font-mono">
-                    {healthData?.ai_engine?.model || 'gpt-4o-mini'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-900 dark:text-blue-200 leading-relaxed">
-                <strong>Guaranteed Execution:</strong> All 6 writing checks (sentence splitting, passive voice, filler removal, jargon glossary, repetition detection, and complexity scoring) run deterministically without external API dependencies.
               </div>
             </div>
           )}
@@ -582,7 +840,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
                   <span className="text-slate-700 dark:text-slate-300 font-medium">Active Schema Tables</span>
-                  <span className="font-mono text-slate-900 dark:text-white font-bold">7 Tables</span>
+                  <span className="font-mono text-slate-900 dark:text-white font-bold">34 Tables (Phase 4 Migration Complete)</span>
                 </div>
               </div>
             </div>

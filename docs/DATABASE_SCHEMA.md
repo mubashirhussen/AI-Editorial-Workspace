@@ -205,3 +205,4 @@ Complete schema specification of all 34 tables in the **AI Editorial Workspace**
 * `audit_logs`: Immutable security audit events for compliance.
 * `notifications`: In-app user notifications with read tracking.
 * `usage_events`: High-frequency metric aggregations for rate limits and dashboard charts.
+

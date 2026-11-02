@@ -37,3 +37,4 @@ def mask_secret(secret: Optional[str], visible_chars: int = 4) -> str:
     if len(clean) <= visible_chars * 2:
         return "****"
     return f"{clean[:visible_chars]}...{clean[-visible_chars:]}"
+

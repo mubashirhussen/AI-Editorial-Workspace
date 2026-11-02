@@ -104,3 +104,4 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.delete(obj)
         db.commit()
         return True
+

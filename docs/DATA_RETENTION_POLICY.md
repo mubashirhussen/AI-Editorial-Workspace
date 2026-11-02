@@ -29,3 +29,4 @@ This document defines data lifecycle, retention schedules, sanitization, and pri
 3. **Data Subject Rights (GDPR / CCPA Compliant)**:
    * **Right to Erasure**: Soft-deletes user accounts and cascades session revocations.
    * **Right to Portability**: Workspace exports format research briefs and drafts into standardized JSON / Markdown bundles.
+

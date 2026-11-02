@@ -76,3 +76,4 @@ backend\venv\Scripts\alembic -c backend\alembic.ini downgrade -1
 Migrations are tested across two isolated environments:
 1. **Fresh Database Execution**: Running `upgrade head` against a completely empty database creates all 34 tables with primary keys, composite indexes, and foreign keys.
 2. **Existing Database Upgrade**: Tested on pre-existing `editorial.db` preserving 201 users, 201 organizations, 236 memberships, 53 projects, 56 sources, and 27 drafts without data loss.
+

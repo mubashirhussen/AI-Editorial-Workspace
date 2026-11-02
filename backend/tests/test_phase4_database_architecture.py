@@ -257,3 +257,4 @@ def test_db_health_check_function():
     assert health["status"] == "healthy"
     assert health["latency_ms"] >= 0.0
     assert health["engine"] in ("sqlite", "postgresql")
+
