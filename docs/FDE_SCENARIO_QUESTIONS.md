@@ -210,3 +210,4 @@ This guide prepares engineers for customer-facing technical triage, incident res
   Walk through a prototype demonstrating that the alternative solves their velocity need without destroying baseline traceability.
 - **Customer Communication:**
   > *"We understand your goal of accelerating newsletter production. Rather than completely replacing the draft with generic AI copy—which risks flattening your publication's authoritative voice and hallucinating claims—we have enabled batch suggestion acceptance and custom publication style presets. This cuts your editing time in half while preserving 100% source attribution."*
+

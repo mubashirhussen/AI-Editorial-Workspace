@@ -356,3 +356,4 @@
 
 ### 100. How do you verify database disaster recovery?
 **Answer:** By running `backup_db.py --action backup`, verifying the SHA-256 checksum and `PRAGMA integrity_check`, simulating data corruption on a test database, and executing `--action restore` to confirm full recovery.
+

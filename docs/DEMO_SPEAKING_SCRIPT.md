@@ -120,3 +120,4 @@
 > - **Zero-Failure Offline Fallback:** *If an external AI API has an outage or quota exhaustion, our intelligent router automatically routes requests to our deterministic rule engine—meaning our editorial desk never experiences downtime on deadline.*
 >
 > **Thank you for your time. I'd love to take your questions on the architecture, data models, or implementation details."**
+

@@ -49,3 +49,4 @@ This playbook provides word-for-word spoken pitches for technical interviews, ex
 | **Why Dual-Column Drafts?** | "Original content is immutable in the database. Accepting an edit never destroys the source baseline, allowing instant side-by-side diffing and zero data loss." |
 | **Why Socket-Level SSRF?** | "Validating URLs with regex is useless if DNS resolves to `127.0.0.1` or AWS metadata `169.254.169.254`. We resolve DNS before socket connection on every redirect hop." |
 | **Why Offline Fallback?** | "A publication cannot stop on deadline because an external AI provider has an outage. Our offline heuristic engine synthesizes briefs and drafts with zero cloud dependencies." |
+

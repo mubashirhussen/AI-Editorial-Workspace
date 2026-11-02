@@ -109,3 +109,4 @@ The evaluation uses a 100-point rubric weighted across 15 technical and product 
 ### 15. Engineering Decision-Making & Trade-Offs (Score: 4.6 / 5.0)
 - **Criteria:** Justification of architectural choices (e.g. deterministic heuristics vs LLM calls).
 - **Evidence:** Pragmatic decision to use deterministic Python algorithms for the 6 Hemingway checks (zero cost, zero latency, zero hallucination) while reserving LLMs for creative narrative synthesis.
+

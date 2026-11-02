@@ -157,3 +157,4 @@ sequenceDiagram
 ### 3.5. Multi-Provider Intelligent AI Router
 - **Provider Adapters:** Standard interface implemented across `GroqAdapter`, `OpenAIAdapter`, `AnthropicAdapter`, and `GeminiAdapter`.
 - **Automatic Fallback:** If upstream credentials are missing, invalid, or rate-limited (HTTP 429), the router executes the **Deterministic Fallback Engine**, which parses text using rule-based heuristics so the editorial desk never experiences downtime.
+
