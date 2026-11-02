@@ -19,6 +19,8 @@ class User(Base):
     full_name = Column(String(255), default="", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    is_verified = Column(Boolean, default=True, nullable=False)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
     memberships = relationship("OrganizationMembership", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
@@ -80,6 +82,7 @@ class ResearchProject(Base):
     name = Column(String(255), nullable=True, index=True)
     description = Column(Text, nullable=True)
     status = Column(String(50), default="draft", nullable=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False, index=True)
 
@@ -122,6 +125,7 @@ class Source(Base):
     published_at = Column(String(100), nullable=True)
     extraction_status = Column(String(50), default="PENDING", nullable=False, index=True) # PENDING, EXTRACTING, COMPLETED, FAILED
     error_message = Column(Text, nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 
     project = relationship("ResearchProject", back_populates="sources")
@@ -198,7 +202,9 @@ class WritingDraft(Base):
     readability_score = Column(Float, nullable=True)
     style_profile_id = Column(String(36), ForeignKey("editorial_style_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
     style_score = Column(Float, nullable=True)
+    author_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(String(50), default="DRAFT", nullable=False, index=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False, index=True)
 
@@ -463,3 +469,230 @@ class EditorialVersion(Base):
 
     organization = relationship("Organization")
     creator = relationship("User")
+
+
+# ==============================================================================
+# PHASE 4 DATA MODEL EXTENSIONS: AUTH, AI, JOBS, ANALYTICS & AUDIT LOGS
+# ==============================================================================
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    __table_args__ = (
+        Index("ix_user_sessions_user_exp", "user_id", "expires_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(255), unique=True, nullable=False, index=True)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_revoked = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    user = relationship("User")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(255), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    user = relationship("User")
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash = Column(String(255), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    user = relationship("User")
+
+
+class ResearchEvidence(Base):
+    __tablename__ = "research_evidence"
+    __table_args__ = (
+        Index("ix_evidence_project_source", "project_id", "source_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_id = Column(String(36), ForeignKey("sources.id", ondelete="CASCADE"), nullable=False, index=True)
+    claim_id = Column(String(36), ForeignKey("research_claims.id", ondelete="SET NULL"), nullable=True, index=True)
+    excerpt = Column(Text, nullable=False)
+    fact_type = Column(String(50), default="DIRECT_FACT", nullable=False)
+    confidence = Column(Float, default=0.95, nullable=False)
+    verified = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    project = relationship("ResearchProject")
+    source = relationship("Source")
+    claim = relationship("ResearchClaim")
+
+
+class AiProviderConfig(Base):
+    __tablename__ = "ai_provider_configs"
+    __table_args__ = (
+        Index("ix_ai_provider_org", "organization_id", "provider"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    provider = Column(String(50), nullable=False, index=True) # openai, google_gemini, anthropic, groq
+    model_name = Column(String(100), nullable=False)
+    encrypted_api_key = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    config_json = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    organization = relationship("Organization")
+
+
+class IntegrationConnection(Base):
+    __tablename__ = "integration_connections"
+    __table_args__ = (
+        Index("ix_integration_org_provider", "organization_id", "provider"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    provider = Column(String(50), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    status = Column(String(50), default="connected", nullable=False)
+    masked_key = Column(String(100), nullable=True)
+    encrypted_secret = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    last_synced_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    organization = relationship("Organization")
+
+
+class ProviderUsageRecord(Base):
+    __tablename__ = "provider_usage_records"
+    __table_args__ = (
+        Index("ix_usage_org_created", "organization_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    provider = Column(String(50), nullable=False, index=True)
+    model = Column(String(100), nullable=False)
+    operation = Column(String(100), nullable=False, index=True)
+    prompt_tokens = Column(Integer, default=0, nullable=False)
+    completion_tokens = Column(Integer, default=0, nullable=False)
+    total_tokens = Column(Integer, default=0, nullable=False)
+    duration_ms = Column(Float, default=0.0, nullable=False)
+    status = Column(String(50), default="success", nullable=False)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class IntegrationHealthRecord(Base):
+    __tablename__ = "integration_health_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    provider = Column(String(50), nullable=False, index=True)
+    status = Column(String(50), nullable=False)
+    response_time_ms = Column(Float, default=0.0, nullable=False)
+    error_details = Column(Text, nullable=True)
+    checked_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class BackgroundJob(Base):
+    __tablename__ = "background_jobs"
+    __table_args__ = (
+        Index("ix_jobs_org_status", "organization_id", "status"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    job_type = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), default="PENDING", nullable=False, index=True) # PENDING, RUNNING, COMPLETED, FAILED
+    payload = Column(JSON, default=dict, nullable=False)
+    result = Column(JSON, default=dict, nullable=False)
+    error_message = Column(Text, nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class UserActivityLog(Base):
+    __tablename__ = "user_activity_logs"
+    __table_args__ = (
+        Index("ix_activity_org_created", "organization_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    action = Column(String(100), nullable=False, index=True)
+    resource_type = Column(String(100), nullable=False, index=True)
+    resource_id = Column(String(36), nullable=True, index=True)
+    details = Column(JSON, default=dict, nullable=False)
+    ip_address = Column(String(50), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_org_created", "organization_id", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    actor_email = Column(String(255), nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    changes_json = Column(JSON, default=dict, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notif_user_read", "user_id", "is_read"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String(50), default="info", nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False, index=True)
+    link = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class UsageEvent(Base):
+    __tablename__ = "usage_events"
+    __table_args__ = (
+        Index("ix_events_org_metric_time", "organization_id", "metric_name", "timestamp"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    metric_name = Column(String(100), nullable=False, index=True)
+    metric_value = Column(Float, default=1.0, nullable=False)
+    tags_json = Column(JSON, default=dict, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)

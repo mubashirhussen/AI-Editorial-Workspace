@@ -93,3 +93,4 @@ def extract_from_bytes(file_bytes: bytes, filename: str, content_type: Optional[
     }
 
 print("Extractor prototype compiled successfully")
+

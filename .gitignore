@@ -28,6 +28,8 @@ __pycache__/
 editorial.db
 backend/editorial.db
 *.sqlite3
+*.bak*
+backups/
 
 # Build Outputs
 dist/
