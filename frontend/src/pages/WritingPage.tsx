@@ -115,7 +115,7 @@ export const WritingPage: React.FC = () => {
     }
   };
 
-  const handleAnalyze = async (contentToAnalyze: string, explicitDraftId?: string) => {
+  const handleAnalyze = async (contentToAnalyze: string, explicitDraftId?: string, isUserAction: boolean = false) => {
     try {
       setIsAnalyzing(true);
       const res = await writingService.analyzeWriting({
@@ -135,7 +135,9 @@ export const WritingPage: React.FC = () => {
       if (!originalDraft) {
         setOriginalDraft(contentToAnalyze);
       }
-      info('Writing quality audit completed.');
+      if (isUserAction) {
+        info('Writing quality audit completed.');
+      }
     } catch (err: any) {
       error(err.message || 'Failed to analyze text');
     } finally {
@@ -433,7 +435,7 @@ export const WritingPage: React.FC = () => {
           </Button>
 
           <Button
-            onClick={() => handleAnalyze(text)}
+            onClick={() => handleAnalyze(text, undefined, true)}
             isLoading={isAnalyzing}
             variant="primary"
             size="sm"

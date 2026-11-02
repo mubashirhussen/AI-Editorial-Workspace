@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from backend.app.core.database import get_db
 from backend.app.models.base import Source, User
-from backend.app.schemas.source import SourceCreate, SourceResponse, SourceListResponse, SourceAnalysisSchema
+from backend.app.schemas.source import SourceCreate, SourceUpdate, SourceResponse, SourceListResponse, SourceAnalysisSchema
 from backend.app.schemas.auth import OrgPermission
 from backend.app.services.research_service import research_service
 from backend.app.api.deps import get_current_user
@@ -41,6 +41,37 @@ def get_source(
         raise HTTPException(status_code=404, detail="Source not found.")
     if source.project:
         check_project_tenant_access(db, source.project, current_user, OrgPermission.VIEW_CONTENT)
+    return source
+
+@router.put("/sources/{source_id}", response_model=SourceResponse)
+def update_source(
+    source_id: str,
+    data: SourceUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    source = db.query(Source).filter(Source.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found.")
+    if source.project:
+        check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
+
+    if data.title and data.title.strip():
+        source.title = data.title.strip()
+
+    content = data.text_content or data.raw_content
+    if content and content.strip():
+        cleaned = content.strip()
+        source.raw_content = cleaned
+        source.extracted_content = cleaned
+        source.extraction_status = "completed"
+        source.error_message = None
+        lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+        if lines:
+            source.summary = lines[0][:280]
+
+    db.commit()
+    db.refresh(source)
     return source
 
 @router.delete("/sources/{source_id}")

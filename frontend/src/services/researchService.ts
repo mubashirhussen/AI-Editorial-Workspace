@@ -34,6 +34,11 @@ export const researchService = {
     });
   },
 
+  async updateSource(sourceId: string, payload: { title?: string; text_content?: string }): Promise<Source> {
+    const res = await apiClient.put(`/sources/${sourceId}`, payload);
+    return res.data;
+  },
+
   async deleteSource(sourceId: string): Promise<{ success: boolean; message: string }> {
     const res = await apiClient.delete(`/sources/${sourceId}`);
     return res.data;

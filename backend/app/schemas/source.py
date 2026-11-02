@@ -26,6 +26,11 @@ class SourceAnalysisSchema(BaseModel):
 
 SourceAnalysisResponse = SourceAnalysisSchema
 
+class SourceUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=255)
+    text_content: Optional[str] = Field(None, max_length=500_000)
+    raw_content: Optional[str] = Field(None, max_length=500_000)
+
 class SourceCreate(BaseModel):
     url: Optional[str] = Field(None, max_length=2048)
     title: Optional[str] = Field(None, max_length=255)

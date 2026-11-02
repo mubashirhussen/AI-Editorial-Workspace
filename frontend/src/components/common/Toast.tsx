@@ -22,11 +22,18 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = (message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
+    setToasts((prev) => {
+      // Deduplicate: If identical message already in active toasts, don't duplicate
+      if (prev.some((t) => t.message === message)) {
+        return prev;
+      }
+      const id = Math.random().toString(36).substring(2, 9);
+      setTimeout(() => {
+        removeToast(id);
+      }, 4000);
+      // Keep up to 3 most recent toasts
+      return [...prev.slice(-2), { id, type, message }];
+    });
   };
 
   const removeToast = (id: string) => {
@@ -80,4 +87,3 @@ export const useToast = () => {
   }
   return context;
 };
-

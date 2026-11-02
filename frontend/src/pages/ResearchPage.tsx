@@ -23,6 +23,7 @@ import {
 import { researchApi } from '../services/researchApi';
 import { Project, Source, ResearchBrief, NewsletterAngle } from '../types';
 import { useToast } from '../components/common/Toast';
+import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ResearchIntelligenceDashboard } from '../components/research/ResearchIntelligenceDashboard';
 
@@ -48,6 +49,43 @@ export const ResearchPage: React.FC = () => {
   const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
   const [activeTab, setActiveTab] = useState<'brief' | 'sources' | 'evidence' | 'facts' | 'intelligence'>('brief');
   const [deleteSourceId, setDeleteSourceId] = useState<string | null>(null);
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
+  const [manualText, setManualText] = useState<string>('');
+  const [isSavingManual, setIsSavingManual] = useState(false);
+
+  const handleRetryExtract = async (sourceId: string) => {
+    try {
+      await researchApi.extractSource(sourceId);
+      success('Source extraction re-triggered.');
+      if (activeProject) {
+        const updated = await researchApi.getProject(activeProject.id);
+        setActiveProject(updated);
+        setSources(updated.sources || []);
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to extract source');
+    }
+  };
+
+  const handleSaveManualSource = async (sourceId: string) => {
+    if (!manualText.trim()) return;
+    try {
+      setIsSavingManual(true);
+      await researchApi.updateSource(sourceId, { text_content: manualText });
+      success('Source content updated and verified.');
+      setEditingSourceId(null);
+      setManualText('');
+      if (activeProject) {
+        const updated = await researchApi.getProject(activeProject.id);
+        setActiveProject(updated);
+        setSources(updated.sources || []);
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to update source');
+    } finally {
+      setIsSavingManual(false);
+    }
+  };
 
   useEffect(() => {
     loadProjects();
@@ -395,9 +433,61 @@ export const ResearchPage: React.FC = () => {
                           <Loader2 className="w-3 h-3 animate-spin" /> Extracting...
                         </span>
                       ) : (
-                        <span className="text-red-600 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> Extraction failed
-                        </span>
+                        <div className="flex flex-col gap-1.5 w-full">
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-red-600 flex items-center gap-1 font-medium">
+                              <AlertCircle className="w-3 h-3" /> Extraction failed
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleRetryExtract(s.id)}
+                                className="text-[11px] text-blue-600 hover:underline"
+                              >
+                                Retry
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingSourceId(editingSourceId === s.id ? null : s.id);
+                                  setManualText('');
+                                }}
+                                className="text-[11px] text-indigo-600 font-semibold hover:underline"
+                              >
+                                {editingSourceId === s.id ? 'Cancel' : 'Paste Text'}
+                              </button>
+                            </div>
+                          </div>
+                          {editingSourceId === s.id && (
+                            <div className="mt-2 p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+                              <div className="text-[10px] text-slate-500 font-medium">
+                                Paste article content to verify this source directly:
+                              </div>
+                              <textarea
+                                value={manualText}
+                                onChange={(e) => setManualText(e.target.value)}
+                                placeholder="Paste full article text or press release here..."
+                                className="w-full h-20 p-2 text-xs border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setEditingSourceId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  disabled={!manualText.trim()}
+                                  isLoading={isSavingManual}
+                                  onClick={() => handleSaveManualSource(s.id)}
+                                >
+                                  Verify Content
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 

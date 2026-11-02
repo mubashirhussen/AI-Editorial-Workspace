@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Moon, Sun, Menu, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { checkHealth, HealthStatus } from '../../services/healthService';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
+import { UserProfileMenu } from './UserProfileMenu';
 
 interface HeaderProps {
   currentProjectTitle?: string;
@@ -141,6 +142,9 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
         >
           {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
         </button>
+
+        {/* User Profile on the top-right corner */}
+        <UserProfileMenu />
       </div>
     </header>
   );
