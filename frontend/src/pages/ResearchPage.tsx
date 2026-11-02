@@ -248,7 +248,12 @@ export const ResearchPage: React.FC = () => {
           <button
             onClick={handleGenerateBrief}
             disabled={isGeneratingBrief || sources.length < 3}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 transition-all"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold shadow-xs transition-all ${
+              sources.length >= 3
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 shadow-md ring-2 ring-blue-500/40'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed'
+            }`}
+            title={sources.length < 3 ? `Requires 3 sources to synthesize (currently ${sources.length}/3)` : 'Click to synthesize research brief'}
           >
             {isGeneratingBrief ? (
               <>
@@ -258,7 +263,9 @@ export const ResearchPage: React.FC = () => {
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Generate Research Brief</span>
+                <span>
+                  {sources.length >= 3 ? 'Generate Research Brief' : `Generate Brief (${sources.length}/3 Sources)`}
+                </span>
               </>
             )}
           </button>

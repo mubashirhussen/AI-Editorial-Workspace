@@ -89,3 +89,4 @@ sequenceDiagram
 - **Backend Test Suite**: `pytest -q backend/tests` &rarr; **77 passed, 0 failed in 29.53s**.
 - **Frontend Production Build**: `tsc -b && vite build` &rarr; **2,298 modules transformed in 19.72s with 0 diagnostics**.
 - **Bundle Output**: Distributed cleanly to `frontend/dist/`.
+

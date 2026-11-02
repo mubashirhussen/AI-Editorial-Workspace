@@ -25,6 +25,9 @@ const SettingsPage = lazy(() =>
 const OrganizationPage = lazy(() =>
   import('./pages/OrganizationPage').then((m) => ({ default: m.OrganizationPage }))
 );
+const AuthPage = lazy(() =>
+  import('./pages/AuthPage').then((m) => ({ default: m.AuthPage }))
+);
 import { AuthProvider } from './context/AuthContext';
 
 const ViewSuspenseFallback: React.FC = () => (
@@ -38,6 +41,22 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<ViewSuspenseFallback />}>
+                <AuthPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <Suspense fallback={<ViewSuspenseFallback />}>
+                <AuthPage />
+              </Suspense>
+            }
+          />
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route

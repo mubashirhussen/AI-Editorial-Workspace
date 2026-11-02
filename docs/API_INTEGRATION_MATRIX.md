@@ -42,3 +42,4 @@
 | `GET` | `/documents/{type}/{id}/versions` | Get version timeline | Authenticated | None | `List[VersionResponse]` | `VersionHistoryPanel.tsx` |
 | `GET` | `/documents/{type}/{id}/compare` | Compute text Myers diff | Authenticated | None | `VersionComparisonResponse`| `VersionComparison.tsx` |
 | `POST` | `/documents/{type}/{id}/versions/{v}/restore` | Non-destructive rollback | Authenticated | None | `VersionRestoreResponse` | `VersionHistoryPanel.tsx` |
+

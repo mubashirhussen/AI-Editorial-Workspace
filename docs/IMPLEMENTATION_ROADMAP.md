@@ -53,3 +53,4 @@ flowchart TD
   1. Optimize multi-stage `Dockerfile` for frontend and backend.
   2. Maintain `docker-compose.yml` with health checks and volume persistence.
   3. Add automated GitHub Actions deployment smoke test.
+

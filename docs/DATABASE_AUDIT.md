@@ -70,3 +70,4 @@ erDiagram
 - **Idempotency Strategy**: `0d95531a1a07` introspects database metadata with `sa.inspect(op.get_bind())`. Tables and columns that already exist are safely skipped, preventing `table already exists` or `duplicate column name` exceptions.
 - **Rollback Capability**: `downgrade()` in `0d95531a1a07` drops created tables in inverse dependency sequence.
 - **Data Preservation**: No existing records are deleted or modified during upgrades.
+
