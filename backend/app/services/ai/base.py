@@ -65,3 +65,4 @@ class BaseAIProvider(ABC):
     async def check_health(self) -> Dict[str, Any]:
         """Performs live ping/verification against provider API."""
         pass
+

@@ -113,3 +113,4 @@ class AnthropicAdapter(BaseAIProvider):
                 "error": str(e),
                 "latency_ms": round(duration_ms, 2)
             }
+

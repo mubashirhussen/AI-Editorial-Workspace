@@ -137,6 +137,8 @@ class EditorialReviewWorkflowService:
         Prevents unauthorized or premature transitions (e.g. unapproved to FINALIZED).
         """
         current_status = editorial.status
+        if current_status == new_status:
+            return editorial
 
         if current_status == WorkflowStatus.FINALIZED and new_status != WorkflowStatus.ARCHIVED:
             raise HTTPException(

@@ -143,3 +143,16 @@ class InvitationResponse(BaseModel):
 class InvitationAcceptRequest(BaseModel):
     token: str
 
+
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+class TokenRefreshResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

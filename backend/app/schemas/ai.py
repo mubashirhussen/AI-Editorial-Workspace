@@ -47,3 +47,4 @@ class UsageSummaryResponse(BaseModel):
     active_connections_count: int
     by_provider: Dict[str, Dict[str, Any]]
     by_operation: Dict[str, int]
+

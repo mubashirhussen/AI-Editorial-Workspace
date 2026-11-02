@@ -201,3 +201,4 @@ class AIRouter:
                 db.rollback()
 
 ai_router = AIRouter()
+

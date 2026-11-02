@@ -117,6 +117,31 @@ def create_editorial_review(
     db.refresh(review)
     return review
 
+@router.post("/{editorial_id}/comments", response_model=EditorialCommentResponse, status_code=201)
+def add_editorial_direct_comment(
+    editorial_id: str,
+    req: EditorialCommentCreate,
+    db: Session = Depends(get_db)
+):
+    """Adds a comment directly to an editorial by automatically attaching to or creating its active review."""
+    editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
+    if not editorial:
+        raise HTTPException(status_code=404, detail="Editorial not found.")
+    
+    review = db.query(EditorialReview).filter(EditorialReview.editorial_id == editorial_id).order_by(EditorialReview.reviewed_at.desc()).first()
+    if not review:
+        review = EditorialReview(
+            editorial_id=editorial_id,
+            reviewer_name="Human Editor",
+            review_status="HUMAN_REVIEW_PENDING",
+            reviewed_at=review_workflow_service.transition_editorial_status.__globals__['utc_now']()
+        )
+        db.add(review)
+        db.commit()
+        db.refresh(review)
+        
+    return review_workflow_service.add_comment(db, review.id, req)
+
 @router.post("/reviews/{review_id}/comments", response_model=EditorialCommentResponse)
 def add_review_comment(
     review_id: str,

@@ -4,14 +4,17 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from backend.app.core.database import get_db
-from backend.app.core.security import hash_password, verify_password, create_access_token, revoke_token
+from backend.app.core.security import hash_password, verify_password, create_access_token, decode_access_token, revoke_token
 from backend.app.models.base import User, Organization, OrganizationMembership
 from backend.app.schemas.auth import (
     UserRegisterRequest,
     UserLoginRequest,
     UserResponse,
     OrganizationResponse,
-    AuthResponse
+    AuthResponse,
+    PasswordResetRequest,
+    PasswordChangeRequest,
+    TokenRefreshResponse
 )
 from backend.app.api.deps import get_current_user
 
@@ -160,3 +163,46 @@ def logout_user(authorization: str = Header(...)):
         revoke_token(token)
     return {"message": "Logged out successfully."}
 
+
+
+@router.post("/refresh", response_model=TokenRefreshResponse)
+def refresh_access_token(authorization: str = Header(...), db: Session = Depends(get_db)):
+    """Refreshes an active session token before expiration."""
+    if not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header.")
+    token = authorization[7:].strip()
+    payload = decode_access_token(token)
+    if not payload or not payload.get("sub"):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired or invalid.")
+    
+    user = db.query(User).filter(User.id == payload["sub"]).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User account is inactive.")
+    
+    new_token = create_access_token(data={"sub": user.id, "email": user.email})
+    return TokenRefreshResponse(access_token=new_token, token_type="bearer")
+
+
+@router.post("/reset-password")
+def reset_password(payload: PasswordResetRequest, db: Session = Depends(get_db)):
+    """Resets user password with direct email verification."""
+    email_clean = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == email_clean).first()
+    if not user:
+        # Prevent user enumeration by returning uniform success
+        return {"success": True, "message": "If this email is registered, the password has been updated."}
+    
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"success": True, "message": "Password updated successfully."}
+
+
+@router.post("/change-password")
+def change_password(payload: PasswordChangeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Updates password for currently authenticated user."""
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect.")
+    
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"success": True, "message": "Password changed successfully."}

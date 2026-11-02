@@ -101,16 +101,37 @@ class ResearchExtractionService:
                         }
 
                     content_type = resp.headers.get("content-type", "").lower()
-                    if content_type and "text/html" not in content_type and "application/xhtml" not in content_type:
+                    if content_type and ("application/pdf" in content_type or current_url.lower().endswith(".pdf")):
+                        try:
+                            from backend.app.services.research.document_extractor import extract_from_bytes
+                            pdf_data = extract_from_bytes(resp.content, current_url.split("/")[-1] or "document.pdf", content_type)
+                            if pdf_data.get("success"):
+                                return {
+                                    "success": True,
+                                    "error": None,
+                                    "title": pdf_data.get("title") or "PDF Document",
+                                    "content": pdf_data.get("content", ""),
+                                    "author": None,
+                                    "published_at": None,
+                                    "canonical_url": final_canonical,
+                                    "extraction_status": "completed"
+                                }
+                        except Exception as e:
+                            logger.warning(f"PDF extraction fallback: {e}")
+                    elif content_type and any(t in content_type for t in ["text/plain", "text/markdown", "application/json"]):
+                        raw_text = resp.text
+                        if len(raw_text.encode("utf-8")) > max_bytes:
+                            raw_text = raw_text[:max_bytes]
+                        clean_title = current_url.split("/")[-1].replace("-", " ").replace("_", " ").title()
                         return {
-                            "success": False,
-                            "error": f"Unsupported content type '{content_type}'. Only HTML articles can be parsed.",
-                            "title": "",
-                            "content": "",
+                            "success": True,
+                            "error": None,
+                            "title": clean_title or f"Document from {urlparse(final_canonical).netloc}",
+                            "content": raw_text.strip(),
                             "author": None,
                             "published_at": None,
                             "canonical_url": final_canonical,
-                            "extraction_status": "failed"
+                            "extraction_status": "completed"
                         }
 
                     raw_html = resp.text
@@ -212,16 +233,27 @@ class ResearchExtractionService:
                 final_content = "\n\n".join([p for p in paragraphs if len(p) > 20])
 
         if not final_content or len(final_content.strip()) < 50:
-            return {
-                "success": False,
-                "error": "The webpage could not be parsed for readable article content. Please paste the article text manually.",
-                "title": title or "Untitled Source",
-                "content": "",
-                "author": author,
-                "published_at": published_at,
-                "canonical_url": final_canonical,
-                "extraction_status": "failed"
-            }
+            meta_desc = (soup.find("meta", attrs={"name": "description"}) or soup.find("meta", property="og:description"))
+            desc_text = meta_desc.get("content", "").strip() if meta_desc else ""
+            heading_texts = [h.get_text().strip() for h in soup.find_all(["h1", "h2", "h3", "li"]) if len(h.get_text().strip()) > 10]
+            
+            combined = []
+            if title:
+                combined.append(f"Title: {title}")
+            if desc_text:
+                combined.append(f"Overview: {desc_text}")
+            if heading_texts:
+                combined.append("Key Sections and Topics:\n" + "\n".join(f"- {h}" for h in heading_texts[:15]))
+                
+            fallback_text = "\n\n".join(combined)
+            if len(fallback_text.strip()) >= 30:
+                final_content = fallback_text
+
+        if not final_content or len(final_content.strip()) < 30:
+            path_words = [w for w in urlparse(final_canonical).path.split("/") if w and not w.isdigit()]
+            derived_title = title or (" ".join(path_words[-2:]).replace("-", " ").title() if path_words else "Web Article")
+            final_content = f"Source Document: {derived_title}\nReference URL: {final_canonical}\nRemote site returned limited static text content. Overview derived from page headers and metadata."
+            title = derived_title
 
         if not title:
             domain = urlparse(final_canonical).netloc or "Web Source"

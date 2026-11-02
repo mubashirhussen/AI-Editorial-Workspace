@@ -104,3 +104,4 @@ class FallbackAdapter(BaseAIProvider):
             "latency_ms": 0.5,
             "is_fallback": True
         }
+

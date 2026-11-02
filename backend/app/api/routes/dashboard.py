@@ -19,6 +19,8 @@ from backend.app.api.deps import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard & Analytics"])
 
+@router.get("")
+@router.get("/")
 @router.get("/overview")
 def get_dashboard_overview(
     current_user: User = Depends(get_current_user),

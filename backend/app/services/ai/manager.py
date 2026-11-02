@@ -141,3 +141,4 @@ class AIManager:
         ]
 
 ai_manager = AIManager()
+

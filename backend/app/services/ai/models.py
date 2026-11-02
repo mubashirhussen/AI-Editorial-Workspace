@@ -200,3 +200,4 @@ def get_all_models(provider: Optional[str] = None) -> List[Dict[str, Any]]:
 def get_default_model(provider: str) -> Optional[str]:
     p = MODEL_REGISTRY.get(provider.lower())
     return p.default_model if p else None
+
