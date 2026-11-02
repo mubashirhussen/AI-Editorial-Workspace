@@ -91,3 +91,46 @@ async def generate_brief(project_id: str, db: Session = Depends(get_db)):
 def get_brief(project_id: str, db: Session = Depends(get_db)):
     return research_service.get_brief(db, project_id)
 
+
+@router.patch("/projects/{project_id}", response_model=ProjectResponse)
+def patch_project(project_id: str, data: ProjectUpdate, db: Session = Depends(get_db)):
+    """Patch project details."""
+    return research_service.update_project(db, project_id, data)
+
+@router.post("/projects/{project_id}/process")
+async def process_project_pipeline(project_id: str, db: Session = Depends(get_db)):
+    """Triggers analysis of all sources and synthesizes a research brief."""
+    await research_service.analyze_project_sources(db, project_id)
+    brief = await research_service.generate_research_brief(db, project_id)
+    return {
+        "status": "completed",
+        "project_id": project_id,
+        "brief_id": brief.id,
+        "executive_summary": brief.executive_summary
+    }
+
+@router.get("/projects/{project_id}/results")
+def get_project_results(project_id: str, db: Session = Depends(get_db)):
+    """Retrieves full research investigation results including sources, analyses, and brief."""
+    project = research_service.get_project(db, project_id)
+    brief = None
+    try:
+        brief = research_service.get_brief(db, project_id)
+    except Exception:
+        pass
+    
+    ready = len(project.sources) >= 3 and brief is not None
+    return {
+        "project": project,
+        "sources": project.sources,
+        "brief": brief,
+        "sources_count": len(project.sources),
+        "is_ready_for_drafting": ready,
+        "is_ready_for_editorial": ready,
+        "ready_for_editorial": ready
+    }
+
+@router.get("/projects/{project_id}/sources", response_model=List[SourceResponse])
+def get_project_sources_list(project_id: str, db: Session = Depends(get_db)):
+    """List sources belonging to a research project."""
+    return research_service.get_project_sources(db, project_id)

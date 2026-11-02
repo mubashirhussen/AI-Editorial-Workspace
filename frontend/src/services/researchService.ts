@@ -54,6 +54,31 @@ export const researchService = {
     return res.data;
   },
 
+  async uploadSourceFile(projectId: string, file: File, title?: string): Promise<Source> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) {
+      formData.append('title', title);
+    }
+    const res = await apiClient.post(`/research/projects/${projectId}/sources/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  },
+
+  async reuploadSourceFile(sourceId: string, file: File): Promise<Source> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await apiClient.post(`/sources/${sourceId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return res.data;
+  },
+
   async generateBrief(projectId: string): Promise<ResearchBrief> {
     const res = await apiClient.post(`/research/projects/${projectId}/generate-brief`);
     return res.data;

@@ -1,15 +1,89 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from backend.app.core.database import get_db
-from backend.app.models.base import Source, User
+from backend.app.models.base import Source, User, ResearchProject
 from backend.app.schemas.source import SourceCreate, SourceUpdate, SourceResponse, SourceListResponse, SourceAnalysisSchema
 from backend.app.schemas.auth import OrgPermission
 from backend.app.services.research_service import research_service
 from backend.app.api.deps import get_current_user
 from backend.app.api.v1.endpoints.projects import check_project_tenant_access
+from backend.app.services.research.document_extractor import extract_from_bytes
 
-router = APIRouter(tags=["Sources"])
+router = APIRouter(tags=['Sources'])
+
+@router.post("/research/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=201)
+@router.post("/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=201)
+async def upload_project_source_file(
+    project_id: str,
+    file: UploadFile = File(...),
+    title: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Multi-modal document and image ingestion (PDF, Word docx, Text, Markdown, Image OCR)."""
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    check_project_tenant_access(db, project, current_user, OrgPermission.ADD_SOURCES)
+
+    content_bytes = await file.read()
+    if not content_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    extracted = extract_from_bytes(content_bytes, file.filename or "uploaded_document", file.content_type)
+    if not extracted.get("success"):
+        raise HTTPException(status_code=400, detail=extracted.get("error", "Failed to extract content from file."))
+
+    source_title = title.strip() if title and title.strip() else extracted["title"]
+    source = Source(
+        project_id=project_id,
+        title=source_title,
+        url=None,
+        original_url=None,
+        source_type=extracted.get("source_type", "TEXT"),
+        raw_content=extracted["content"],
+        extracted_content=extracted["content"],
+        extraction_status="completed",
+        summary=extracted["content"][:280] if extracted.get("content") else None
+    )
+    db.add(source)
+    db.commit()
+    db.refresh(source)
+    return source
+
+@router.post("/sources/{source_id}/upload", response_model=SourceResponse)
+async def reupload_source_file(
+    source_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Re-verifies an existing source by uploading a document or image file."""
+    source = db.query(Source).filter(Source.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found.")
+    if source.project:
+        check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
+
+    content_bytes = await file.read()
+    if not content_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    extracted = extract_from_bytes(content_bytes, file.filename or "uploaded_document", file.content_type)
+    if not extracted.get("success"):
+        raise HTTPException(status_code=400, detail=extracted.get("error", "Failed to extract content."))
+
+    source.source_type = extracted.get("source_type", "TEXT")
+    source.raw_content = extracted["content"]
+    source.extracted_content = extracted["content"]
+    source.extraction_status = "completed"
+    source.error_message = None
+    source.summary = extracted["content"][:280] if extracted.get("content") else None
+
+    db.commit()
+    db.refresh(source)
+    return source
 
 @router.post("/research/projects/{project_id}/sources", response_model=SourceResponse, status_code=201)
 async def add_source(
@@ -107,4 +181,3 @@ def get_source_analysis(source_id: str, db: Session = Depends(get_db)):
     if not source.analyses:
         raise HTTPException(status_code=404, detail="Source analysis not found.")
     return source.analyses
-

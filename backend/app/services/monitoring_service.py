@@ -101,5 +101,6 @@ class MonitoringService:
             "recent_events": list(self.recent_events)[:10]
         }
 
+MonitoringService.get_telemetry = MonitoringService.get_telemetry_summary
 monitoring_service = MonitoringService()
 

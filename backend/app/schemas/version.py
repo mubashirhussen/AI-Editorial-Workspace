@@ -20,6 +20,9 @@ class EditorialVersionResponse(BaseModel):
     word_count: int
     char_count: int
 
+# Backward-compatibility alias
+VersionResponse = EditorialVersionResponse
+
 class DiffChunk(BaseModel):
     type: str  # "addition", "deletion", "unchanged"
     text: str
@@ -57,3 +60,6 @@ class RestoreVersionResponse(BaseModel):
     restored_from_version: int
     new_version: EditorialVersionResponse
     updated_content: str
+
+# Backward-compatibility alias
+VersionRestoreResponse = RestoreVersionResponse

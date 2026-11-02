@@ -147,3 +147,73 @@ def accept_all_draft_suggestions(draft_id: str, db: Session = Depends(get_db)):
 def compare_draft_versions(draft_id: str, db: Session = Depends(get_db)):
     """Compare original baseline content versus current revised content."""
     return suggestion_service.compare_draft(db, draft_id)
+
+
+from backend.app.services.version_control.version_service import version_service
+from backend.app.schemas.version import VersionResponse, VersionRestoreResponse
+
+@router.patch("/drafts/{draft_id}", response_model=DraftResponse)
+def patch_draft(draft_id: str, payload: DraftUpdate, db: Session = Depends(get_db)):
+    """Patch draft content or status and record version snapshot."""
+    draft = crud_writing.get_draft_by_id(db, draft_id)
+    if not draft:
+        raise HTTPException(status_code=404, detail=f"Draft with ID '{draft_id}' not found.")
+    updated = crud_writing.update_draft(db, draft, payload)
+    content = updated.revised_content or updated.original_content or ""
+    try:
+        version_service.create_snapshot(
+            db,
+            document_type="WRITING_DRAFT",
+            document_id=draft_id,
+            content=content,
+            title=updated.title,
+            change_type="MANUAL_EDIT",
+            change_summary="Draft updated via API",
+            force=True
+        )
+    except Exception:
+        pass
+    return updated
+
+@router.post("/drafts/{draft_id}/rewrite")
+def request_draft_rewrite(draft_id: str, db: Session = Depends(get_db)):
+    """Generates AI rewrite suggestions for full draft or highlighted passages."""
+    draft = crud_writing.get_draft_by_id(db, draft_id)
+    if not draft:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Draft with ID '{draft_id}' not found.")
+    active_content = draft.revised_content or draft.original_content
+    analysis = writing_analyzer.analyze_text(active_content, draft_id=draft.id)
+    return {
+        "draft_id": draft_id,
+        "metrics": analysis.metrics.model_dump() if hasattr(analysis.metrics, "model_dump") else analysis.metrics.dict(),
+        "issues_count": len(analysis.issues),
+        "issues": [i.model_dump() if hasattr(i, "model_dump") else i.dict() for i in analysis.issues],
+        "revised_content": active_content
+    }
+
+@router.post("/drafts/{draft_id}/suggestions/{suggestion_id}/accept")
+def accept_draft_suggestion(draft_id: str, suggestion_id: str, db: Session = Depends(get_db)):
+    """Accepts a rewrite suggestion specifically scoped to the draft."""
+    return suggestion_service.accept_suggestion(db, draft_id, suggestion_id)
+
+@router.post("/drafts/{draft_id}/suggestions/{suggestion_id}/reject")
+def reject_draft_suggestion(draft_id: str, suggestion_id: str, db: Session = Depends(get_db)):
+    """Rejects a rewrite suggestion specifically scoped to the draft."""
+    return suggestion_service.reject_suggestion(db, draft_id, suggestion_id)
+
+@router.get("/drafts/{draft_id}/versions", response_model=List[VersionResponse])
+def get_draft_versions_timeline(draft_id: str, db: Session = Depends(get_db)):
+    """Returns chronological snapshot versions for this draft."""
+    draft = crud_writing.get_draft_by_id(db, draft_id)
+    if not draft:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Draft with ID '{draft_id}' not found.")
+    return version_service.list_versions(db, "WRITING_DRAFT", draft_id)
+
+@router.post("/drafts/{draft_id}/restore/{version_id}", response_model=VersionRestoreResponse)
+def restore_draft_version(draft_id: str, version_id: str, db: Session = Depends(get_db)):
+    """Restores a previous draft snapshot non-destructively as a new version."""
+    draft = crud_writing.get_draft_by_id(db, draft_id)
+    if not draft:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Draft with ID '{draft_id}' not found.")
+    version = version_service.get_version(db, version_id)
+    return version_service.restore_version(db, "WRITING_DRAFT", draft_id, version.version_number)

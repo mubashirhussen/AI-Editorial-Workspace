@@ -18,7 +18,11 @@ import {
   HelpCircle,
   TrendingUp,
   RefreshCw,
-  Network
+  Network,
+  UploadCloud,
+  FileUp,
+  FileCheck,
+  Paperclip
 } from 'lucide-react';
 import { researchApi } from '../services/researchApi';
 import { Project, Source, ResearchBrief, NewsletterAngle } from '../types';
@@ -41,7 +45,9 @@ export const ResearchPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Form State
-  const [inputType, setInputType] = useState<'url' | 'text'>('url');
+  const [inputType, setInputType] = useState<'url' | 'text' | 'file'>('url');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingSourceId, setUploadingSourceId] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
   const [sourceText, setSourceText] = useState('');
@@ -64,6 +70,24 @@ export const ResearchPage: React.FC = () => {
       }
     } catch (err: any) {
       error(err.message || 'Failed to extract source');
+    }
+  };
+
+  const handleReuploadFile = async (sourceId: string, file: File) => {
+    try {
+      setUploadingSourceId(sourceId);
+      info(`Extracting content from ${file.name}...`);
+      const updated = await researchApi.reuploadSourceFile(sourceId, file);
+      success(`Content extracted from ${file.name}! Status: ${updated.extraction_status}`);
+      if (activeProject) {
+        const p = await researchApi.getProject(activeProject.id);
+        setActiveProject(p);
+        setSources(p.sources || []);
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to extract content from file');
+    } finally {
+      setUploadingSourceId(null);
     }
   };
 
@@ -145,6 +169,33 @@ export const ResearchPage: React.FC = () => {
 
     if (inputType === 'url' && !sourceUrl.trim()) return;
     if (inputType === 'text' && !sourceText.trim()) return;
+    if (inputType === 'file') {
+      if (!selectedFile) {
+        error('Please select a document or image file to upload.');
+        return;
+      }
+      try {
+        setIsAddingSource(true);
+        info(`Extracting multi-modal content from ${selectedFile.name}...`);
+        const newSource = await researchApi.uploadSourceFile(
+          activeProject.id,
+          selectedFile,
+          sourceTitle.trim() || undefined
+        );
+        setSources((prev) => [...prev, newSource]);
+        setSelectedFile(null);
+        setSourceTitle('');
+        success(`Extracted & ingested: "${newSource.title}"`);
+        const updated = await researchApi.getProject(activeProject.id);
+        setActiveProject(updated);
+        setSources(updated.sources || []);
+      } catch (err: any) {
+        error(err.message || 'Failed to extract file content');
+      } finally {
+        setIsAddingSource(false);
+      }
+      return;
+    }
 
     try {
       setIsAddingSource(true);
@@ -305,6 +356,16 @@ export const ResearchPage: React.FC = () => {
                 <FileText className="w-3.5 h-3.5" />
                 <span>Paste Text</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setInputType('file')}
+                className={`flex-1 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-all ${
+                  inputType === 'file' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Upload File</span>
+              </button>
             </div>
 
             <form onSubmit={handleAddSource} className="space-y-3">
@@ -325,7 +386,7 @@ export const ResearchPage: React.FC = () => {
                     <ShieldCheck className="w-3 h-3 text-emerald-500" /> SSRF Protected • Trafilatura + BS4
                   </p>
                 </div>
-              ) : (
+              ) : inputType === 'text' ? (
                 <div className="space-y-3">
                   <div>
                     <label className="block text-[11px] font-medium text-slate-600 mb-1">
@@ -354,6 +415,53 @@ export const ResearchPage: React.FC = () => {
                     />
                   </div>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                      Source Title (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "") : "e.g. Research Paper or Technical Spec"}
+                      value={sourceTitle}
+                      onChange={(e) => setSourceTitle(e.target.value)}
+                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                      Document, PDF or Image
+                    </label>
+                    <div className="border-2 border-dashed border-slate-200 hover:border-blue-400 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-50/50 hover:bg-blue-50/20">
+                      <input
+                        type="file"
+                        id="research-file-input"
+                        accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) setSelectedFile(f);
+                        }}
+                        className="hidden"
+                      />
+                      <label htmlFor="research-file-input" className="cursor-pointer block">
+                        <UploadCloud className="w-6 h-6 text-blue-600 mx-auto mb-1.5" />
+                        {selectedFile ? (
+                          <div className="text-xs font-semibold text-slate-800 flex items-center justify-center gap-1.5">
+                            <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+                            <span className="text-[10px] text-slate-400">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-xs font-semibold text-slate-700">Click to upload or drag & drop</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">PDF, Word (.docx), Plaintext, or Images (PNG, JPG)</div>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <button
@@ -369,7 +477,7 @@ export const ResearchPage: React.FC = () => {
                 ) : (
                   <>
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add Source to Investigation</span>
+                    <span>{inputType === 'file' ? 'Extract & Ingest File' : 'Add Source to Investigation'}</span>
                   </>
                 )}
               </button>
@@ -452,6 +560,24 @@ export const ResearchPage: React.FC = () => {
                               >
                                 Retry
                               </button>
+                              <label className="text-[11px] text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5 font-medium">
+                                {uploadingSourceId === s.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                                ) : (
+                                  <UploadCloud className="w-3 h-3 text-blue-600" />
+                                )}
+                                <span>{uploadingSourceId === s.id ? 'Extracting...' : 'Upload File'}</span>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.docx,.doc,.txt,.md,.png,.jpg,.jpeg,.webp"
+                                  className="hidden"
+                                  disabled={uploadingSourceId === s.id}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleReuploadFile(s.id, file);
+                                  }}
+                                />
+                              </label>
                               <button
                                 onClick={() => {
                                   setEditingSourceId(editingSourceId === s.id ? null : s.id);
