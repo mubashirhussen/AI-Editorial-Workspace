@@ -1,73 +1,58 @@
 # Database Audit & Schema Verification
 
-**Database Engine:** SQLite (Local Dev / CI) & PostgreSQL-compatible  
+**Database Engine:** SQLite (Local Dev / CI) & PostgreSQL 15 (Production)  
 **ORM:** SQLAlchemy 2.0  
 **Migration Tool:** Alembic  
-**Current Revision:** `0d95531a1a07` (Head)  
-**Down Revision:** `fe217d474c9d`  
+**Current Revision:** `3b7c9f1e8a2d` (Head)  
+**Revision Chain:** `base` &rarr; `fe217d474c9d` &rarr; `0d95531a1a07` &rarr; `3b7c9f1e8a2d` (head)  
 
 ---
 
 ## 1. Schema Overview
 
-The database contains **20 normalized tables** organized into 6 core domains:
-
-```mermaid
-erDiagram
-    ORGANIZATIONS ||--o{ USERS : "memberships"
-    ORGANIZATIONS ||--o{ RESEARCH_PROJECTS : "owns"
-    ORGANIZATIONS ||--o{ EDITORIAL_STYLE_PROFILES : "configures"
-    ORGANIZATIONS ||--o{ EDITORIAL_VERSIONS : "versions"
-    
-    RESEARCH_PROJECTS ||--o{ SOURCES : "contains"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_BRIEFS : "synthesizes"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_ENTITIES : "extracts"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_CLAIMS : "verifies"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_RELATIONSHIPS : "maps"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_CONTRADICTIONS : "detects"
-    RESEARCH_PROJECTS ||--o{ RESEARCH_TRENDS : "surfaces"
-    RESEARCH_PROJECTS ||--o{ WRITING_DRAFTS : "develops"
-    RESEARCH_PROJECTS ||--o{ EDITORIAL_OUTPUTS : "publishes"
-
-    SOURCES ||--o{ SOURCE_ANALYSES : "analyzed_by"
-    WRITING_DRAFTS ||--o{ WRITING_SUGGESTIONS : "audited_by"
-    EDITORIAL_OUTPUTS ||--o{ EDITORIAL_REVIEWS : "reviewed_by"
-    EDITORIAL_REVIEWS ||--o{ EDITORIAL_COMMENTS : "commented_on"
-```
+The database contains **34 normalized tables** (33 mapped ORM models + `alembic_version`) organized into 8 functional domains:
+1. **Identity & Multi-Tenancy:** `users`, `organizations`, `organization_memberships`, `organization_invitations`, `user_sessions`, `password_reset_tokens`, `email_verification_tokens`.
+2. **Research Ingestion:** `research_projects`, `sources`, `source_analyses`.
+3. **Research Intelligence:** `research_briefs`, `research_entities`, `research_claims`, `research_evidence`, `research_relationships`, `research_contradictions`, `research_trends`.
+4. **Writing & Revision:** `writing_drafts`, `writing_suggestions`.
+5. **Editorial Production & Review:** `editorial_outputs`, `editorial_reviews`, `editorial_comments`.
+6. **Style & Document Versioning:** `editorial_style_profiles`, `editorial_versions`.
+7. **AI & Integrations:** `ai_provider_configs`, `provider_usage_records`, `integration_connections`, `integration_health_records`.
+8. **Operations & Telemetry:** `background_jobs`, `audit_logs`, `user_activity_logs`, `usage_events`, `notifications`.
 
 ---
 
-## 2. Table Catalog
+## 2. Table Catalog (Selected Core Models)
 
-| Table Name | Primary Key | Foreign Keys | Key Indexes | Nullable Protections |
+| Table Name | Primary Key | Foreign Keys | Key Indexes | Cascading & Nullable Protections |
 | :--- | :--- | :--- | :--- | :--- |
 | `users` | `id` (VARCHAR 36) | None | `ix_users_email` (UNIQUE) | `email`, `hashed_password`, `full_name` non-null |
 | `organizations` | `id` (VARCHAR 36) | None | `ix_organizations_slug` (UNIQUE) | `name`, `slug` non-null |
-| `organization_memberships` | `id` (VARCHAR 36) | `organization_id` &rarr; `organizations.id`, `user_id` &rarr; `users.id` | `uq_org_user` (UNIQUE) | `role` defaults to `VIEWER`, CASCADE delete |
-| `organization_invitations` | `id` (VARCHAR 36) | `organization_id` &rarr; `organizations.id`, `invited_by_id` &rarr; `users.id` | `ix_organization_invitations_token` (UNIQUE) | `token` non-null, expiration check |
+| `organization_memberships` | `id` (VARCHAR 36) | `organization_id` &rarr; `organizations.id`, `user_id` &rarr; `users.id` | `uq_org_user` (UNIQUE) | `role` defaults to `VIEWER`, CASCADE on delete |
 | `research_projects` | `id` (VARCHAR 36) | `organization_id` &rarr; `organizations.id` | `ix_research_projects_organization_id` | CASCADE on org delete |
-| `sources` | `id` (VARCHAR 36) | `project_id` &rarr; `research_projects.id` | `ix_sources_project_created` | `title`, `source_type` non-null |
+| `sources` | `id` (VARCHAR 36) | `project_id` &rarr; `research_projects.id` | `ix_sources_project_created` | `title`, `source_type` non-null, CASCADE delete |
 | `source_analyses` | `id` (VARCHAR 36) | `source_id` &rarr; `sources.id` | `ix_source_analyses_source_id` | CASCADE on source delete |
 | `research_briefs` | `id` (VARCHAR 36) | `project_id` &rarr; `research_projects.id` | `ix_briefs_project_created` | `content` non-null |
-| `research_entities` | `id` (VARCHAR 36) | `project_id`, `source_id` | `ix_entities_project_type` | `normalized_name`, `entity_type` non-null |
-| `research_claims` | `id` (VARCHAR 36) | `project_id`, `source_id` | `ix_claims_project_classification` | `evidence_classification` non-null |
-| `research_relationships` | `id` (VARCHAR 36) | `project_id`, `source_id` | `ix_relationships_project_type` | `source_entity_name`, `target_entity_name` non-null |
-| `research_contradictions` | `id` (VARCHAR 36) | `project_id`, `source_a_id`, `source_b_id` | `ix_contradictions_project` | `disagreement_nature` non-null |
-| `research_trends` | `id` (VARCHAR 36) | `project_id` | `ix_trends_project_cat` | `theme`, `category` non-null |
-| `writing_drafts` | `id` (VARCHAR 36) | `project_id`, `style_profile_id` | `ix_drafts_project_created` | `original_content` non-null |
-| `writing_suggestions` | `id` (VARCHAR 36) | `draft_id` &rarr; `writing_drafts.id` | `ix_suggestions_draft_status` | `category`, `status` non-null |
+| `research_claims` | `id` (VARCHAR 36) | `project_id`, `source_id` | `ix_claims_project_classification` | `evidence_classification` (`verified_fact`, `editorial_analysis`, `speculation`) |
+| `writing_drafts` | `id` (VARCHAR 36) | `project_id`, `style_profile_id` | `ix_drafts_project_created` | `original_content` immutable, `revised_content` mutable |
+| `writing_suggestions` | `id` (VARCHAR 36) | `draft_id` &rarr; `writing_drafts.id` | `ix_suggestions_draft_status` | `category`, `status` non-null, CASCADE delete |
 | `editorial_style_profiles` | `id` (VARCHAR 36) | `organization_id` | `ix_style_org_default` | Default seed profile auto-provisioned |
 | `editorial_outputs` | `id` (VARCHAR 36) | `project_id` &rarr; `research_projects.id` | `ix_editorial_project_created` | `content` non-null |
-| `editorial_reviews` | `id` (VARCHAR 36) | `editorial_id` &rarr; `editorial_outputs.id` | `ix_editorial_review_created` | `review_status` state machine |
-| `editorial_comments` | `id` (VARCHAR 36) | `review_id` &rarr; `editorial_reviews.id` | `ix_editorial_comments_review` | `section_reference`, `comment` non-null |
 | `editorial_versions` | `id` (VARCHAR 36) | `organization_id`, `created_by` | `ix_editorial_versions_doc` | `content_snapshot`, `document_type` non-null |
+| `ai_provider_configs` | `id` (VARCHAR 36) | `organization_id` &rarr; `organizations.id` | `ix_ai_configs_org_provider` | `encrypted_api_key` encrypted via AES-128 Fernet |
+| `provider_usage_records`| `id` (VARCHAR 36) | `organization_id`, `user_id` | `ix_provider_usage_org_created` | `prompt_tokens`, `completion_tokens`, `cost_usd` |
+| `background_jobs` | `id` (VARCHAR 36) | `organization_id`, `user_id` | `ix_background_jobs_status` | `job_type`, `status` (`PENDING`, `RUNNING`, `COMPLETED`, `FAILED`) |
+| `audit_logs` | `id` (VARCHAR 36) | `organization_id`, `user_id` | `ix_audit_logs_action_created` | Immutable audit trail for all sensitive operations |
 
 ---
 
-## 3. Migration Chain & Idempotency Guarantee
+## 3. Migration Chain & Integrity Guarantee
 
-- **Revision Chain**: `base` &rarr; `fe217d474c9d` &rarr; `0d95531a1a07` (head).
-- **Idempotency Strategy**: `0d95531a1a07` introspects database metadata with `sa.inspect(op.get_bind())`. Tables and columns that already exist are safely skipped, preventing `table already exists` or `duplicate column name` exceptions.
-- **Rollback Capability**: `downgrade()` in `0d95531a1a07` drops created tables in inverse dependency sequence.
-- **Data Preservation**: No existing records are deleted or modified during upgrades.
+1. **`fe217d474c9d_initial_7_tables_migration.py`:** Baseline schema for research projects, sources, source analyses, research briefs, writing drafts, suggestions, and editorial outputs.
+2. **`0d95531a1a07_add_multi_tenant_and_newer_tables.py`:** Multi-tenant organizations, invitations, research intelligence (entities, claims, relationships, trends, contradictions), style profiles, and version snapshots.
+3. **`3b7c9f1e8a2d_phase4_database_architecture.py`:** Enterprise extensions: background jobs, audit logs, provider configs, token usage tracking, and integration connections.
 
+### Idempotency & Zero Data Loss Strategy
+- Every migration step verifies table and column existence using `sa.inspect(op.get_bind())` before issuing `op.create_table` or `op.add_column`.
+- Upgrades run seamlessly on both fresh databases and populated databases without throwing `Table already exists` or `Duplicate column` errors.
+- SQLite backup and recovery utility (`backend/app/scripts/backup_db.py`) creates verified snapshots with SHA-256 integrity validation and `PRAGMA integrity_check == ok`.

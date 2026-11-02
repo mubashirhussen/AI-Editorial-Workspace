@@ -19,3 +19,4 @@ This document covers technical, customer engineering, and behavioral questions t
 
 ## 2. Customer & Field Engineering Drills
 Refer to [`docs/FDE_SCENARIO_QUESTIONS.md`](FDE_SCENARIO_QUESTIONS.md) for detailed step-by-step investigations of all 10 real-world customer incident scenarios.
+

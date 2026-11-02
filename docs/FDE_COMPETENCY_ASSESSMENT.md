@@ -16,3 +16,4 @@
 | **Application Security** | **Advanced** | Socket-level SSRF defense, AES-128 Fernet encryption, bcrypt hashing, secret scanning. | OAuth2 OpenID Connect flows. |
 | **DevOps & Infrastructure** | **Proficient** | Multi-stage Dockerfiles, Docker Compose, GitHub Actions matrices, health probes. | Kubernetes Helm charts & cloud Terraform. |
 | **Customer Communication** | **Advanced** | 10 realistic FDE troubleshooting playbooks in `docs/FDE_SCENARIO_QUESTIONS.md`. | Live incident triage communication drills. |
+

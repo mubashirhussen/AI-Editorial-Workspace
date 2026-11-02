@@ -18,3 +18,4 @@ Use these verified bullet points tailored to your target job applications:
 - Designed 34 relational tables in SQLAlchemy 2.0 with connection pooling, foreign key cascade constraints, and linear Alembic migrations.
 - Integrated multi-provider LLM router (Groq LPU, OpenAI, Anthropic, Gemini) with AES-128 Fernet key encryption at rest and an offline deterministic fallback engine.
 - Wrote 104 comprehensive unit, integration, and E2E tests using Pytest and FastAPI TestClient.
+

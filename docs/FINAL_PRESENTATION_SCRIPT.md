@@ -52,3 +52,4 @@
 - **Action:** Show `/health/ready` probe, AES-128 key masking, and Docker Compose configuration.
 - **Speaking Notes:**
   > *"From an engineering perspective, this workspace is production-hardened: 104 passed tests, 0 failed, multi-stage Docker containerization running as unprivileged `appuser:10001`, and an intelligent AI router with an offline deterministic fallback that guarantees zero crashes if external cloud APIs fail. Thank you, and I look forward to your questions."*
+

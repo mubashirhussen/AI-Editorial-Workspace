@@ -24,3 +24,4 @@
 
 ## 3. Detailed 2-Minute Explanation
 *(Complete technical architecture, trade-offs, and invariants documented in `docs/PROJECT_PRESENTATION.md` and `docs/ARCHITECTURE_WALKTHROUGH.md`)*
+
