@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -7,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-editorial_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-editorial_secret_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your root .env file}
       POSTGRES_DB: ${POSTGRES_DB:-editorial_workspace}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -29,8 +27,8 @@ services:
     container_name: editorial-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-editorial_user}:${POSTGRES_PASSWORD:-editorial_secret_pass}@db:5432/${POSTGRES_DB:-editorial_workspace}
-      SECRET_KEY: ${SECRET_KEY:-editorial_prod_master_secret_key_change_in_production_32_chars}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-editorial_user}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your root .env file}@db:5432/${POSTGRES_DB:-editorial_workspace}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your root .env file}
       ENVIRONMENT: production
       TESTING: "False"
       ALLOWED_ORIGINS: "http://localhost,http://localhost:80,http://localhost:5173,http://127.0.0.1"
