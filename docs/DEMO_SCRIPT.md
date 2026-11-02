@@ -1,105 +1,135 @@
-# AI Editorial Workspace: 5-Minute Technical Demonstration Script
+# AI Editorial Workspace — 5–7 Minute Technical Demonstration Script
 
 **System:** AI Editorial Workspace  
 **Assignment:** Forward Deployed Engineer (FDE) Intern Assignment  
 **Publication Target:** *This Week in AI*  
 **Presenter:** Mubashir Hussain  
 **Format:** Live Technical Walkthrough & Architecture Defense  
-**Total Target Time:** 5 Minutes  
+**Total Target Time:** 5 to 7 Minutes  
 
 ---
 
-## 1. Application Introduction & The Problem (0:00 – 0:45)
+## Timeline & Scene Overview
 
-> **"Hello everyone. Today I'm demonstrating the AI Editorial Workspace, a specialized full-stack platform built for the technical editorial desk at *This Week in AI*."**
-
-### The Core Problem
-"Technical media faces two existential problems:
-1. **The Epistemic Dilution Problem:** Frontier AI labs package roadmaps and synthetic benchmarks as settled scientific breakthroughs. Traditional generative AI models hallucinate or blend vendor PR with verified reality because they lack evidence grounding.
-2. **The Style & Jargon Bloat Problem:** Technical drafts are frequently weighed down by passive voice, bloated prepositional phrases (`in order to`), and run-on sentences (>25 words) that induce cognitive fatigue.
-
-The AI Editorial Workspace enforces an evidence-grounded, non-destructive editorial pipeline that turns raw industry developments into verified, concise, 300–500 word newsletter briefings."
-
----
-
-## 2. Research Assistant Walkthrough (0:45 – 1:45)
-
-> **"Let's begin in the Research Assistant."**
-
-1. **Project Creation:**
-   - *"We create a new investigation: 'Open-Weights Reasoning & Inference Repricing'."*
-2. **Multi-Source Ingestion & SSRF Protection:**
-   - *"We ingest three distinct primary sources: DeepSeek-R1's GitHub report, OpenAI's o1 test-time compute paper, and Meta's Llama 3 infrastructure disclosure."*
-   - *"Notice what happens under the hood: Before issuing any HTTP requests, our backend resolves DNS records via `socket.getaddrinfo`. If a URL points to localhost, AWS metadata (`169.254.169.254`), or private RFC 1918 subnets, it is blocked immediately. This check is enforced across every redirect hop."*
-3. **Epistemic Classification:**
-   - *"When extraction completes, the system categorizes claims into three separate buckets:*
-     - **Verified Facts:** *Benchmark numbers (79.8% on AIME 2024), licensing terms (MIT), parameter sizes.*
-     - **Editorial Analysis:** *Inference-time compute scaling economics and margin compression.*
-     - **Speculative Claims:** *Vendor forecasts claiming models will replace all human software engineers.*
-   - *"Every single claim links to a unique source ID and verbatim textual excerpt."*
-4. **Cross-Source Synthesis:**
-   - *"Clicking 'Synthesize Research' generates our 10-section brief, cross-source points of divergence, and 3 tailored newsletter angles."*
+```
+0:00 ── 0:45 : Problem & Product Introduction
+0:45 ── 1:30 : Application Architecture & Dashboard
+1:30 ── 2:45 : Research Assistant (3 Sources, SSRF & Triangulation)
+2:45 ── 4:00 : Writing Assistant & Deterministic Hemingway Audits
+4:00 ── 5:00 : Surgical Non-Destructive Rewrites & Version Comparison
+5:00 ── 6:00 : Editorial Studio, Numerical Citations & XSS Sanitization
+6:00 ── 7:00 : SRE Observability, Reliability Defense & Roadmap
+```
 
 ---
 
-## 3. Writing Assistant Walkthrough (1:45 – 2:45)
+## Step-by-Step Demonstration Playbook
 
-> **"Next, we move to the Writing Assistant to inspect our draft quality."**
+### Step 1: Problem & Product Introduction (0:00 – 0:45)
 
-1. **Zero-Latency Deterministic Heuristics:**
-   - *"Instead of sending an expensive, unpredictable prompt to an LLM to find filler words, our Writing Assistant uses 6 deterministic, rule-based algorithms:*
-     1. *Passive Voice detection (auxiliary verb + past participle).*
-     2. *Hedge and filler phrases (`in order to` $\rightarrow$ `to`, `due to the fact that` $\rightarrow$ `because`).*
-     3. *Sentence length warnings for clauses exceeding 25 words.*
-     4. *Repetitive sentence-starter tracking.*
-     5. *Nominalization detection (`utilization` $\rightarrow$ `use`).*
-     6. *Jargon and buzzword flagging.*
-2. **Mathematical Readability Scoring:**
-   - *"The top panel displays the exact Flesch Reading Ease score, syllable count, and reading duration calculated deterministically using the standard formula."*
-3. **Surgical Non-Destructive Replacement:**
-   - *"When I click 'Accept' on the suggestion to replace 'In order to' with 'To', our safe replacement engine replaces that exact substring in `revised_content`."*
-   - *"The `original_content` remains permanently immutable in the database. Clicking 'Compare' shows a clean word-diff and a +14.2 point improvement in Flesch Reading Ease."*
+- **Screen to Open:** Homepage / Login Screen ([http://localhost:5173/login](http://localhost:5173/login) or [http://localhost](http://localhost))
+- **Action to Perform:** Present the core editorial challenge; log in using standard credentials.
+- **Expected Result:** Instant transition into the authenticated Workspace Dashboard with live "Backend connected" green status pill and user profile in top-right navbar.
+- **Important Technical Point to Explain:**
+  > "Technical media publications face two critical failure modes: **The Epistemic Dilution Problem** (frontier labs packaging speculative roadmaps as empirical facts, leading to ungrounded LLM hallucinations), and **The Style & Jargon Bloat Problem** (drafts saturated with run-on sentences >25 words, passive voice, and redundant filler). The AI Editorial Workspace enforces an evidence-first, non-destructive editorial pipeline."
 
 ---
 
-## 4. Editorial Studio Walkthrough (2:45 – 3:45)
+### Step 2: Application Architecture & Dashboard (0:45 – 1:30)
 
-> **"Now let's step into the Editorial Studio to produce our final newsletter."**
-
-1. **Headline Formula Generation:**
-   - *"The studio generates 5 distinct headline angles: How-To, Curiosity Gap, Direct Benefit, Contrarian, and Data-Driven. We select: 'The Great Inference Repricing: Why Open Reasoning Shifts Power to Enterprise Builders'."*
-2. **Structured Drafting & Word Count Adherence:**
-   - *"The studio drafts an 8-part newsletter article strictly constrained between 300 and 500 words."*
-3. **Traceable Numerical Citations:**
-   - *"Notice the inline citations: `[1]`, `[2]`, `[3]`. Each tag corresponds directly to our verified source references in the footer."*
-4. **Multi-Format Export with XSS Sanitization:**
-   - *"With one click, we can export the piece to Markdown, Plain Text, or semantic HTML5. In the HTML5 export, all dynamic content is entity-escaped to guarantee defense against XSS while converting citations into styled superscript tags."*
+- **Screen to Open:** Dashboard (`/dashboard`)
+- **Action to Perform:** Highlight real-time metric cards (Active Investigations, Total Sources, Verified Claims, Drafts, Readability Index) and workspace profile badge.
+- **Expected Result:** Live database counts populated via `GET /api/v1/dashboard/metrics`; status indicator shows active connection and database readiness.
+- **Important Technical Point to Explain:**
+  > "The architecture pairs a React 18 / TypeScript SPA with a FastAPI ASGI backend, backed by SQLAlchemy 2.0 with connection pooling and 34 relational tables. Every incoming request is stamped with an `X-Request-ID` correlation header tracked through an in-memory latency ring buffer."
 
 ---
 
-## 5. Technical Architecture & Reliability Defense (3:45 – 4:30)
+### Step 3: Research Assistant & Multi-Source Triangulation (1:30 – 2:45)
 
-> **"Under the hood, this system is engineered for production reliability:"**
-
-* **Decoupled Architecture:** React 18 SPA built with Vite on the frontend; FastAPI running asynchronously under Uvicorn on the backend.
-* **Dual Database Portability:** SQLite for local zero-dependency evaluation; PostgreSQL with connection pooling (`pool_size=10, max_overflow=20`) enabled for production via `DATABASE_URL`.
-* **Zero-Failure Offline Mode:** If an OpenAI API key is unavailable, expired, or returns a 429 rate limit, the application does not crash. It automatically engages our deterministic fallback engine to extract claims, synthesize briefs, and generate articles.
-* **Defensive Security:** Socket-level DNS SSRF validation, HTML entity escaping, XML prompt fences, and restricted CORS origins.
+- **Screen to Open:** Research Assistant (`/research`)
+- **Action to Perform:**
+  1. Select project: `"Datacenter Scaling 2026"`.
+  2. Ingest 3 heterogeneous sources:
+     - Source 1: DeepSeek-R1 Technical Report (Web URL / Paste Text)
+     - Source 2: OpenAI o1 Test-Time Compute Paper
+     - Source 3: Meta Llama 3 Infrastructure Blog
+  3. Attempt ingestion of private IP `http://127.0.0.1:8000/internal` to show SSRF defense.
+  4. Click **"Generate Research Brief"**.
+- **Expected Result:**
+  - SSRF test is rejected with HTTP 400 Bad Request ("Target URL resolves to a protected or private IP address").
+  - Primary sources extract with author, publication date, and word count.
+  - Epistemic Engine separates claims into **Verified Facts**, **Editorial Analysis**, and **Speculation**, linked to verbatim quotes.
+  - Generates 10-section brief and 3 distinct newsletter angles.
+- **Important Technical Point to Explain:**
+  > "Our extraction pipeline uses Trafilatura with BeautifulSoup4 fallback and socket-level DNS pre-flight checking. Notice that each claim retains an immutable `source_id` link. If a client-rendered SPA blocks scraping, the UI provides an immediate inline 'Paste Text' fallback."
 
 ---
 
-## 6. Known Limitations & Future Improvements (4:30 – 5:00)
+### Step 4: Writing Assistant & Deterministic Hemingway Audits (2:45 – 4:00)
 
-> **"To conclude, here are our intentional scope boundaries and next steps:"**
+- **Screen to Open:** Writing Assistant (`/writing`)
+- **Action to Perform:** Load sample draft `"Production Reasoning Architecture Review"`, containing 121 words, 4 sentences, passive voice, and filler words. Click **"Audit Quality"**.
+- **Expected Result:**
+  - Readability Index displays: **"Very Difficult"** (Flesch Reading Ease: 0.0 / 100, Average Sentence Length: 30.2 words).
+  - Flags 6 filler phrases, 1 passive construction, 3 jargon phrases, and 3 long sentences.
+  - Each suggestion displays the original snippet, exact explanation, and proposed concise rewrite.
+- **Important Technical Point to Explain:**
+  > "Zero LLM calls are made for writing analysis. All 6 Hemingway checks run locally via deterministic Python AST and regex heuristics in under 15ms. This eliminates LLM latency, cost, and hallucination during style auditing."
 
-* **Current Limitations:**
-  - Dynamic JavaScript-heavy SPAs require raw text pasting if static HTML parsing is blocked.
-  - Workspace is single-tenant (multi-user auth was excluded within the 6–8 hour assignment constraint).
-* **Future Roadmap:**
-  - Headless browser ingestion (Playwright) for dynamic pages.
-  - Live multiplayer collaborative editing (Yjs / WebSockets).
-  - Automated web archival snapshots (WARC/PDF) to eliminate dead-link reference rot.
-  - One-click publishing webhooks for Ghost, Substack, and Beehiiv.
+---
 
-> **"Thank you. All 25 automated tests are passing, and I welcome any technical questions."**
+### Step 5: Surgical Non-Destructive Rewrites & Version Comparison (4:00 – 5:00)
 
+- **Screen to Open:** Writing Assistant (`/writing`) $\rightarrow$ Comparison Modal
+- **Action to Perform:**
+  1. Click **"Accept"** on `"In order to"` $\rightarrow$ `"To"`.
+  2. Click **"Accept"** on `"Due to the fact that"` $\rightarrow$ `"Because"`.
+  3. Click **"Compare Original vs Revised"**.
+- **Expected Result:**
+  - Real-time recalculation of Flesch Reading Ease jumps to accessible readability.
+  - The side-by-side comparison modal highlights deletions in red and additions in green.
+  - `original_content` remains permanently immutable in the database.
+- **Important Technical Point to Explain:**
+  > "Our replacement algorithm uses sentence-boundary substring slicing. Accepting an editorial rewrite modifies only the target sentence in `revised_content`, completely protecting adjacent citations and surrounding copy from accidental corruption."
+
+---
+
+### Step 6: Editorial Studio, Numerical Citations & Multi-Format Export (5:00 – 6:00)
+
+- **Screen to Open:** Editorial Studio (`/editorial`)
+- **Action to Perform:** Select brief, generate 300–500 word newsletter article, review inline citations `[1]`, `[2]`, and export to Markdown, Plain Text, and HTML5.
+- **Expected Result:**
+  - Produces structured publication-ready newsletter (Headline, Context, Analysis, Implications, References).
+  - All facts have corresponding numbered citations `[1]`, `[2]` linking to the references footer.
+  - One-click copy formats Markdown, Plain Text, and HTML with styled superscript citations and XSS entity escaping.
+- **Important Technical Point to Explain:**
+  > "The output strictly adheres to the 300–500 word length invariant. In the HTML5 export, all dynamic content is entity-escaped using Python's `html.escape`, preventing stored XSS while preserving rich superscript markup for newsletter readers."
+
+---
+
+### Step 7: SRE Observability, Reliability Defense & Roadmap (6:00 – 7:00)
+
+- **Screen to Open:** Settings / Telemetry Screen (`/settings`) & Terminal
+- **Action to Perform:** Show `/health/ready` probe, AES-128 key masking (`••••••••1234`), and Docker Compose setup.
+- **Expected Result:**
+  - Status shows 100% database connectivity, zero unhandled exceptions, and active providers.
+  - Docker Compose demonstrates multi-container orchestration with PostgreSQL 15, FastAPI, and Nginx.
+- **Important Technical Point to Explain:**
+  > "Production readiness is verified: 104 passed tests, 0 failed, 0 skipped. In Docker, backend runs as an unprivileged non-root user `appuser:10001`. Automated database backups run via `backup_db.py` with SHA-256 verification."
+
+---
+
+## 8. Fallback Demonstration Plan (Zero-Dependency Offline Mode)
+
+If live internet connectivity drops or upstream AI API providers experience outages during the demo:
+
+1. **Activate Deterministic Fallback Mode:**
+   - In `Settings`, clear the API key or set `OPENAI_API_KEY=""`.
+   - The backend Intelligent AI Router automatically routes all requests to the **Deterministic Rule Engine**.
+2. **Deterministic Research Synthesis:**
+   - The offline engine synthesizes the 10-section brief using extracted source key sentences, entity frequencies, and heuristic templates.
+3. **Deterministic Editorial Drafting:**
+   - The offline drafting engine generates the 300–500 word newsletter article adhering to formulaic templates, complete with numbered citations `[1]`, `[2]`.
+4. **Key Talking Point:**
+   > "This demonstrates our zero-failure resilience architecture: the application never crashes or presents a blank screen when upstream cloud providers fail. The editorial desk can continue publishing even in an air-gapped or offline environment."
