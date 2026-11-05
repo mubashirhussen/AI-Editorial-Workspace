@@ -55,9 +55,10 @@ jobs:
         run: |
           python -m compileall backend/app backend/tests
 
-      - name: Run Database Migrations on Isolated DB
+      - name: Run Database Migrations & Verify Schema Consistency
         run: |
           alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini current
 
       - name: Run Pytest Suite with JUnit Reporting
         run: |

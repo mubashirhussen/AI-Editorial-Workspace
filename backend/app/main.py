@@ -31,10 +31,14 @@ logger = logging.getLogger("editorial_workspace")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB schema
-    logger.info("Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database initialized successfully.")
+    # Initialize DB schema: strictly isolate dev convenience from production Alembic enforcement
+    env_name = getattr(settings, "ENVIRONMENT", "development").lower()
+    if env_name not in ("production", "prod"):
+        logger.info("Initializing database tables (development mode)...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database initialized successfully.")
+    else:
+        logger.info("Production mode active: Database schema is managed strictly via Alembic migrations.")
 
     # Ensure default style profile exists
     try:

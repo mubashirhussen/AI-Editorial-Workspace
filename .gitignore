@@ -48,3 +48,6 @@ test-results/
 Thumbs.db
 frontend/.vite/
 .vite/
+
+# Temporary Scratch scripts
+scratch/

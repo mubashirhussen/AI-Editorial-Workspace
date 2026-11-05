@@ -96,3 +96,38 @@ erDiagram
 * **Pagination**:
   * Reusable pagination pattern with bounded page sizes ($1 \le \text{page\_size} \le 100$) and deterministic `created_at DESC` ordering.
 
+
+---
+
+## 6. Migration Version History & Alembic Architecture
+
+The database schema is strictly version-controlled via Alembic, establishing a linear, reproducible migration history across development, CI/CD, and production:
+
+| Revision ID | Description | Down Revision | Key Schema Operations |
+|---|---|---|---|
+| `1a2b3c4d5e6f` | Initial baseline schema | None | Base tables: `users`, `organizations`, `research_projects`, `sources` |
+| `2a4b6c8d0e1f` | Audit & performance indexes | `1a2b3c4d5e6f` | `audit_logs`, `background_jobs`, `user_activity_logs` |
+| `3b7c9f1e8a2d` | Production hardening indexes | `2a4b6c8d0e1f` | Multi-tenant scoping and integrity checks |
+| `4c8d1e2f3a4b` | Add missing foreign key indexes | `3b7c9f1e8a2d` | Added 14 missing FK indexes across claims, evidence, invitations, versions |
+| `5e9a2f1b4c3d` (head) | Performance & composite indexes | `4c8d1e2f3a4b` | Added 75 composite/performance indexes; enforced unique constraint on `users.email` |
+
+### Production vs Development Lifespan Policy
+
+* **Development & Test**: Application lifespan executes `Base.metadata.create_all()` as a non-destructive convenience when `ENVIRONMENT != 'production'`.
+* **Production**: Unversioned DDL calls are disabled. The application lifespan strictly logs `Production mode active: Database schema is managed strictly via Alembic migrations.` Schema changes require `alembic upgrade head`.
+
+### Verification Commands
+
+```bash
+# Verify current migration revision:
+alembic -c backend/alembic.ini current
+
+# Run migrations to latest head:
+alembic -c backend/alembic.ini upgrade head
+
+# Rollback one migration step:
+alembic -c backend/alembic.ini downgrade -1
+
+# Create an online verified backup:
+python backend/app/scripts/backup_db.py --action backup --dir backups/
+```
