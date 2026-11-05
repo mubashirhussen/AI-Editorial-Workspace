@@ -215,20 +215,23 @@ export const ResearchPage: React.FC = () => {
           setSourceTitle('');
           success(`Source "${newSource.title || 'Extracted Article'}" added to investigation!`);
         } else {
-          info(`Extracting and ingesting ${extractedUrls.length} sources...`);
-          const addedList: Source[] = [];
-          for (let i = 0; i < extractedUrls.length; i++) {
-            const url = extractedUrls[i];
-            try {
-              const newSource = await researchApi.addSource(targetProject.id, {
+          info(`Extracting and ingesting ${extractedUrls.length} sources in parallel...`);
+          const results = await Promise.allSettled(
+            extractedUrls.map((url) =>
+              researchApi.addSource(targetProject.id, {
                 source_type: 'url',
                 url: url,
-              });
-              addedList.push(newSource);
-            } catch (err: any) {
-              console.error(`Failed to ingest ${url}:`, err);
+              })
+            )
+          );
+          const addedList: Source[] = [];
+          results.forEach((res, i) => {
+            if (res.status === 'fulfilled') {
+              addedList.push(res.value);
+            } else {
+              console.error(`Failed to ingest ${extractedUrls[i]}:`, res.reason);
             }
-          }
+          });
           if (addedList.length > 0) {
             setSources((prev) => [...prev, ...addedList]);
             setSourceUrl('');
@@ -239,10 +242,11 @@ export const ResearchPage: React.FC = () => {
           }
         }
 
-        // Refresh project in background to sync
+        // Refresh project and project list in background to sync
         const updated = await researchApi.getProject(targetProject.id);
         setActiveProject(updated);
         setSources(updated.sources || []);
+        await loadProjects();
       } catch (err: any) {
         error(err.message || 'Failed to add source');
       } finally {
@@ -484,18 +488,30 @@ export const ResearchPage: React.FC = () => {
             <form onSubmit={handleAddSource} className="space-y-3">
               {inputType === 'url' ? (
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-medium text-slate-600">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-medium text-slate-700">
                       Article or Release URL(s)
                     </label>
-                    <span className="text-[10px] text-slate-400">
-                      Paste 1 or multiple URLs
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSourceUrl(
+                          `https://deepmind.google/technologies/gemini/\nhttps://en.wikipedia.org/wiki/Large_language_model\nhttps://arxiv.org/abs/1706.03762`
+                        );
+                        if (!sourceTitle) setSourceTitle('Frontier LLMs & Model Architecture');
+                        info('Loaded 3 verified test sources: Gemini, Large Language Models, and Attention Is All You Need.');
+                      }}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+                      title="Load 3 working AI research URLs for fast testing"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      <span>Quick Load 3 Sample URLs</span>
+                    </button>
                   </div>
                   <textarea
-                    rows={3}
+                    rows={4}
                     required
-                    placeholder={`Enter one or multiple URLs (separated by new line or space):\nhttps://openai.com/index/openai-o3-mini/\nhttps://huggingface.co/blog/deepseek-r1\nhttps://deepmind.google/technologies/gemini/`}
+                    placeholder={`Enter one or multiple URLs (separated by new line or space):\nhttps://deepmind.google/technologies/gemini/\nhttps://en.wikipedia.org/wiki/Large_language_model\nhttps://arxiv.org/abs/1706.03762`}
                     value={sourceUrl}
                     onChange={(e) => setSourceUrl(e.target.value)}
                     className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none font-mono"

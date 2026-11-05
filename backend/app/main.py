@@ -5,7 +5,7 @@ import uuid
 import logging
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response, Depends, status
+from fastapi import FastAPI, Request, Response, Depends, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -247,9 +247,36 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         headers={"X-Request-ID": req_id},
         content={
+            "success": False,
+            "message": "Request validation failed. Please check the submitted fields.",
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "details": exc.errors()
+            },
             "detail": exc.errors(),
             "request_id": req_id,
             "error_category": "VALIDATION_ERROR"
+        }
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    req_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+    msg = exc.detail if isinstance(exc.detail, str) else "HTTP request error"
+    code = getattr(exc, "error_code", f"HTTP_{exc.status_code}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        headers={"X-Request-ID": req_id, **(exc.headers or {})},
+        content={
+            "success": False,
+            "message": msg,
+            "error": {
+                "code": code,
+                "details": exc.detail
+            },
+            "detail": exc.detail,
+            "request_id": req_id,
+            "error_category": getattr(exc, "error_category", code)
         }
     )
 
@@ -261,6 +288,12 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         headers={"X-Request-ID": req_id},
         content={
+            "success": False,
+            "message": "An internal server error occurred. Please verify your inputs and try again.",
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "details": None
+            },
             "detail": "An internal server error occurred. Please verify your inputs and try again.",
             "request_id": req_id,
             "error_category": "INTERNAL_SERVER_ERROR"

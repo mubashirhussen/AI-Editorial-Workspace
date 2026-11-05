@@ -275,10 +275,10 @@ class ResearchExtractionService:
         Validates and processes manually pasted text content.
         """
         clean_text = (text or "").strip()
-        if len(clean_text) < 20:
+        if len(clean_text) < 10:
             return {
                 "success": False,
-                "error": "Pasted text is too short. Please provide at least 20 characters.",
+                "error": "Pasted text is too short. Please provide at least 10 characters.",
                 "title": "",
                 "content": "",
                 "extraction_status": "failed"

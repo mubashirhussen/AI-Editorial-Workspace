@@ -43,32 +43,65 @@ class WritingAnalysisResponse(BaseModel):
 
 class DraftCreate(BaseModel):
     title: str = Field("Draft Article", max_length=255)
-    original_content: str = Field(..., min_length=1, max_length=500_000)
+    original_content: Optional[str] = Field(None, max_length=500_000)
+    content: Optional[str] = Field(None, max_length=500_000)
     project_id: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.original_content and self.content:
+            self.original_content = self.content
+        elif not self.content and self.original_content:
+            self.content = self.original_content
+        if not self.original_content:
+            raise ValueError("Draft must contain content.")
 
 class DraftUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
+    content: Optional[str] = Field(None, max_length=500_000)
     revised_content: Optional[str] = Field(None, max_length=500_000)
     final_content: Optional[str] = Field(None, max_length=500_000)
     status: Optional[str] = Field(None, max_length=50)
+    applied_issue_ids: Optional[List[str]] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.revised_content and self.content:
+            self.revised_content = self.content
+        elif not self.content and self.revised_content:
+            self.content = self.revised_content
 
 class SuggestionAction(BaseModel):
     suggestion_id: str
     action: Literal["accept", "reject"]
 
+class DraftVersionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    draft_id: str
+    version_number: int
+    content: str
+    created_at: datetime
+    description: Optional[str] = None
+
 class DraftResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     project_id: Optional[str] = None
     title: str
     original_content: str
-    revised_content: str
+    revised_content: Optional[str] = ""
+    current_content: Optional[str] = ""
     final_content: Optional[str] = None
     status: str
     created_at: datetime
     updated_at: datetime
     suggestions: List[WritingIssue] = Field(default_factory=list)
+    versions: Optional[List[DraftVersionResponse]] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    def model_post_init(self, __context: Any) -> None:
+        if not self.current_content and self.revised_content:
+            self.current_content = self.revised_content
+        elif not self.revised_content and self.current_content:
+            self.revised_content = self.current_content
 
 # Explicit Aliases for Phase 2 specification
 WritingDraftCreate = DraftCreate

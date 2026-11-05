@@ -36,11 +36,20 @@ class WritingService:
 
         return draft
 
+    def get_drafts(self, db: Session, skip: int = 0, limit: int = 100) -> List[WritingDraft]:
+        return db.query(WritingDraft).order_by(WritingDraft.created_at.desc()).offset(skip).limit(limit).all()
+
     def get_draft(self, db: Session, draft_id: str) -> WritingDraft:
         draft = db.query(WritingDraft).filter(WritingDraft.id == draft_id).first()
         if not draft:
             raise HTTPException(status_code=404, detail="Writing draft not found.")
         return draft
+
+    def delete_draft(self, db: Session, draft_id: str) -> bool:
+        draft = self.get_draft(db, draft_id)
+        db.delete(draft)
+        db.commit()
+        return True
 
     def update_draft(self, db: Session, draft_id: str, data: DraftUpdate) -> WritingDraft:
         draft = self.get_draft(db, draft_id)

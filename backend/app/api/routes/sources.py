@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.app.core.database import get_db
@@ -12,8 +12,8 @@ from backend.app.services.research.document_extractor import extract_from_bytes
 
 router = APIRouter(tags=['Sources'])
 
-@router.post("/research/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=201)
-@router.post("/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=201)
+@router.post("/research/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=status.HTTP_201_CREATED, summary="Upload source document to research project")
+@router.post("/projects/{project_id}/sources/upload", response_model=SourceResponse, status_code=status.HTTP_201_CREATED, summary="Upload source document alias")
 async def upload_project_source_file(
     project_id: str,
     file: UploadFile = File(...),
@@ -24,16 +24,16 @@ async def upload_project_source_file(
     """Multi-modal document and image ingestion (PDF, Word docx, Text, Markdown, Image OCR)."""
     project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project with ID '{project_id}' not found.")
     check_project_tenant_access(db, project, current_user, OrgPermission.ADD_SOURCES)
 
     content_bytes = await file.read()
     if not content_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty.")
 
     extracted = extract_from_bytes(content_bytes, file.filename or "uploaded_document", file.content_type)
     if not extracted.get("success"):
-        raise HTTPException(status_code=400, detail=extracted.get("error", "Failed to extract content from file."))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=extracted.get("error", "Failed to extract content from file."))
 
     source_title = title.strip() if title and title.strip() else extracted["title"]
     source = Source(
@@ -52,7 +52,7 @@ async def upload_project_source_file(
     db.refresh(source)
     return source
 
-@router.post("/sources/{source_id}/upload", response_model=SourceResponse)
+@router.post("/sources/{source_id}/upload", response_model=SourceResponse, summary="Reupload file to source")
 async def reupload_source_file(
     source_id: str,
     file: UploadFile = File(...),
@@ -62,17 +62,17 @@ async def reupload_source_file(
     """Re-verifies an existing source by uploading a document or image file."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
     if source.project:
         check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
 
     content_bytes = await file.read()
     if not content_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty.")
 
     extracted = extract_from_bytes(content_bytes, file.filename or "uploaded_document", file.content_type)
     if not extracted.get("success"):
-        raise HTTPException(status_code=400, detail=extracted.get("error", "Failed to extract content."))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=extracted.get("error", "Failed to extract content."))
 
     source.source_type = extracted.get("source_type", "TEXT")
     source.raw_content = extracted["content"]
@@ -85,56 +85,64 @@ async def reupload_source_file(
     db.refresh(source)
     return source
 
-@router.post("/research/projects/{project_id}/sources", response_model=SourceResponse, status_code=201)
+@router.post("/research/projects/{project_id}/sources", response_model=SourceResponse, status_code=status.HTTP_201_CREATED, summary="Add URL or text source to project")
+@router.post("/projects/{project_id}/sources", response_model=SourceResponse, status_code=status.HTTP_201_CREATED, summary="Add source to project alias")
 async def add_source(
     project_id: str,
     data: SourceCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Adds a web URL or pasted text source to an active investigation project."""
     project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project with ID '{project_id}' not found.")
     check_project_tenant_access(db, project, current_user, OrgPermission.ADD_SOURCES)
     source = await research_service.add_source(db, project_id, data)
     return source
 
-@router.get("/research/projects/{project_id}/sources", response_model=List[SourceResponse])
+@router.get("/research/projects/{project_id}/sources", response_model=List[SourceResponse], summary="List sources for project")
+@router.get("/projects/{project_id}/sources", response_model=List[SourceResponse], summary="List sources for project alias")
 def list_project_sources(
     project_id: str,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Retrieves all ingested sources and extraction status for a project."""
     project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project with ID '{project_id}' not found.")
     check_project_tenant_access(db, project, current_user, OrgPermission.VIEW_CONTENT)
-    sources = db.query(Source).filter(Source.project_id == project_id).order_by(Source.created_at.asc()).all()
+    sources = db.query(Source).filter(Source.project_id == project_id).order_by(Source.created_at.asc()).offset(skip).limit(limit).all()
     return sources
 
-@router.get("/sources/{source_id}", response_model=SourceResponse)
+@router.get("/sources/{source_id}", response_model=SourceResponse, summary="Get source by ID")
 def get_source(
     source_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Retrieves source metadata and extracted body content."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
     if source.project:
         check_project_tenant_access(db, source.project, current_user, OrgPermission.VIEW_CONTENT)
     return source
 
-@router.put("/sources/{source_id}", response_model=SourceResponse)
+@router.put("/sources/{source_id}", response_model=SourceResponse, summary="Update source content")
 def update_source(
     source_id: str,
     data: SourceUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Updates source title or manually corrects extracted text content."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
     if source.project:
         check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
 
@@ -156,36 +164,40 @@ def update_source(
     db.refresh(source)
     return source
 
-@router.delete("/sources/{source_id}")
+@router.delete("/sources/{source_id}", summary="Delete source")
 def delete_source(
     source_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Deletes a source and cascades to its extracted claims and evidence."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
     if source.project:
         check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
     db.delete(source)
     db.commit()
     return {"success": True, "message": "Source removed successfully."}
 
-@router.post("/sources/{source_id}/extract", response_model=SourceResponse)
+@router.post("/sources/{source_id}/extract", response_model=SourceResponse, summary="Trigger source extraction")
 async def extract_source_content(source_id: str, db: Session = Depends(get_db)):
+    """Triggers automated extraction and metadata parsing for a URL source."""
     source = await research_service.extract_source(db, source_id)
     return source
 
-@router.post("/sources/{source_id}/analyze")
+@router.post("/sources/{source_id}/analyze", summary="Trigger source analysis")
 async def analyze_source(source_id: str, db: Session = Depends(get_db)):
+    """Executes single-source claim and evidence extraction."""
     analysis = await research_service.analyze_single_source(db, source_id)
     return {"success": True, "analysis_id": analysis.id}
 
-@router.get("/sources/{source_id}/analysis")
+@router.get("/sources/{source_id}/analysis", summary="Get source analysis")
 def get_source_analysis(source_id: str, db: Session = Depends(get_db)):
+    """Retrieves verified claims and analysis breakdown for a source."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
-        raise HTTPException(status_code=404, detail="Source not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
     if not source.analyses:
-        raise HTTPException(status_code=404, detail="Source analysis not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source analysis not found.")
     return source.analyses
