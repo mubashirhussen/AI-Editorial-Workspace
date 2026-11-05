@@ -1,3 +1,6 @@
+from backend.app.api.deps import get_current_user, get_active_organization
+from backend.app.api.v1.endpoints.projects import check_project_tenant_access
+from backend.app.models.base import User, Organization
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -56,39 +59,92 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     }
 
 @router.post("/projects", response_model=ProjectResponse, status_code=201)
-def create_project(data: ProjectCreate, db: Session = Depends(get_db)):
-    return research_service.create_project(db, data)
+def create_project(
+    data: ProjectCreate,
+    current_user: User = Depends(get_current_user),
+    org: Organization = Depends(get_active_organization),
+    db: Session = Depends(get_db)
+):
+    target_org_id = getattr(data, "organization_id", None) or (org.id if org else None)
+    return research_service.create_project(db, data, organization_id=target_org_id)
 
 @router.get("/projects", response_model=ProjectListResponse)
-def list_projects(skip: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), db: Session = Depends(get_db)):
-    projects = research_service.get_projects(db, skip=skip, limit=limit)
-    total = db.query(ResearchProject).count()
+def list_projects(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    org: Organization = Depends(get_active_organization),
+    db: Session = Depends(get_db)
+):
+    # Scope query strictly to user's active organization (preserving unassigned legacy dev items)
+    query = db.query(ResearchProject).filter(
+        (ResearchProject.organization_id == org.id) | (ResearchProject.organization_id == None)
+    )
+    total = query.count()
+    projects = query.order_by(ResearchProject.updated_at.desc()).offset(skip).limit(limit).all()
     return {"items": projects, "total": total}
 
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
-def get_project(project_id: str, db: Session = Depends(get_db)):
-    return research_service.get_project(db, project_id)
+def get_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return project
 
 @router.put("/projects/{project_id}", response_model=ProjectResponse)
-def update_project(project_id: str, data: ProjectUpdate, db: Session = Depends(get_db)):
+def update_project(
+    project_id: str,
+    data: ProjectUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
     return research_service.update_project(db, project_id, data)
 
 @router.delete("/projects/{project_id}")
-def delete_project(project_id: str, db: Session = Depends(get_db)):
+def delete_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
     research_service.delete_project(db, project_id)
     return {"success": True, "message": "Project deleted successfully."}
 
 @router.post("/projects/{project_id}/analyze")
-async def analyze_project_sources(project_id: str, db: Session = Depends(get_db)):
+async def analyze_project_sources(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
     sources = await research_service.analyze_project_sources(db, project_id)
     return {"success": True, "sources_analyzed": len(sources)}
 
 @router.post("/projects/{project_id}/generate-brief", response_model=ResearchBriefResponse)
-async def generate_brief(project_id: str, db: Session = Depends(get_db)):
+async def generate_brief(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
     return await research_service.generate_research_brief(db, project_id)
 
 @router.get("/projects/{project_id}/brief", response_model=ResearchBriefResponse)
-def get_brief(project_id: str, db: Session = Depends(get_db)):
+def get_brief(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
     return research_service.get_brief(db, project_id)
 
 

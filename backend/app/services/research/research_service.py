@@ -19,13 +19,14 @@ class ResearchService:
     and cross-source evidence synthesis.
     """
 
-    def create_project(self, db: Session, data: ProjectCreate) -> ResearchProject:
+    def create_project(self, db: Session, data: ProjectCreate, organization_id: Optional[str] = None) -> ResearchProject:
         title = data.title or getattr(data, "name", None) or "Untitled Investigation"
         project = ResearchProject(
             title=title.strip(),
             name=title.strip(),
             description=data.description.strip() if data.description else None,
-            status="draft"
+            status="draft",
+            organization_id=organization_id or getattr(data, "organization_id", None)
         )
         db.add(project)
         db.commit()

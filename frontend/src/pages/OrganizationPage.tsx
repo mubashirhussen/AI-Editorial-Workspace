@@ -36,6 +36,8 @@ export const OrganizationPage: React.FC = () => {
   useEffect(() => {
     if (activeOrg) {
       loadMembersAndInvitations();
+    } else {
+      setLoading(false);
     }
   }, [activeOrg]);
 

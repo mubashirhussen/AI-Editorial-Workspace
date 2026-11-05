@@ -43,6 +43,14 @@ def get_current_user(
             )
         return user
 
+    # Strictly forbid anonymous fallback in production environments
+    if getattr(settings, "ENVIRONMENT", "development").lower() in ("production", "prod"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token required in production environment.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     # Fallback for single-tenant backward compatibility during local development & legacy tests
     if settings.ALLOW_ANONYMOUS_DEV:
         default_user = db.query(User).filter(User.email == "owner@editorial.ai").first()

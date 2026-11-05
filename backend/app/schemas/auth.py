@@ -145,8 +145,11 @@ class InvitationAcceptRequest(BaseModel):
 
 
 
+class PasswordForgotRequest(BaseModel):
+    email: str = Field(..., min_length=3, max_length=255)
+
 class PasswordResetRequest(BaseModel):
-    email: str = Field(..., max_length=255)
+    token: str = Field(..., min_length=16, description="Cryptographically secure reset token")
     new_password: str = Field(..., min_length=8, max_length=128)
 
 class PasswordChangeRequest(BaseModel):

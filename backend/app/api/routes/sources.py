@@ -92,6 +92,10 @@ async def add_source(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    check_project_tenant_access(db, project, current_user, OrgPermission.ADD_SOURCES)
     source = await research_service.add_source(db, project_id, data)
     return source
 
@@ -101,6 +105,10 @@ def list_project_sources(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    check_project_tenant_access(db, project, current_user, OrgPermission.VIEW_CONTENT)
     sources = db.query(Source).filter(Source.project_id == project_id).order_by(Source.created_at.asc()).all()
     return sources
 

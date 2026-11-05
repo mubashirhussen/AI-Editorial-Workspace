@@ -1,3 +1,9 @@
+from backend.app.core.config import settings
+import logging
+logger = logging.getLogger(__name__)
+import secrets
+import hashlib
+from datetime import timedelta
 import uuid
 import re
 from datetime import datetime, timezone
@@ -5,8 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from backend.app.core.database import get_db
 from backend.app.core.security import hash_password, verify_password, create_access_token, decode_access_token, revoke_token
-from backend.app.models.base import User, Organization, OrganizationMembership
+from backend.app.models.base import User, Organization, OrganizationMembership, PasswordResetToken, UserSession
 from backend.app.schemas.auth import (
+    PasswordForgotRequest,
     UserRegisterRequest,
     UserLoginRequest,
     UserResponse,
@@ -183,18 +190,81 @@ def refresh_access_token(authorization: str = Header(...), db: Session = Depends
     return TokenRefreshResponse(access_token=new_token, token_type="bearer")
 
 
-@router.post("/reset-password")
-def reset_password(payload: PasswordResetRequest, db: Session = Depends(get_db)):
-    """Resets user password with direct email verification."""
+@router.post("/forgot-password")
+def forgot_password(payload: PasswordForgotRequest, db: Session = Depends(get_db)):
+    """Initiates a secure password reset workflow by generating a time-limited cryptographic token."""
     email_clean = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email_clean).first()
-    if not user:
-        # Prevent user enumeration by returning uniform success
-        return {"success": True, "message": "If this email is registered, the password has been updated."}
     
+    dev_token = None
+    if user and user.is_active:
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        
+        # Invalidate prior unused tokens
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.is_used == False
+        ).update({"is_used": True})
+        
+        reset_entry = PasswordResetToken(
+            id=str(uuid.uuid4()),
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+            is_used=False
+        )
+        db.add(reset_entry)
+        db.commit()
+        dev_token = raw_token
+        logger.info("Password reset token generated for user %s (expires %s)", user.id, expires_at)
+
+    resp = {
+        "success": True,
+        "message": "If this email address is registered, password reset instructions have been dispatched."
+    }
+    if dev_token and getattr(settings, "ENVIRONMENT", "development").lower() not in ("production", "prod"):
+        resp["dev_reset_token"] = dev_token
+    return resp
+
+
+@router.post("/reset-password")
+def reset_password(payload: PasswordResetRequest, db: Session = Depends(get_db)):
+    """Validates the cryptographic reset token, updates password, and invalidates active sessions."""
+    if not payload.token or len(payload.token.strip()) < 16:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A valid reset token is required.")
+
+    token_hash = hashlib.sha256(payload.token.strip().encode("utf-8")).hexdigest()
+    reset_record = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.is_used == False
+    ).first()
+
+    if not reset_record:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid, expired, or previously used reset token.")
+
+    now = datetime.now(timezone.utc)
+    exp = reset_record.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp < now:
+        reset_record.is_used = True
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reset token has expired.")
+
+    user = db.query(User).filter(User.id == reset_record.user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User account is inactive or not found.")
+
     user.hashed_password = hash_password(payload.new_password)
+    reset_record.is_used = True
+    
+    # Invalidate user sessions
+    db.query(UserSession).filter(UserSession.user_id == user.id).update({"is_revoked": True})
     db.commit()
-    return {"success": True, "message": "Password updated successfully."}
+    
+    return {"success": True, "message": "Password successfully reset. All previous sessions have been invalidated."}
 
 
 @router.post("/change-password")

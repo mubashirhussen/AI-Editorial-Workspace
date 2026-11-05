@@ -136,9 +136,10 @@ export const ResearchPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await researchApi.getProjects();
-      setProjects(res.items);
-    } catch (err) {
-      console.error(err);
+      setProjects(res.items || []);
+    } catch (err: any) {
+      console.error('Failed to load projects:', err);
+      error('Failed to connect to backend server. Please verify backend is running on port 8000.');
     } finally {
       setLoading(false);
     }
@@ -165,10 +166,115 @@ export const ResearchPage: React.FC = () => {
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeProject) return;
 
-    if (inputType === 'url' && !sourceUrl.trim()) return;
-    if (inputType === 'text' && !sourceText.trim()) return;
+    // Auto-create or fallback project if none selected
+    let targetProject = activeProject;
+    if (!targetProject) {
+      if (projects.length > 0) {
+        targetProject = projects[0];
+        setActiveProject(projects[0]);
+      } else {
+        try {
+          info('Initializing a new research investigation...');
+          const newProj = await researchApi.createProject({
+            title: sourceTitle.trim() || 'AI Research Investigation',
+            description: 'Automated research investigation'
+          });
+          targetProject = newProj;
+          setProjects([newProj]);
+          setActiveProject(newProj);
+        } catch (err: any) {
+          error('Unable to create an investigation project. Ensure backend server is running.');
+          return;
+        }
+      }
+    }
+
+    if (inputType === 'url') {
+      const extractedUrls = sourceUrl
+        .split(/[\r\n\s,]+/)
+        .map((u) => u.trim())
+        .filter((u) => /^https?:\/\//i.test(u));
+
+      if (extractedUrls.length === 0) {
+        error('Please enter at least one valid HTTP or HTTPS URL.');
+        return;
+      }
+
+      try {
+        setIsAddingSource(true);
+        if (extractedUrls.length === 1) {
+          info('Extracting source content and metadata...');
+          const newSource = await researchApi.addSource(targetProject.id, {
+            source_type: 'url',
+            url: extractedUrls[0],
+            title: sourceTitle.trim() || undefined,
+          });
+          setSources((prev) => [...prev, newSource]);
+          setSourceUrl('');
+          setSourceTitle('');
+          success(`Source "${newSource.title || 'Extracted Article'}" added to investigation!`);
+        } else {
+          info(`Extracting and ingesting ${extractedUrls.length} sources...`);
+          const addedList: Source[] = [];
+          for (let i = 0; i < extractedUrls.length; i++) {
+            const url = extractedUrls[i];
+            try {
+              const newSource = await researchApi.addSource(targetProject.id, {
+                source_type: 'url',
+                url: url,
+              });
+              addedList.push(newSource);
+            } catch (err: any) {
+              console.error(`Failed to ingest ${url}:`, err);
+            }
+          }
+          if (addedList.length > 0) {
+            setSources((prev) => [...prev, ...addedList]);
+            setSourceUrl('');
+            setSourceTitle('');
+            success(`Successfully added ${addedList.length} of ${extractedUrls.length} sources to investigation!`);
+          } else {
+            error('Failed to extract any of the provided URLs.');
+          }
+        }
+
+        // Refresh project in background to sync
+        const updated = await researchApi.getProject(targetProject.id);
+        setActiveProject(updated);
+        setSources(updated.sources || []);
+      } catch (err: any) {
+        error(err.message || 'Failed to add source');
+      } finally {
+        setIsAddingSource(false);
+      }
+      return;
+    }
+
+    if (inputType === 'text') {
+      if (!sourceText.trim()) return;
+      try {
+        setIsAddingSource(true);
+        const newSource = await researchApi.addSource(targetProject.id, {
+          source_type: 'text',
+          title: sourceTitle.trim() || undefined,
+          text_content: sourceText.trim(),
+        });
+        setSources((prev) => [...prev, newSource]);
+        setSourceTitle('');
+        setSourceText('');
+        success(`Source "${newSource.title}" added to investigation!`);
+        const updated = await researchApi.getProject(targetProject.id);
+        setActiveProject(updated);
+        setSources(updated.sources || []);
+      } catch (err: any) {
+        error(err.message || 'Failed to add source');
+      } finally {
+        setIsAddingSource(false);
+      }
+      return;
+    }
+
     if (inputType === 'file') {
       if (!selectedFile) {
         error('Please select a document or image file to upload.');
@@ -178,7 +284,7 @@ export const ResearchPage: React.FC = () => {
         setIsAddingSource(true);
         info(`Extracting multi-modal content from ${selectedFile.name}...`);
         const newSource = await researchApi.uploadSourceFile(
-          activeProject.id,
+          targetProject.id,
           selectedFile,
           sourceTitle.trim() || undefined
         );
@@ -186,7 +292,7 @@ export const ResearchPage: React.FC = () => {
         setSelectedFile(null);
         setSourceTitle('');
         success(`Extracted & ingested: "${newSource.title}"`);
-        const updated = await researchApi.getProject(activeProject.id);
+        const updated = await researchApi.getProject(targetProject.id);
         setActiveProject(updated);
         setSources(updated.sources || []);
       } catch (err: any) {
@@ -195,31 +301,6 @@ export const ResearchPage: React.FC = () => {
         setIsAddingSource(false);
       }
       return;
-    }
-
-    try {
-      setIsAddingSource(true);
-      const newSource = await researchApi.addSource(activeProject.id, {
-        source_type: inputType,
-        url: inputType === 'url' ? sourceUrl.trim() : undefined,
-        title: sourceTitle.trim() || undefined,
-        text_content: inputType === 'text' ? sourceText.trim() : undefined,
-      });
-
-      setSources((prev) => [...prev, newSource]);
-      setSourceUrl('');
-      setSourceTitle('');
-      setSourceText('');
-      success(`Source "${newSource.title}" added to investigation!`);
-
-      // Refresh project in background to sync
-      const updated = await researchApi.getProject(activeProject.id);
-      setActiveProject(updated);
-      setSources(updated.sources || []);
-    } catch (err: any) {
-      error(err.message || 'Failed to add source');
-    } finally {
-      setIsAddingSource(false);
     }
   };
 
@@ -283,18 +364,50 @@ export const ResearchPage: React.FC = () => {
         </div>
 
         {/* Project Selector */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <select
             value={activeProject?.id || ''}
-            onChange={(e) => selectProject(e.target.value)}
-            className="text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            onChange={(e) => {
+              if (e.target.value) {
+                selectProject(e.target.value);
+              }
+            }}
+            className="text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 max-w-xs truncate"
           >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                Project: {p.title} ({p.sources?.length || 0} sources)
-              </option>
-            ))}
+            {projects.length === 0 ? (
+              <option value="">No projects yet</option>
+            ) : (
+              projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  Project: {p.title} ({p.sources?.length || 0} sources)
+                </option>
+              ))
+            )}
           </select>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const title = window.prompt('Enter new investigation title:', 'AI Research Investigation');
+              if (title && title.trim()) {
+                try {
+                  const newP = await researchApi.createProject({ title: title.trim() });
+                  setProjects((prev) => [newP, ...prev]);
+                  setActiveProject(newP);
+                  setSources([]);
+                  setBrief(null);
+                  success(`Created investigation "${newP.title}"`);
+                } catch (err: any) {
+                  error(err?.message || 'Failed to create project');
+                }
+              }
+            }}
+            className="text-xs px-2.5 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg flex items-center gap-1 font-medium transition-colors"
+            title="Create new investigation project"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>New</span>
+          </button>
 
           <button
             onClick={handleGenerateBrief}
@@ -371,19 +484,34 @@ export const ResearchPage: React.FC = () => {
             <form onSubmit={handleAddSource} className="space-y-3">
               {inputType === 'url' ? (
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Article or Release URL
-                  </label>
-                  <input
-                    type="url"
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-medium text-slate-600">
+                      Article or Release URL(s)
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      Paste 1 or multiple URLs
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
                     required
-                    placeholder="https://openai.com/index/o3-model-overview"
+                    placeholder={`Enter one or multiple URLs (separated by new line or space):\nhttps://openai.com/index/openai-o3-mini/\nhttps://huggingface.co/blog/deepseek-r1\nhttps://deepmind.google/technologies/gemini/`}
                     value={sourceUrl}
                     onChange={(e) => setSourceUrl(e.target.value)}
-                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none font-mono"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" /> SSRF Protected • Trafilatura + BS4
+                  <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-500" /> SSRF Protected • Trafilatura + BS4
+                    </span>
+                    {sourceUrl.trim() && (
+                      <span className="font-semibold text-blue-600">
+                        {(() => {
+                          const count = sourceUrl.split(/[\r\n\s,]+/).filter((u) => /^https?:\/\//i.test(u.trim())).length;
+                          return count > 1 ? `${count} URLs detected` : count === 1 ? '1 URL detected' : '';
+                        })()}
+                      </span>
+                    )}
                   </p>
                 </div>
               ) : inputType === 'text' ? (
@@ -477,7 +605,14 @@ export const ResearchPage: React.FC = () => {
                 ) : (
                   <>
                     <Plus className="w-3.5 h-3.5" />
-                    <span>{inputType === 'file' ? 'Extract & Ingest File' : 'Add Source to Investigation'}</span>
+                    <span>
+                      {inputType === 'file'
+                        ? 'Extract & Ingest File'
+                        : (() => {
+                            const count = inputType === 'url' ? sourceUrl.split(/[\r\n\s,]+/).filter((u) => /^https?:\/\//i.test(u.trim())).length : 0;
+                            return count > 1 ? `Add ${count} Sources to Investigation` : 'Add Source to Investigation';
+                          })()}
+                    </span>
                   </>
                 )}
               </button>
