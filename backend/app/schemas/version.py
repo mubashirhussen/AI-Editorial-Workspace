@@ -60,6 +60,13 @@ class RestoreVersionResponse(BaseModel):
     restored_from_version: int
     new_version: EditorialVersionResponse
     updated_content: str
+    content: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.content and self.updated_content:
+            self.content = self.updated_content
+        elif not self.updated_content and self.content:
+            self.updated_content = self.content
 
 # Backward-compatibility alias
 VersionRestoreResponse = RestoreVersionResponse

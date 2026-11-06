@@ -210,13 +210,14 @@ class VersionService:
         doc_type_upper = document_type.upper()
 
         version = None
-        if version_ref.isdigit():
+        version_ref_str = str(version_ref).strip()
+        if version_ref_str.isdigit():
             version = (
                 db.query(EditorialVersion)
                 .filter(
                     EditorialVersion.document_type == doc_type_upper,
                     EditorialVersion.document_id == document_id,
-                    EditorialVersion.version_number == int(version_ref)
+                    EditorialVersion.version_number == int(version_ref_str)
                 )
                 .first()
             )
@@ -224,7 +225,7 @@ class VersionService:
             version = (
                 db.query(EditorialVersion)
                 .filter(
-                    EditorialVersion.id == version_ref,
+                    EditorialVersion.id == version_ref_str,
                     EditorialVersion.document_type == doc_type_upper,
                     EditorialVersion.document_id == document_id
                 )

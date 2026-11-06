@@ -203,8 +203,18 @@ def get_draft_versions(draft_id: str, db: Session = Depends(get_db)):
 def restore_draft_version(draft_id: str, version_id: str, db: Session = Depends(get_db)):
     """Restores a previous draft snapshot non-destructively as a new head version."""
     writing_service.get_draft(db, draft_id)
-    version = version_service.get_version(db, version_id)
-    return version_service.restore_version(db, "WRITING_DRAFT", draft_id, version.version_number)
+    version = version_service.get_version(db, "WRITING_DRAFT", draft_id, version_id)
+    new_version, new_content = version_service.restore_version(db, "WRITING_DRAFT", draft_id, version.version_number)
+    return VersionRestoreResponse(
+        success=True,
+        message=f"Draft restored to version {version.version_number}",
+        document_type="WRITING_DRAFT",
+        document_id=draft_id,
+        restored_from_version=version.version_number,
+        new_version=new_version,
+        updated_content=new_content,
+        content=new_content
+    )
 
 # --- Style Intelligence ---
 

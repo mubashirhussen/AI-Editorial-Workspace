@@ -13,6 +13,8 @@ interface AuthContextType {
   login: (payload: { email: string; password: string }) => Promise<void>;
   register: (payload: { email: string; password: string; full_name: string; organization_name?: string }) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string; dev_reset_token?: string }>;
+  resetPassword: (token: string, new_password: string) => Promise<{ success: boolean; message: string }>;
   refreshUserProfile: () => Promise<void>;
   canManageOrg: boolean;
   canInvite: boolean;
@@ -33,6 +35,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('access_token'));
 
   useEffect(() => {
+    const handleSessionExpired = () => {
+      setUser(null);
+      setActiveOrg(null);
+      setOrganizations([]);
+      setToken(null);
+    };
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
+  }, []);
+
+  useEffect(() => {
     loadUserAndOrgs();
   }, [token]);
 
@@ -41,24 +54,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const profile = await authService.getMe();
       setUser(profile.user);
-      
-      const orgs: Organization[] = profile.organizations.map(o => ({
+
+      const orgs: Organization[] = profile.organizations.map((o) => ({
         id: o.id,
         name: o.name,
         slug: o.slug,
         role: o.role,
-        created_at: o.joined_at
+        created_at: o.joined_at,
       }));
       setOrganizations(orgs);
 
       const savedOrgId = localStorage.getItem('active_org_id');
-      const matched = orgs.find(o => o.id === savedOrgId) || orgs[0] || null;
+      const matched = orgs.find((o) => o.id === savedOrgId) || orgs[0] || null;
       if (matched) {
         setActiveOrg(matched);
         localStorage.setItem('active_org_id', matched.id);
       }
     } catch (err) {
-      // In single-user dev mode, backend automatically provisions default user
       console.warn('Authentication initialized in default workspace mode.');
     } finally {
       setLoading(false);
@@ -66,11 +78,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchOrganization = async (orgId: string) => {
-    const org = organizations.find(o => o.id === orgId);
+    const org = organizations.find((o) => o.id === orgId);
     if (org) {
       setActiveOrg(org);
       localStorage.setItem('active_org_id', org.id);
-      // Reload project list by notifying consumers
       window.dispatchEvent(new Event('organization-changed'));
     }
   };
@@ -105,6 +116,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
   };
 
+  const forgotPassword = async (email: string) => {
+    return authService.forgotPassword(email);
+  };
+
+  const resetPassword = async (token: string, new_password: string) => {
+    return authService.resetPassword(token, new_password);
+  };
+
   const refreshUserProfile = async () => {
     await loadUserAndOrgs();
   };
@@ -132,6 +151,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        forgotPassword,
+        resetPassword,
         refreshUserProfile,
         canManageOrg,
         canInvite,
@@ -154,4 +175,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

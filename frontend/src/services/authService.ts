@@ -33,6 +33,29 @@ export const authService = {
     }
   },
 
+  async refreshToken(): Promise<{ access_token: string; token_type: string }> {
+    const res = await apiClient.post<{ access_token: string; token_type: string }>('/auth/refresh');
+    if (res.data?.access_token) {
+      localStorage.setItem('access_token', res.data.access_token);
+    }
+    return res.data;
+  },
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string; dev_reset_token?: string }> {
+    const res = await apiClient.post('/auth/forgot-password', { email });
+    return res.data;
+  },
+
+  async resetPassword(token: string, new_password: string): Promise<{ success: boolean; message: string }> {
+    const res = await apiClient.post('/auth/reset-password', { token, new_password });
+    return res.data;
+  },
+
+  async changePassword(current_password: string, new_password: string): Promise<{ success: boolean; message: string }> {
+    const res = await apiClient.post('/auth/change-password', { current_password, new_password });
+    return res.data;
+  },
+
   async getOrganizations(): Promise<Organization[]> {
     const res = await apiClient.get<Organization[]>('/organizations');
     return res.data;
@@ -86,4 +109,3 @@ export const authService = {
     return res.data;
   }
 };
-

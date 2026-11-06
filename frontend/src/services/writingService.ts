@@ -64,12 +64,12 @@ export const writingService = {
   },
 
   async acceptSuggestion(draftId: string, suggestionId: string): Promise<SuggestionActionResponse> {
-    const res = await apiClient.post(`/writing/suggestions/${suggestionId}/accept`);
+    const res = await apiClient.post(`/writing/drafts/${draftId}/suggestions/${suggestionId}/accept`);
     return res.data;
   },
 
   async rejectSuggestion(draftId: string, suggestionId: string): Promise<SuggestionActionResponse> {
-    const res = await apiClient.post(`/writing/suggestions/${suggestionId}/reject`);
+    const res = await apiClient.post(`/writing/drafts/${draftId}/suggestions/${suggestionId}/reject`);
     return res.data;
   },
 
@@ -82,5 +82,24 @@ export const writingService = {
     const res = await apiClient.get(`/writing/drafts/${draftId}/compare`);
     return res.data;
   },
-};
 
+  async rewriteDraft(draftId: string, payload?: { prompt?: string; mode?: string }): Promise<any> {
+    const res = await apiClient.post(`/writing/drafts/${draftId}/rewrite`, payload || {});
+    return res.data;
+  },
+
+  async getDraftVersions(draftId: string): Promise<any[]> {
+    const res = await apiClient.get(`/writing/drafts/${draftId}/versions`);
+    return res.data;
+  },
+
+  async restoreDraftVersion(draftId: string, versionId: string): Promise<any> {
+    const res = await apiClient.post(`/writing/drafts/${draftId}/restore/${versionId}`);
+    return res.data;
+  },
+
+  async checkStyle(draftId: string, rules?: any): Promise<any> {
+    const res = await apiClient.post(`/writing/drafts/${draftId}/style-check`, rules || {});
+    return res.data;
+  }
+};

@@ -284,6 +284,16 @@ export const ResearchPage: React.FC = () => {
         error('Please select a document or image file to upload.');
         return;
       }
+      const allowedExts = ['.pdf', '.docx', '.doc', '.txt', '.md', '.png', '.jpg', '.jpeg', '.webp'];
+      const fileExt = '.' + (selectedFile.name.split('.').pop() || '').toLowerCase();
+      if (!allowedExts.includes(fileExt)) {
+        error(`Unsupported file type (${fileExt}). Supported formats: PDF, DOCX, TXT, Markdown, PNG, JPG, WEBP.`);
+        return;
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        error('File exceeds 10MB maximum limit. Please select a smaller document.');
+        return;
+      }
       try {
         setIsAddingSource(true);
         info(`Extracting multi-modal content from ${selectedFile.name}...`);

@@ -128,6 +128,7 @@ async def analyze_project_sources(
     return {"success": True, "sources_analyzed": len(sources)}
 
 @router.post("/projects/{project_id}/generate-brief", response_model=ResearchBriefResponse)
+@router.post("/projects/{project_id}/brief", response_model=ResearchBriefResponse)
 async def generate_brief(
     project_id: str,
     current_user: User = Depends(get_current_user),

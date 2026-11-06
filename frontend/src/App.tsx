@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { LoadingState } from './components/common/LoadingState';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 // Lazy-load route components to optimize initial bundle size & page speed
 const DashboardPage = lazy(() =>
@@ -28,7 +30,6 @@ const OrganizationPage = lazy(() =>
 const AuthPage = lazy(() =>
   import('./pages/AuthPage').then((m) => ({ default: m.AuthPage }))
 );
-import { AuthProvider } from './context/AuthContext';
 
 const ViewSuspenseFallback: React.FC = () => (
   <div className="flex h-[60vh] w-full items-center justify-center p-8">
@@ -57,103 +58,109 @@ export const App: React.FC = () => {
               </Suspense>
             }
           />
-        <Route element={<DashboardLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route
-            path="/dashboard"
             element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <DashboardPage />
-              </Suspense>
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
             }
-          />
+          >
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <DashboardPage />
+                </Suspense>
+              }
+            />
 
-          {/* Research Routes */}
-          <Route
-            path="/research"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <ResearchPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/research/:projectId"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <ResearchPage />
-              </Suspense>
-            }
-          />
+            {/* Research Routes */}
+            <Route
+              path="/research"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <ResearchPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/research/:projectId"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <ResearchPage />
+                </Suspense>
+              }
+            />
 
-          {/* Writing Routes */}
-          <Route
-            path="/writing"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <WritingPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/writing/:draftId"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <WritingPage />
-              </Suspense>
-            }
-          />
+            {/* Writing Routes */}
+            <Route
+              path="/writing"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <WritingPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/writing/:draftId"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <WritingPage />
+                </Suspense>
+              }
+            />
 
-          {/* Editorial Routes */}
-          <Route
-            path="/editorial"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <EditorialPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/editorial/:editorialId"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <EditorialPage />
-              </Suspense>
-            }
-          />
+            {/* Editorial Routes */}
+            <Route
+              path="/editorial"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <EditorialPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/editorial/:editorialId"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <EditorialPage />
+                </Suspense>
+              }
+            />
 
-          {/* Projects & Settings */}
-          <Route
-            path="/projects"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <ProjectsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <SettingsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/organization"
-            element={
-              <Suspense fallback={<ViewSuspenseFallback />}>
-                <OrganizationPage />
-              </Suspense>
-            }
-          />
+            {/* Projects & Settings */}
+            <Route
+              path="/projects"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <ProjectsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <SettingsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/organization"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <OrganizationPage />
+                </Suspense>
+              }
+            />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Route>
-      </Routes>
-    </AuthProvider>
-  </BrowserRouter>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 };
 

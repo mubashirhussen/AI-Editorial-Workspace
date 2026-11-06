@@ -36,3 +36,4 @@ class PaginatedApiResponse(BaseModel, Generic[T]):
     data: List[T] = Field(default_factory=list)
     meta: PaginationMeta
     model_config = ConfigDict(extra="ignore")
+
