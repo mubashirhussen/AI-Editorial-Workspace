@@ -386,7 +386,7 @@ export const ResearchPage: React.FC = () => {
                 selectProject(e.target.value);
               }
             }}
-            className="text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 max-w-xs truncate"
+            className="text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[220px] max-w-xs truncate font-medium shadow-xs"
           >
             {projects.length === 0 ? (
               <option value="">No projects yet</option>
