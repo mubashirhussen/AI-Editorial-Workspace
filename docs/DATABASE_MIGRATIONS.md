@@ -21,11 +21,26 @@ fe217d474c9d (Initial 7 core tables: research_projects, sources, source_analyses
               relationships, contradictions, trends, style profiles, versions)
   │
   ▼
-3b7c9f1e8a2d [HEAD] (Phase 4 Complete Architecture: user_sessions, password_reset_tokens,
+3b7c9f1e8a2d (Phase 4 Extended Entities: user_sessions, password_reset_tokens,
               email_verification_tokens, research_evidence, ai_provider_configs,
               integration_connections, provider_usage_records, integration_health_records,
-              background_jobs, user_activity_logs, audit_logs, notifications, usage_events,
-              and soft-deletion indexes)
+              background_jobs, user_activity_logs, audit_logs, notifications, usage_events)
+  │
+  ▼
+4c8d1e2f3a4b (Foreign Key Performance Indexes: adding dedicated single-column B-tree
+              indexes on all referenced foreign-key join columns across SQLite/PostgreSQL)
+  │
+  ▼
+5e9a2f1b4c3d (Multi-Tenant Composite Indexes: indexing (organization_id, id),
+              (project_id, created_at), and document versioning tuples)
+  │
+  ▼
+6f1b2a3c4d5e (Writing Assistant Intelligence: suggestions status index, draft
+              lifecycle states, and version snapshots)
+  │
+  ▼
+7a2c3d4e5f6a [HEAD] (Phase 8 AI Reliability & Observability: evaluation runs,
+              prompt template versions, model hallucination logs, token usage metrics)
 ```
 
 ---

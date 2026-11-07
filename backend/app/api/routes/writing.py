@@ -25,12 +25,43 @@ from backend.app.schemas.version import VersionResponse, VersionRestoreResponse
 from backend.app.services.writing_service import writing_service
 from backend.app.services.style_intelligence.style_analyzer import style_analyzer
 from backend.app.services.version_control.version_service import version_service
+from backend.app.schemas.auth import OrgPermission, has_permission
 from backend.app.services.writing import writing_analyzer, metrics_service, suggestion_service
 from backend.app.services.analytics_service import analytics_service
-from backend.app.models.base import WritingDraft, WritingSuggestion, ResearchProject, EditorialStyleProfile, User, Organization
+from backend.app.models.base import WritingDraft, WritingSuggestion, ResearchProject, EditorialStyleProfile, User, Organization, OrganizationMembership
 from backend.app.api.deps import get_current_user, get_active_organization
 
 router = APIRouter(prefix="/writing", tags=["Writing Assistant"])
+
+def check_draft_tenant_access(
+    db: Session,
+    draft: WritingDraft,
+    user: Optional[User],
+    required_permission: Optional[OrgPermission] = None
+) -> Optional[OrganizationMembership]:
+    """Ensures the user belongs to the draft's organization and holds the required permission."""
+    if not draft.organization_id:
+        return None  # Unassigned legacy draft
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+
+    membership = db.query(OrganizationMembership).filter(
+        OrganizationMembership.organization_id == draft.organization_id,
+        OrganizationMembership.user_id == user.id
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Writing draft with ID '{draft.id}' not found."
+        )
+
+    if required_permission and not has_permission(membership.role, required_permission):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{membership.role}' lacks permission '{required_permission.value}' for this draft."
+        )
+    return membership
 
 @router.post("/analyze", response_model=WritingAnalysisResponse, summary="Analyze writing text")
 async def analyze_writing(req: WritingAnalysisRequest, db: Session = Depends(get_db)):
@@ -100,26 +131,32 @@ async def rewrite_selection_span(
 @router.post("/drafts/{draft_id}/grounding-audit", response_model=ResearchGroundingAuditResponse, summary="Audit factual grounding against research alias")
 def audit_grounding(
     draft_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
 ):
     """
     Cross-references claims in the draft against connected research brief evidence and sources.
     Reports grounded, inferred, unsupported, and contradictory statements.
     """
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.VIEW_CONTENT)
     return writing_service.audit_research_grounding(db, draft_id)
 
 @router.get("/drafts/{draft_id}/export", summary="Export draft to Markdown, Text, Word, or HTML")
 def export_draft_document(
     draft_id: str,
     format: str = Query("markdown", description="Format: markdown, txt, docx, html"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
 ):
     """
     Exports the latest revised draft to publication-ready formats.
     Preserves headings, formatting, citations, and metadata.
     """
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.VIEW_CONTENT)
     file_bytes, filename, mime_type = writing_service.export_draft(db, draft_id, format)
-    analytics_service.track_event(db, None, "export_executed", metadata={"format": format})
+    analytics_service.track_event(db, getattr(draft, "organization_id", None), "export_executed", metadata={"format": format})
     return Response(
         content=file_bytes,
         media_type=mime_type,
@@ -149,9 +186,15 @@ def list_drafts(
     )
 
 @router.get("/drafts/{draft_id}", response_model=DraftResponse, summary="Get draft by ID")
-def get_draft(draft_id: str, db: Session = Depends(get_db)):
+def get_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """Retrieves full writing draft details including revised and original content."""
-    return writing_service.get_draft(db, draft_id)
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.VIEW_CONTENT)
+    return draft
 
 @router.put("/drafts/{draft_id}", response_model=DraftResponse, summary="Update draft content")
 def update_draft(
@@ -161,6 +204,8 @@ def update_draft(
     current_user: Optional[User] = Depends(get_current_user)
 ):
     """Updates draft text, title, or status, creating a version snapshot if revised."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
     user_id = current_user.id if current_user else None
     return writing_service.update_draft(db, draft_id, data, user_id=user_id)
 
@@ -172,6 +217,8 @@ def patch_draft(
     current_user: Optional[User] = Depends(get_current_user)
 ):
     """Partially updates draft content, metadata, or status with automatic snapshot."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
     user_id = current_user.id if current_user else None
     updated = writing_service.update_draft(db, draft_id, data, user_id=user_id)
     content = updated.revised_content or updated.original_content or ""
@@ -192,17 +239,28 @@ def patch_draft(
     return updated
 
 @router.delete("/drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete draft")
-def delete_draft(draft_id: str, db: Session = Depends(get_db)):
+def delete_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """Deletes a writing draft and its associated suggestions."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
     writing_service.delete_draft(db, draft_id)
     return None
 
 # --- Draft Analysis Endpoints ---
 
 @router.post("/drafts/{draft_id}/analyze", response_model=WritingAnalysisResponse, summary="Run analysis on draft")
-def analyze_draft(draft_id: str, db: Session = Depends(get_db)):
+def analyze_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """Analyzes an existing draft's text for readability and generates actionable rewrite suggestions."""
     draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.VIEW_CONTENT)
     content = draft.revised_content or draft.original_content or ""
     
     # Clean previous pending suggestions
