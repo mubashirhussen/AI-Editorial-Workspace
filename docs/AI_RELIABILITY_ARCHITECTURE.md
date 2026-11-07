@@ -71,3 +71,4 @@ Every AI request produces an audit-logged `ProviderUsageRecord` strictly scoped 
 1. **Zero Credential Leakage**: API keys and authorization headers are never written to log files, serialized in telemetry records, or exposed to frontend clients.
 2. **Encrypted Secret Storage**: Organization provider credentials stored in `ai_provider_configs` are symmetrically encrypted with Fernet AES-128 before persisting to PostgreSQL / SQLite.
 3. **Defensive Source Sandboxing**: All user-uploaded or scraped source contents are enclosed inside `<source_content>...</source_content>` tags, accompanied by a system-level guardrail preventing prompt injection or instruction overriding.
+

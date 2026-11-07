@@ -88,3 +88,4 @@ Authorization: Bearer <TOKEN>
 
 ### 3.3 Via Web UI
 Navigate to **AI Observability** (`/observability`) &rarr; **Offline Benchmark Suite** tab &rarr; click **Execute Full Benchmark**.
+

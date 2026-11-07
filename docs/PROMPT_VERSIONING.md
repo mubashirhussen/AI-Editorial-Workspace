@@ -80,3 +80,4 @@ When an AI response is generated, the prompt registry version is captured and st
 - `provider_usage_records.prompt_version`
 
 This enables deterministic retrospective analysis: if a prompt change degrades output quality, past articles can be traced back to the exact version that authored them.
+
