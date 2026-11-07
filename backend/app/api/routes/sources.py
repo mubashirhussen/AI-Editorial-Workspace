@@ -188,23 +188,47 @@ def delete_source(
     return {"success": True, "message": "Source removed successfully."}
 
 @router.post("/sources/{source_id}/extract", response_model=SourceResponse, summary="Trigger source extraction")
-async def extract_source_content(source_id: str, db: Session = Depends(get_db)):
+async def extract_source_content(
+    source_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Triggers automated extraction and metadata parsing for a URL source."""
-    source = await research_service.extract_source(db, source_id)
-    return source
+    source = db.query(Source).filter(Source.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
+    if source.project:
+        check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
+    extracted_source = await research_service.extract_source(db, source_id)
+    return extracted_source
 
 @router.post("/sources/{source_id}/analyze", summary="Trigger source analysis")
-async def analyze_source(source_id: str, db: Session = Depends(get_db)):
+async def analyze_source(
+    source_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Executes single-source claim and evidence extraction."""
+    source = db.query(Source).filter(Source.id == source_id).first()
+    if not source:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
+    if source.project:
+        check_project_tenant_access(db, source.project, current_user, OrgPermission.ADD_SOURCES)
     analysis = await research_service.analyze_single_source(db, source_id)
     return {"success": True, "analysis_id": analysis.id}
 
 @router.get("/sources/{source_id}/analysis", summary="Get source analysis")
-def get_source_analysis(source_id: str, db: Session = Depends(get_db)):
+def get_source_analysis(
+    source_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Retrieves verified claims and analysis breakdown for a source."""
     source = db.query(Source).filter(Source.id == source_id).first()
     if not source:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Source with ID '{source_id}' not found.")
+    if source.project:
+        check_project_tenant_access(db, source.project, current_user, OrgPermission.VIEW_CONTENT)
     if not source.analyses:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source analysis not found.")
     return source.analyses

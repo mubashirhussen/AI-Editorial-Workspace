@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from backend.app.core.exceptions import AppException
 from backend.app.core.config import settings
 from backend.app.core.database import engine, Base, get_db
 from backend.app.models.base import (
@@ -240,6 +242,50 @@ app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
 app.include_router(observability.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analytics.router, prefix=settings.API_V1_PREFIX)
 app.include_router(v1_endpoints_router, prefix=settings.API_V1_PREFIX)
+
+@app.exception_handler(AppException)
+async def app_exception_handler(request: Request, exc: AppException):
+    req_id = getattr(request.state, 'request_id', str(uuid.uuid4()))
+    logger.warning(f'[{req_id}] AppException on {request.url.path}: {exc.code} - {exc.message}')
+    headers = {'X-Request-ID': req_id}
+    if exc.headers:
+        headers.update(exc.headers)
+    return JSONResponse(
+        status_code=exc.status_code,
+        headers=headers,
+        content={
+            'success': False,
+            'message': exc.message,
+            'error': {
+                'code': exc.code,
+                'details': exc.details
+            },
+            'detail': exc.message,
+            'request_id': req_id,
+            'error_category': exc.code
+        }
+    )
+
+@app.exception_handler(IntegrityError)
+async def integrity_exception_handler(request: Request, exc: IntegrityError):
+    req_id = getattr(request.state, 'request_id', str(uuid.uuid4()))
+    logger.error(f'[{req_id}] Database integrity constraint violation on {request.url.path}: {exc.orig}')
+    msg = 'A database integrity constraint was violated (duplicate value or invalid relation).'
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        headers={'X-Request-ID': req_id},
+        content={
+            'success': False,
+            'message': msg,
+            'error': {
+                'code': 'DATABASE_INTEGRITY_ERROR',
+                'details': 'The requested resource conflict or constraint prevents completing this operation.'
+            },
+            'detail': msg,
+            'request_id': req_id,
+            'error_category': 'INTEGRITY_ERROR'
+        }
+    )
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

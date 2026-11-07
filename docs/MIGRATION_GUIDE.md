@@ -122,3 +122,4 @@ When deploying to PostgreSQL in production environments:
 * Zero-downtime guidelines:
   1. Additive changes (new tables, new nullable columns, non-unique indexes) are applied first without disruption.
   2. Multi-column and unique constraints are populated in follow-up transactional scripts.
+
