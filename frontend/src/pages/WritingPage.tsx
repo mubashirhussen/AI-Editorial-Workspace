@@ -22,7 +22,9 @@ import {
   Clock,
   Layers,
   ChevronDown,
-  History
+  History,
+  FileDown,
+  Wand2
 } from 'lucide-react';
 import { writingService } from '../services/writingService';
 import { WritingIssue, WritingMetrics, WritingDraft, DraftComparisonResponse } from '../types';
@@ -68,6 +70,22 @@ export const WritingPage: React.FC = () => {
   const [newDraftInitialText, setNewDraftInitialText] = useState('');
   const [deleteDraftId, setDeleteDraftId] = useState<string | null>(null);
 
+  // Export State
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'markdown' | 'docx' | 'html' | 'txt'>('markdown');
+  const [isExporting, setIsExporting] = useState(false);
+
+  // AI Generation State
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [generateTopic, setGenerateTopic] = useState('');
+  const [generateAudience, setGenerateAudience] = useState('Founders, builders, and operators');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Selection Rewrite State
+  const [selectedText, setSelectedText] = useState('');
+  const [rewriteOp, setRewriteOp] = useState('simplify_complex_sentences');
+  const [isRewriting, setIsRewriting] = useState(false);
+
   const isDirty = text !== savedContent;
 
   useEffect(() => {
@@ -89,6 +107,101 @@ export const WritingPage: React.FC = () => {
       setSavedDrafts(drafts);
     } catch (err) {
       console.error('Failed to load saved drafts', err);
+    }
+  };
+
+  const handleExport = async (format: 'markdown' | 'docx' | 'html' | 'txt' = exportFormat) => {
+    if (!activeDraftId) {
+      info('Please select or save a draft before exporting.');
+      return;
+    }
+    try {
+      setIsExporting(true);
+      info(`Exporting draft as ${format.toUpperCase()}...`);
+      const { blob, filename } = await writingService.exportDraft(activeDraftId, format);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      success(`Draft exported successfully as ${filename}!`);
+      setIsExportOpen(false);
+    } catch (err: any) {
+      error(err.message || 'Failed to export draft document.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleGenerateDraft = async () => {
+    if (!generateTopic.trim()) {
+      error('Please specify a topic or editorial focus.');
+      return;
+    }
+    try {
+      setIsGenerating(true);
+      info('Synthesizing initial article draft with AI...');
+      const res = await writingService.generateDraft({
+        topic: generateTopic,
+        target_audience: generateAudience,
+        content_type: 'editorial_analysis',
+        desired_length: 800,
+      });
+      setText(res.content);
+      const title = res.title || res.headline || generateTopic;
+      setDraftTitle(title);
+      setOriginalDraft(res.content);
+      setIsGenerateOpen(false);
+      setGenerateTopic('');
+      success('Article draft generated! Click Audit Quality to evaluate readability.');
+      if (res.draft_id) {
+        setActiveDraftId(res.draft_id);
+        navigate(`/writing/${res.draft_id}`, { replace: true });
+        loadDraftsList();
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to generate draft.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRewriteSelection = async () => {
+    if (!selectedText.trim()) {
+      info('Select a section of text in the draft editor to rewrite.');
+      return;
+    }
+    try {
+      setIsRewriting(true);
+      info('AI is rewriting selected text...');
+      const res = await writingService.rewriteSelection({
+        selected_text: selectedText,
+        operation: rewriteOp,
+        draft_id: activeDraftId || undefined,
+      });
+      if (res.rewritten_text) {
+        const newText = text.replace(selectedText, res.rewritten_text);
+        setText(newText);
+        setSelectedText('');
+        success(`Applied AI rewrite: ${res.explanation || 'Content updated!'}`);
+        handleAnalyze(newText);
+      }
+    } catch (err: any) {
+      error(err.message || 'Failed to rewrite selected text.');
+    } finally {
+      setIsRewriting(false);
+    }
+  };
+
+  const handleTextSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    if (start !== end) {
+      setSelectedText(target.value.substring(start, end));
     }
   };
 
@@ -384,6 +497,15 @@ export const WritingPage: React.FC = () => {
           </div>
 
           <Button
+            onClick={() => setIsGenerateOpen(true)}
+            variant="outline"
+            size="sm"
+            leftIcon={<Wand2 className="w-3.5 h-3.5 text-purple-600" />}
+          >
+            AI Draft
+          </Button>
+
+          <Button
             onClick={() => setIsNewDraftOpen(true)}
             variant="outline"
             size="sm"
@@ -421,6 +543,17 @@ export const WritingPage: React.FC = () => {
               leftIcon={<History className="w-3.5 h-3.5 text-blue-600" />}
             >
               Version History
+            </Button>
+          )}
+
+          {activeDraftId && (
+            <Button
+              onClick={() => setIsExportOpen(true)}
+              variant="outline"
+              size="sm"
+              leftIcon={<FileDown className="w-3.5 h-3.5 text-emerald-600" />}
+            >
+              Export
             </Button>
           )}
 
@@ -512,10 +645,51 @@ export const WritingPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
+                {selectedText && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-semibold text-blue-900 dark:text-blue-100">
+                        Selected: "{selectedText.slice(0, 32)}{selectedText.length > 32 ? '...' : ''}"
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={rewriteOp}
+                        onChange={(e) => setRewriteOp(e.target.value)}
+                        className="text-xs bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none"
+                      >
+                        <option value="simplify_complex_sentences">Simplify Sentences</option>
+                        <option value="improve_clarity">Improve Clarity</option>
+                        <option value="remove_repetitive_content">Remove Repetition</option>
+                        <option value="strengthen_headline">Strengthen Hook</option>
+                        <option value="correct_grammar">Correct Grammar</option>
+                      </select>
+                      <Button
+                        onClick={handleRewriteSelection}
+                        isLoading={isRewriting}
+                        variant="primary"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Rewrite
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedText('')}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-slate-500"
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <textarea
                   rows={16}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
+                  onSelect={handleTextSelect}
                   placeholder="Paste or write your newsletter draft here..."
                   className="w-full text-slate-800 dark:text-slate-100 font-serif text-[14px] leading-relaxed p-4 bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-y"
                 />
@@ -766,6 +940,99 @@ export const WritingPage: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Export Draft Modal */}
+      <Modal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        title="Export Publication-Ready Draft"
+        description="Download your revised draft formatted for publication or editorial distribution."
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'markdown', label: 'Markdown (.md)', desc: 'With YAML frontmatter and section headers' },
+              { id: 'docx', label: 'Word (.docx)', desc: 'Clean formatted Microsoft Word document' },
+              { id: 'html', label: 'HTML (.html)', desc: 'Semantic web article markup' },
+              { id: 'txt', label: 'Plain Text (.txt)', desc: 'Clean unformatted editorial copy' },
+            ].map((fmt) => (
+              <button
+                key={fmt.id}
+                type="button"
+                onClick={() => setExportFormat(fmt.id as any)}
+                className={`p-3 text-left rounded-xl border transition-all ${
+                  exportFormat === fmt.id
+                    ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <div className="text-xs font-bold">{fmt.label}</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{fmt.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="ghost" onClick={() => setIsExportOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              isLoading={isExporting}
+              onClick={() => handleExport(exportFormat)}
+              leftIcon={<FileDown className="w-3.5 h-3.5" />}
+            >
+              Export {exportFormat.toUpperCase()}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* AI Generate Draft Modal */}
+      <Modal
+        isOpen={isGenerateOpen}
+        onClose={() => setIsGenerateOpen(false)}
+        title="Generate AI Editorial Draft"
+        description="Synthesize an evidence-based draft tailored to your target audience."
+      >
+        <div className="space-y-4">
+          <Input
+            label="Editorial Topic or Headline"
+            placeholder="e.g. Frontiers in Superconducting Quantum Computing"
+            value={generateTopic}
+            onChange={(e) => setGenerateTopic(e.target.value)}
+            required
+            autoFocus
+          />
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Target Audience
+            </label>
+            <input
+              type="text"
+              value={generateAudience}
+              onChange={(e) => setGenerateAudience(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" variant="ghost" onClick={() => setIsGenerateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              isLoading={isGenerating}
+              onClick={handleGenerateDraft}
+              disabled={!generateTopic.trim()}
+              leftIcon={<Wand2 className="w-3.5 h-3.5" />}
+            >
+              Generate Draft
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Confirm Delete Dialog */}

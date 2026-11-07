@@ -2,8 +2,8 @@
 
 **Project:** AI Editorial Workspace  
 **Target:** Forward Deployed Engineer Intern — *This Week in AI*  
-**Branch:** `feature/fullstack-integration`  
-**Execution Date:** 2026-11-06  
+**Branch:** `feat/phase5-fullstack-integration`  
+**Execution Date:** 2026-11-07  
 **Status:** COMPLETE & FULLY VERIFIED  
 
 ---
@@ -27,11 +27,13 @@ Phase 5 delivers end-to-end integration between the React (TypeScript + Vite) fr
    - Ingests pasted verbatim text, multi-modal file uploads (PDF, DOCX, TXT, images with 10MB size limits), and web URLs.
    - Parallel multi-URL extraction via `Promise.allSettled`.
    - Source evidence extraction and full cross-source synthesis (`POST /projects/{id}/generate-brief`).
-4. **Writing Assistant & Version History (`WritingPage.tsx`)**:
+4. **Writing Assistant, AI Selection Toolbar & Export (`WritingPage.tsx`)**:
    - Draft creation, editing, patching, and non-destructive version snapshots.
    - Real-time diagnostic metrics calculation (word count, reading time, grade levels).
    - AI writing analysis with actionable category-tagged suggestions (clarity, passive voice, conciseness).
    - Instant suggestion acceptance, rejection, and version restoration (`POST /drafts/{id}/restore/{version_id}`).
+   - Inline selection rewrite toolbar with custom operations (simplify sentences, improve clarity, strengthen hook, correct grammar).
+   - Multi-format publication export (`GET /writing/drafts/{id}/export`) supporting Markdown, Word docx, HTML, and Plain Text.
 5. **Multi-Tenant Data Isolation**:
    - Verified cross-organization boundary enforcement across all endpoints. Requests attempting to read, update, or delete data belonging to another tenant strictly return 403 Forbidden or 404 Not Found.
 

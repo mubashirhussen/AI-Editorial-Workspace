@@ -101,5 +101,44 @@ export const writingService = {
   async checkStyle(draftId: string, rules?: any): Promise<any> {
     const res = await apiClient.post(`/writing/drafts/${draftId}/style-check`, rules || {});
     return res.data;
+  },
+
+  async exportDraft(draftId: string, format: string = 'markdown'): Promise<{ blob: Blob; filename: string }> {
+    const res = await apiClient.get(`/writing/drafts/${draftId}/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    const disposition = res.headers['content-disposition'];
+    let filename = `draft_${draftId}.${format === 'markdown' ? 'md' : format}`;
+    if (disposition) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob: res.data, filename };
+  },
+
+  async rewriteSelection(payload: {
+    selected_text: string;
+    operation: string;
+    draft_id?: string;
+    target_tone?: string;
+    custom_instructions?: string;
+  }): Promise<any> {
+    const res = await apiClient.post('/writing/rewrite-selection', payload);
+    return res.data;
+  },
+
+  async generateDraft(payload: {
+    topic?: string;
+    project_id?: string;
+    brief_id?: string;
+    content_type?: string;
+    target_audience?: string;
+    tone?: string;
+    desired_length?: number;
+    editorial_instructions?: string;
+  }): Promise<any> {
+    const res = await apiClient.post('/writing/generate', payload);
+    return res.data;
   }
 };
