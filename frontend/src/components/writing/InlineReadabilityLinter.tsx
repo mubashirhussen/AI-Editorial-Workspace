@@ -123,3 +123,4 @@ export const InlineReadabilityLinter: React.FC<InlineReadabilityLinterProps> = (
     </div>
   );
 };
+

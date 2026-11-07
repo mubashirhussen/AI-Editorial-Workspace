@@ -449,3 +449,4 @@ export const ArticleImprovementsPanel: React.FC<ArticleImprovementsPanelProps> =
     </div>
   );
 };
+
