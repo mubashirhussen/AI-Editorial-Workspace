@@ -24,7 +24,10 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    return settings.DATABASE_URL
+    url = config.get_main_option("sqlalchemy.url")
+    if url:
+        return url
+    return os.environ.get("DATABASE_URL") or settings.DATABASE_URL
 
 def run_migrations_offline() -> None:
     url = get_url()
