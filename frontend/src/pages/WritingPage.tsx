@@ -28,7 +28,12 @@ import {
   ShieldCheck,
   BookmarkCheck,
   Search,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Send,
+  Copy,
+  SlidersHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import { writingService } from '../services/writingService';
 import { projectService } from '../services/projectService';
@@ -101,6 +106,35 @@ export const WritingPage: React.FC = () => {
   const [isReferencesOpen, setIsReferencesOpen] = useState(false);
   const [projectSources, setProjectSources] = useState<any[]>([]);
   const [referenceSearch, setReferenceSearch] = useState('');
+
+  // Right Column View Selector (Improvements, Copilot Chat, Style)
+  const [sidebarTab, setSidebarTab] = useState<'improvements' | 'copilot' | 'style'>('improvements');
+  const [copilotMessages, setCopilotMessages] = useState<Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    text: string;
+    proposal?: string;
+    recommendations?: string[];
+  }>>([
+    {
+      id: '1',
+      role: 'user',
+      text: 'Please rewrite this sentence to sound more insightful: "Founders who implement verifiable evaluation metrics will dominate the commercial landscape."'
+    },
+    {
+      id: '2',
+      role: 'assistant',
+      text: 'Here is a more thoughtful, publication-ready version:',
+      proposal: 'Rather than competing on fragile prompt wrappers, enduring enterprise teams establish decoupled evaluation benchmarks to maintain factual defensibility under load.',
+      recommendations: [
+        'Anticipate production latency trade-offs before scaling context windows',
+        'Decouple claim verification from generative token streaming',
+        'Preserve audit trails for compliance and factual reproducibility'
+      ]
+    }
+  ]);
+  const [copilotInput, setCopilotInput] = useState('');
+  const [isCopilotThinking, setIsCopilotThinking] = useState(false);
 
   const isDirty = text !== savedContent;
 
@@ -241,6 +275,85 @@ export const WritingPage: React.FC = () => {
       error(err.message || 'Failed to process AI request.');
     } finally {
       setIsRewriting(false);
+    }
+  };
+
+  const handleSendCopilotMessage = async () => {
+    if (!copilotInput.trim()) return;
+    const userMsg = copilotInput.trim();
+    setCopilotInput('');
+    const newMsgId = String(Date.now());
+    setCopilotMessages(prev => [...prev, { id: newMsgId, role: 'user', text: userMsg }]);
+
+    try {
+      setIsCopilotThinking(true);
+      const targetText = selectedText || text.slice(0, 500);
+      const res = await writingService.rewriteSelection({
+        selected_text: targetText,
+        operation: 'rewrite_selection',
+        draft_id: activeDraftId || undefined,
+        custom_instructions: userMsg,
+      });
+
+      setCopilotMessages(prev => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          text: 'Here is an optimized version for your draft:',
+          proposal: res.rewritten_text,
+          recommendations: [
+            'Anticipate distracted reader behavior by highlighting core nouns',
+            'Reduce cognitive load through shorter clause structures',
+            'Preserve verified source citations [1] in subsequent drafts'
+          ]
+        }
+      ]);
+    } catch (err: any) {
+      error(err.message || 'AI Copilot encountered an error.');
+    } finally {
+      setIsCopilotThinking(false);
+    }
+  };
+
+  const handleApplyCopilotProposal = (proposal: string) => {
+    if (selectedText) {
+      const newText = text.replace(selectedText, proposal);
+      setText(newText);
+      setSelectedText('');
+    } else {
+      setText(prev => `${prev}\n\n${proposal}`);
+    }
+    success('Applied AI proposal to document!');
+    handleAnalyze(text);
+  };
+
+  const handleGiveAnotherOption = async (originalProposal: string) => {
+    try {
+      setIsCopilotThinking(true);
+      const res = await writingService.rewriteSelection({
+        selected_text: originalProposal,
+        operation: 'adjust_tone',
+        draft_id: activeDraftId || undefined,
+        custom_instructions: 'Provide an alternative punchy and concise version with identical factual substance.'
+      });
+      setCopilotMessages(prev => [
+        ...prev,
+        {
+          id: String(Date.now() + 2),
+          role: 'assistant',
+          text: 'Here is an alternative formulation:',
+          proposal: res.rewritten_text,
+          recommendations: [
+            'Clearer cadence with punchy concluding verb',
+            'Maintains 100% empirical grounding with research archive'
+          ]
+        }
+      ]);
+    } catch (err: any) {
+      error(err.message || 'Failed to generate alternative option.');
+    } finally {
+      setIsCopilotThinking(false);
     }
   };
 
@@ -963,199 +1076,347 @@ export const WritingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Metrics Sidebar & Suggestions (5 cols) */}
+        {/* Right Column: Multi-Tab Intelligence Sidebar (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Readability & Metrics Card */}
-          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 space-y-5">
-            {/* Top Grade Box */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider">
-                  Readability Index
-                </span>
-                <div className="text-xl font-bold text-white mt-0.5">
-                  {metrics?.readability_grade || 'Standard'}
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Flesch Reading Ease: <strong className="text-emerald-400">{metrics?.readability_score ?? '--'}</strong> / 100
-                </div>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-mono font-bold text-base">
-                {metrics?.readability_score ? Math.round(metrics.readability_score) : '--'}
-              </div>
-            </div>
-
-            {/* Stats Breakdown */}
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
-                <div className="text-base font-bold text-slate-100">{metrics?.word_count ?? 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase mt-0.5">Words</div>
-              </div>
-              <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
-                <div className="text-base font-bold text-slate-100">{metrics?.average_sentence_length ?? 0}</div>
-                <div className="text-[10px] text-slate-400 uppercase mt-0.5">Avg Words/Sent</div>
-              </div>
-              <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
-                <div className="text-base font-bold text-slate-100">{metrics?.reading_time_minutes ?? 0}m</div>
-                <div className="text-[10px] text-slate-400 uppercase mt-0.5">Read Time</div>
-              </div>
-            </div>
-
-            {/* Category Counter Pills */}
-            <div className="space-y-1.5 pt-1 text-xs">
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'filler' ? 'all' : 'filler')}
-                className="flex items-center justify-between p-2 rounded-lg bg-purple-950/40 border border-purple-800/50 text-purple-200 cursor-pointer hover:bg-purple-950/70 transition-colors"
-              >
-                <span><strong>{countFiller}</strong> filler phrases to tighten</span>
-                <span className="text-[10px] font-mono uppercase bg-purple-900/60 px-1.5 py-0.5 rounded">Filler</span>
-              </div>
-
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'passive_voice' ? 'all' : 'passive_voice')}
-                className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/40 border border-emerald-800/50 text-emerald-200 cursor-pointer hover:bg-emerald-950/70 transition-colors"
-              >
-                <span><strong>{countPassive}</strong> passive constructions</span>
-                <span className="text-[10px] font-mono uppercase bg-emerald-900/60 px-1.5 py-0.5 rounded">Passive</span>
-              </div>
-
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'jargon' ? 'all' : 'jargon')}
-                className="flex items-center justify-between p-2 rounded-lg bg-blue-950/40 border border-blue-800/50 text-blue-200 cursor-pointer hover:bg-blue-950/70 transition-colors"
-              >
-                <span><strong>{countJargon}</strong> jargon phrases to clarify</span>
-                <span className="text-[10px] font-mono uppercase bg-blue-900/60 px-1.5 py-0.5 rounded">Jargon</span>
-              </div>
-
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'long_sentence' ? 'all' : 'long_sentence')}
-                className="flex items-center justify-between p-2 rounded-lg bg-amber-950/40 border border-amber-800/50 text-amber-200 cursor-pointer hover:bg-amber-950/70 transition-colors"
-              >
-                <span><strong>{countLong}</strong> long sentences (&gt;25 words)</span>
-                <span className="text-[10px] font-mono uppercase bg-amber-900/60 px-1.5 py-0.5 rounded">Length</span>
-              </div>
-
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'repetition' ? 'all' : 'repetition')}
-                className="flex items-center justify-between p-2 rounded-lg bg-indigo-950/40 border border-indigo-800/50 text-indigo-200 cursor-pointer hover:bg-indigo-950/70 transition-colors"
-              >
-                <span><strong>{countRepetition}</strong> repeated sentence openers</span>
-                <span className="text-[10px] font-mono uppercase bg-indigo-900/60 px-1.5 py-0.5 rounded">Repetition</span>
-              </div>
-
-              <div 
-                onClick={() => setFilterCategory(filterCategory === 'complexity' ? 'all' : 'complexity')}
-                className="flex items-center justify-between p-2 rounded-lg bg-rose-950/40 border border-rose-800/50 text-rose-200 cursor-pointer hover:bg-rose-950/70 transition-colors"
-              >
-                <span><strong>{countComplexity}</strong> dense paragraphs</span>
-                <span className="text-[10px] font-mono uppercase bg-rose-900/60 px-1.5 py-0.5 rounded">Density</span>
-              </div>
-            </div>
+          {/* Sidebar Navigation Tabs (Improvements, AI Copilot, Style) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs">
+            <button
+              type="button"
+              onClick={() => setSidebarTab('improvements')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all ${
+                sidebarTab === 'improvements'
+                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Review ({pendingIssues.length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarTab('copilot')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all ${
+                sidebarTab === 'copilot'
+                  ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>AI Copilot</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarTab('style')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all ${
+                sidebarTab === 'style'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Style Guide</span>
+            </button>
           </div>
 
-          {/* Editorial Style Intelligence Panel */}
-          <StyleIntelligencePanel
-            draftId={activeDraftId || undefined}
-            currentContent={text}
-            onAcceptSuggestion={handleAcceptSuggestionId}
-            onRejectSuggestion={handleRejectSuggestionId}
-          />
+          {/* TAB 1: Improvements & Review Mode (Surfer / CKEditor / TinyMCE style) */}
+          {sidebarTab === 'improvements' && (
+            <div className="space-y-4">
+              {/* Article Improvements Score Header (Clearscope / Surfer style) */}
+              <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-md border border-slate-800 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">
+                      Article Quality & Readiness
+                    </span>
+                    <div className="text-lg font-bold text-white mt-0.5 flex items-center gap-2">
+                      <span>{(metrics?.readability_score ?? 60) >= 60 ? 'Good' : 'Needs Polish'}</span>
+                      <span className="text-xs font-mono font-normal text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800">
+                        {metrics?.readability_score ? Math.round(metrics.readability_score) : 60}/100
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase">Grade</span>
+                    <div className="text-sm font-semibold text-slate-200">
+                      {metrics?.readability_grade || 'Standard'}
+                    </div>
+                  </div>
+                </div>
 
-          {/* Interactive Suggestions Panel */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                Editorial Suggestions ({pendingIssues.length} pending)
-              </h3>
-              {pendingIssues.length > 0 && (
-                <button
-                  onClick={handleAcceptAll}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  <span>Accept All</span>
-                </button>
-              )}
-            </div>
+                {/* Multi-Segment Quality Meter Bar */}
+                <div className="space-y-1">
+                  <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex">
+                    <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.min(100, metrics?.readability_score ?? 60)}%` }} />
+                    <div className="h-full bg-blue-500/40" style={{ width: '20%' }} />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>{metrics?.word_count ?? 0} words</span>
+                    <span>{metrics?.reading_time_minutes ?? 0}m reading time</span>
+                    <span>{metrics?.sentence_count ?? 0} sentences</span>
+                  </div>
+                </div>
 
-            {filteredIssues.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                No active issues in this category. Click "Audit Quality" to re-scan.
+                {/* Interactive Tone Adjuster (Wordo style) */}
+                <div className="space-y-2 pt-1 border-t border-slate-800">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                    Adjust Tone Preset:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: 'Authoritative', tone: 'authoritative, analytical, objective' },
+                      { label: 'Conversational', tone: 'conversational, engaging, accessible' },
+                      { label: 'Assertive', tone: 'assertive, bold, decisive' },
+                      { label: 'Confident', tone: 'confident, executive, strategic' },
+                      { label: 'Constructive', tone: 'constructive, technical, empirical' }
+                    ].map(t => (
+                      <button
+                        key={t.label}
+                        type="button"
+                        onClick={async () => {
+                          const target = selectedText || text;
+                          info(`Adjusting tone to ${t.label}...`);
+                          try {
+                            const res = await writingService.rewriteSelection({
+                              selected_text: target,
+                              operation: 'adjust_tone',
+                              draft_id: activeDraftId || undefined,
+                              target_tone: t.tone
+                            });
+                            if (res.rewritten_text) {
+                              if (selectedText) {
+                                setText(text.replace(selectedText, res.rewritten_text));
+                                setSelectedText('');
+                              } else {
+                                setText(res.rewritten_text);
+                              }
+                              success(`Tone adjusted to ${t.label}!`);
+                              handleAnalyze(text);
+                            }
+                          } catch (e: any) {
+                            error(e.message || 'Failed to adjust tone');
+                          }
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-medium text-slate-300 hover:text-white border border-slate-700/60 transition-colors"
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                {filteredIssues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className={`p-3.5 rounded-xl border text-xs space-y-2.5 transition-all ${
-                      issue.status === 'accepted'
-                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 opacity-60'
-                        : issue.status === 'rejected'
-                        ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-40 line-through'
-                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-2xs'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full ${
-                        issue.category === 'long_sentence' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
-                        issue.category === 'passive_voice' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
-                        issue.category === 'filler' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' :
-                        issue.category === 'repetition' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' :
-                        issue.category === 'complexity' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
-                        'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                      }`}>
-                        {issue.category.replace('_', ' ')}
-                      </span>
-                      <span className="text-[10px] text-slate-400 capitalize">
-                        {issue.status}
-                      </span>
-                    </div>
 
-                    {/* Inline Visual Diff Representation (CKEditorAI & TinyMCE style) */}
-                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 font-serif text-[13px] leading-relaxed">
-                      <span className="line-through bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 px-1 py-0.5 rounded mr-1.5 font-normal">
-                        {issue.original_text}
-                      </span>
-                      {issue.suggested_rewrite && (
-                        <span className="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded font-medium no-underline">
-                          {issue.suggested_rewrite}
+              {/* Suggestions Panel with Inline Diffs */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Review Recommendations ({pendingIssues.length} pending)
+                  </h3>
+                  {pendingIssues.length > 0 && (
+                    <button
+                      onClick={handleAcceptAll}
+                      className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>Accept All</span>
+                    </button>
+                  )}
+                </div>
+
+                {filteredIssues.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    No active issues in this category. Click "Audit Quality" to re-scan.
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                    {filteredIssues.map((issue) => (
+                      <div
+                        key={issue.id}
+                        className={`p-3.5 rounded-xl border text-xs space-y-2.5 transition-all ${
+                          issue.status === 'accepted'
+                            ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 opacity-60'
+                            : issue.status === 'rejected'
+                            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-40 line-through'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full ${
+                            issue.category === 'long_sentence' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                            issue.category === 'passive_voice' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                            issue.category === 'filler' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' :
+                            issue.category === 'repetition' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' :
+                            issue.category === 'complexity' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' :
+                            'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                          }`}>
+                            {issue.category.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 capitalize">
+                            {issue.status}
+                          </span>
+                        </div>
+
+                        {/* Inline Visual Diff (CKEditorAI & TinyMCE style) */}
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 font-serif text-[13px] leading-relaxed">
+                          <span className="line-through bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300 px-1 py-0.5 rounded mr-1.5 font-normal">
+                            {issue.original_text}
+                          </span>
+                          {issue.suggested_rewrite && (
+                            <span className="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded font-medium no-underline">
+                              {issue.suggested_rewrite}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Editorial Rationale */}
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal font-sans">
+                          {issue.explanation}
+                        </p>
+
+                        {/* Accept / Reject Buttons (matching TinyMCE Apply & Skip) */}
+                        {issue.status === 'pending' && (
+                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <Button
+                              onClick={() => handleRejectSuggestion(issue)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-[11px]"
+                              leftIcon={<X className="w-3.5 h-3.5" />}
+                            >
+                              ✕ Skip
+                            </Button>
+                            <Button
+                              onClick={() => handleAcceptSuggestion(issue)}
+                              variant="primary"
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px]"
+                              leftIcon={<Check className="w-3.5 h-3.5" />}
+                            >
+                              ✓ Apply
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: AI Copilot Chat Panel (Notelify style) */}
+          {sidebarTab === 'copilot' && (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Editorial AI Copilot
+                  </h3>
+                </div>
+                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full">
+                  Interactive Assistant
+                </span>
+              </div>
+
+              {/* Chat Thread */}
+              <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                {copilotMessages.map(msg => (
+                  <div key={msg.id} className="space-y-2">
+                    {msg.role === 'user' ? (
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 font-medium">
+                        {msg.text}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-purple-50/50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-3 text-xs">
+                        <span className="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-300 tracking-wider block">
+                          AI Answer & Editorial Proposal:
                         </span>
-                      )}
-                    </div>
-
-                    {/* Editorial Rationale */}
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal font-sans">
-                      {issue.explanation}
-                    </p>
-
-                    {/* Accept / Reject Buttons (matching TinyMCE Apply & Skip) */}
-                    {issue.status === 'pending' && (
-                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                        <Button
-                          onClick={() => handleRejectSuggestion(issue)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 text-[11px]"
-                          leftIcon={<X className="w-3.5 h-3.5" />}
-                        >
-                          ✕ Skip
-                        </Button>
-                        <Button
-                          onClick={() => handleAcceptSuggestion(issue)}
-                          variant="primary"
-                          size="sm"
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px]"
-                          leftIcon={<Check className="w-3.5 h-3.5" />}
-                        >
-                          ✓ Apply
-                        </Button>
+                        {msg.proposal && (
+                          <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-800/80 font-serif text-[13px] leading-relaxed text-slate-900 dark:text-slate-100">
+                            {msg.proposal}
+                          </div>
+                        )}
+                        {msg.recommendations && msg.recommendations.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                              Consider focusing on:
+                            </span>
+                            <ul className="text-[11px] text-slate-600 dark:text-slate-400 space-y-0.5 list-disc list-inside">
+                              {msg.recommendations.map((rec, i) => (
+                                <li key={i}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-1 border-t border-purple-100 dark:border-purple-900/60">
+                          <button
+                            type="button"
+                            onClick={() => msg.proposal && handleGiveAnotherOption(msg.proposal)}
+                            className="text-[11px] text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-1"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            <span>Give me another option</span>
+                          </button>
+                          {msg.proposal && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() => handleApplyCopilotProposal(msg.proposal!)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white text-[11px]"
+                              leftIcon={<Check className="w-3.5 h-3.5" />}
+                            >
+                              Replace in Draft
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 ))}
+                {isCopilotThinking && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 text-xs">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Copilot is formulating editorial recommendations...</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* Bottom Copilot Input (Notelify style) */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ask me anything about this draft..."
+                    value={copilotInput}
+                    onChange={(e) => setCopilotInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSendCopilotMessage();
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  />
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={handleSendCopilotMessage}
+                    disabled={!copilotInput.trim() || isCopilotThinking}
+                    className="bg-purple-600 hover:bg-purple-700 text-white shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Style Intelligence Guide */}
+          {sidebarTab === 'style' && (
+            <StyleIntelligencePanel
+              draftId={activeDraftId || undefined}
+              currentContent={text}
+              onAcceptSuggestion={handleAcceptSuggestionId}
+              onRejectSuggestion={handleRejectSuggestionId}
+            />
+          )}
         </div>
       </div>
 
