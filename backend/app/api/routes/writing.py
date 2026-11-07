@@ -83,6 +83,7 @@ def create_draft(
     return draft
 
 @router.post("/drafts/generate", response_model=DraftGenerateResponse, status_code=status.HTTP_201_CREATED, summary="AI Generate editorial draft from research")
+@router.post("/generate", response_model=DraftGenerateResponse, status_code=status.HTTP_201_CREATED, summary="AI Generate editorial draft from research alias")
 async def generate_draft(
     req: DraftGenerateRequest,
     db: Session = Depends(get_db),
@@ -428,7 +429,28 @@ def style_check_draft(
         profile = db.query(EditorialStyleProfile).first()
 
     if not profile:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active style profile available")
+        # Safe built-in default fallback profile
+        import uuid
+        profile = EditorialStyleProfile(
+            id=str(uuid.uuid4()),
+            organization_id=active_org.id if active_org else None,
+            name="Standard Editorial",
+            publication_name="AI Editorial Workspace",
+            tone="Authoritative, analytical, objective",
+            target_audience="General audience, industry practitioners, and decision-makers",
+            is_default=True,
+            target_flesch_score=60.0,
+            max_sentence_length=35,
+            max_paragraph_length=150,
+            preferred_terminology={},
+            words_to_avoid=["synergy", "paradigm shift", "disruptive", "game-changer"]
+        )
+        try:
+            db.add(profile)
+            db.commit()
+            db.refresh(profile)
+        except Exception:
+            db.rollback()
 
     override_content = payload.content if payload else None
     return style_analyzer.analyze_and_update_draft(db, draft, profile, override_content=override_content)

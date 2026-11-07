@@ -130,3 +130,4 @@ The system tracks corroboration by checking whether other sources in the active 
 - **Corroborated Finding**: Multiple independent sources report the same observation without direct quote sharing.
 - **PR Echo Finding**: Multiple sources share identical marketing phrasing or identical quotes, indicating reliance on a vendor press release rather than independent investigation.
 - **Conflicting Finding**: Two sources make mutually exclusive claims regarding the same technical milestone.
+

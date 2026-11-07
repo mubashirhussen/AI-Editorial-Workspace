@@ -113,3 +113,4 @@ flowchart TD
 | **Content Deduplication** | No duplicate content allowed within the same project workspace. | SHA-256 content hash check in `add_source` and `upload_project_source_file`. |
 | **Minimum Sources Guard** | Cross-source briefs cannot be synthesized with fewer than 3 sources. | HTTP 400 validation in `synthesize_research`. |
 | **Evidence Traceability** | Every claim in a synthesized brief links to an excerpt in source text. | `validate_and_trace_evidence` verifying verbatim or near-verbatim grounding. |
+

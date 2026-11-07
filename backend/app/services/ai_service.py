@@ -769,18 +769,26 @@ class AIService:
             instructions_map = {
                 "improve_clarity": "Eliminate ambiguity, simplify passive phrasing, and make the passage crystal-clear.",
                 "improve_readability": "Break long sentences into crisp, flowing statements with standard cadence.",
-                "correct_grammar": "Correct all grammatical inconsistencies, dangling modifiers, and syntax flaws.",
+                "fix_grammar": "Correct all grammatical inconsistencies, dangling modifiers, subject-verb disagreements, and syntax flaws.",
+                "correct_grammar": "Correct all grammatical inconsistencies, dangling modifiers, subject-verb disagreements, and syntax flaws.",
                 "fix_spelling": "Correct spelling mistakes, typos, and punctuation errors strictly.",
-                "rewrite_selection": "Rewrite this selection in high-caliber executive editorial prose.",
-                "simplify_complex_sentences": "Simplify convoluted clauses and technical jargon into plain, powerful English.",
-                "improve_transitions": "Enhance logical connective tissue and flow between surrounding ideas.",
+                "improve_sentence_structure": "Restructure awkward clauses into well-balanced, active voice sentences with natural cadence.",
+                "reduce_repetition": "Remove duplicated thoughts, repeated words, and redundant qualifiers.",
                 "remove_repetitive_content": "Remove duplicated thoughts, repeated words, and redundant qualifiers.",
-                "strengthen_headline": "Transform this title into a compelling, authoritative journalistic headline.",
-                "generate_intros": "Craft an engaging, high-impact introductory hook that commands reader attention.",
-                "generate_conclusions": "Deliver an insightful concluding synthesis that leaves a lasting impression.",
+                "improve_transitions": "Enhance logical connective tissue and flow between surrounding ideas.",
+                "simplify_language": "Simplify convoluted clauses and technical jargon into plain, powerful English.",
+                "simplify_complex_sentences": "Simplify convoluted clauses and technical jargon into plain, powerful English.",
                 "adjust_tone": f"Adjust the voice and tone to {target_tone or 'authoritative and objective'}.",
+                "generate_headlines": "Transform this title into a compelling, authoritative journalistic headline.",
+                "strengthen_headline": "Transform this title into a compelling, authoritative journalistic headline.",
+                "summarize_selection": "Condense this passage to its core essential takeaway.",
+                "shorten_content": "Condense this passage to its core essential takeaway.",
                 "expand_content": "Expand this thought with substantive analytical depth without adding filler.",
-                "shorten_content": "Condense this passage to its core essential takeaway."
+                "rewrite_selection": "Rewrite this selection in high-caliber executive editorial prose.",
+                "improve_introduction": "Craft an engaging, high-impact introductory hook that commands reader attention.",
+                "generate_intros": "Craft an engaging, high-impact introductory hook that commands reader attention.",
+                "improve_conclusion": "Deliver an insightful concluding synthesis that leaves a lasting impression.",
+                "generate_conclusions": "Deliver an insightful concluding synthesis that leaves a lasting impression."
             }
 
             op_instruction = instructions_map.get(operation, "Improve this text with senior editorial precision.")
@@ -827,7 +835,7 @@ class AIService:
         # Preserve inline citations
         citations = re.findall(r'\[\d+\]', text)
 
-        if operation in ("improve_clarity", "simplify_complex_sentences"):
+        if operation in ("improve_clarity", "simplify_language", "simplify_complex_sentences"):
             replacements = [
                 (r"\bin order to\b", "to"),
                 (r"\bdue to the fact that\b", "because"),
@@ -844,7 +852,7 @@ class AIService:
             rewritten = re.sub(r'\s{2,}', ' ', rewritten).strip()
             explanation = "Removed verbose qualifiers and simplified word choice for direct clarity."
 
-        elif operation in ("correct_grammar", "fix_spelling"):
+        elif operation in ("fix_grammar", "correct_grammar", "fix_spelling"):
             typos = [
                 (r"\bteh\b", "the"),
                 (r"\brecieve\b", "receive"),
@@ -852,10 +860,44 @@ class AIService:
                 (r"\boccured\b", "occurred"),
                 (r"\buntill\b", "until"),
                 (r"\bthere\s+is\s+many\b", "there are many"),
+                (r"\bdata\s+proves\b", "data demonstrate"),
             ]
             for pat, rep in typos:
                 rewritten = re.sub(pat, rep, rewritten, flags=re.IGNORECASE)
-            explanation = "Corrected grammar, subject agreements, and typographical errors."
+            explanation = "Corrected grammar, subject-verb agreements, and typographical errors."
+
+        elif operation == "improve_sentence_structure":
+            # Convert awkward passive lead-ins and balance clauses
+            rewritten = re.sub(r"\bit is important to note that\s*", "", rewritten, flags=re.IGNORECASE)
+            rewritten = re.sub(r"\bit should be observed that\s*", "", rewritten, flags=re.IGNORECASE)
+            rewritten = re.sub(r"\bthere is an expectation that\s*", "analysts expect that ", rewritten, flags=re.IGNORECASE)
+            if ", which " in rewritten:
+                rewritten = rewritten.replace(", which ", ". This ")
+            rewritten = rewritten[:1].upper() + rewritten[1:] if rewritten else rewritten
+            explanation = "Restructured clauses into active voice with balanced sentence rhythm."
+
+        elif operation in ("reduce_repetition", "remove_repetitive_content"):
+            # Collapse immediate repeated duplicate words
+            rewritten = re.sub(r'\b(\w+)\s+\1\b', r'\1', rewritten, flags=re.IGNORECASE)
+            # Remove redundant tautologies
+            tautologies = [
+                (r"\babsolutely essential\b", "essential"),
+                (r"\bfirst and foremost\b", "first"),
+                (r"\bend result\b", "result"),
+                (r"\bfuture plans\b", "plans"),
+                (r"\bunexpected surprise\b", "surprise"),
+                (r"\bvery unique\b", "unique"),
+            ]
+            for pat, rep in tautologies:
+                rewritten = re.sub(pat, rep, rewritten, flags=re.IGNORECASE)
+            rewritten = re.sub(r'\s{2,}', ' ', rewritten).strip()
+            explanation = "Removed duplicate phrases and redundant tautologies to tighten prose."
+
+        elif operation == "improve_transitions":
+            # Add logical connective transition if not already present
+            if not any(rewritten.lstrip().startswith(kw) for kw in ["However,", "Furthermore,", "Moreover,", "Consequently,", "In addition,"]):
+                rewritten = f"Furthermore, {rewritten[:1].lower() + rewritten[1:]}"
+            explanation = "Enhanced logical connective flow with preceding and subsequent ideas."
 
         elif operation == "improve_readability":
             # Split overly long sentences at semicolons or conjunctions
@@ -865,18 +907,18 @@ class AIService:
                 rewritten = rewritten.replace("; ", ". ")
             explanation = "Segmented compound clauses into crisp, readable sentences."
 
-        elif operation == "strengthen_headline":
+        elif operation in ("generate_headlines", "strengthen_headline"):
             words = [w.strip() for w in rewritten.split() if w.strip()]
             clean_title = " ".join(words).replace(":", " —")
             if not clean_title.endswith("?"):
                 rewritten = f"{clean_title.title()}: Strategic Analysis & What Builders Need to Know"
             explanation = "Structured punchy, executive headline with clear analytical hook."
 
-        elif operation == "generate_intros":
+        elif operation in ("improve_introduction", "generate_intros"):
             rewritten = f"In today's fast-moving AI landscape, {rewritten.lstrip()} This development marks a critical inflection point for technical leaders."
             explanation = "Prefaced with an authoritative industry hook."
 
-        elif operation == "generate_conclusions":
+        elif operation in ("improve_conclusion", "generate_conclusions"):
             rewritten = f"Ultimately, {rewritten.lstrip()} As these systems mature, teams that establish rigorous evaluation benchmarks will lead the transition from experimental wrappers to enduring platform architectures."
             explanation = "Formulated forward-looking strategic conclusion."
 
@@ -892,11 +934,18 @@ class AIService:
             rewritten = f"{rewritten} Specifically, empirical data demonstrates that rigorous observability and decoupled verification significantly mitigate latency overhead while maintaining factual fidelity."
             explanation = "Expanded passage with supporting architectural context."
 
-        elif operation == "shorten_content":
+        elif operation in ("summarize_selection", "shorten_content"):
             sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', rewritten) if s.strip()]
             if len(sentences) > 1:
                 rewritten = sentences[0]
             explanation = "Condensed passage to core thematic statement."
+
+        elif operation == "rewrite_selection":
+            # Executive editorial refinement
+            rewritten = re.sub(r"\ba lot of\b", "substantial", rewritten, flags=re.IGNORECASE)
+            rewritten = re.sub(r"\bvery good\b", "exemplary", rewritten, flags=re.IGNORECASE)
+            rewritten = re.sub(r"\bshow that\b", "demonstrate that", rewritten, flags=re.IGNORECASE)
+            explanation = "Polished wording into authoritative, executive editorial prose."
 
         # Ensure preserved citations were not accidentally stripped
         for cite in citations:

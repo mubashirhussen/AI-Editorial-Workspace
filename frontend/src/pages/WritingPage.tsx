@@ -24,9 +24,14 @@ import {
   ChevronDown,
   History,
   FileDown,
-  Wand2
+  Wand2,
+  ShieldCheck,
+  BookmarkCheck,
+  Search,
+  ExternalLink
 } from 'lucide-react';
 import { writingService } from '../services/writingService';
+import { projectService } from '../services/projectService';
 import { WritingIssue, WritingMetrics, WritingDraft, DraftComparisonResponse } from '../types';
 import { useToast } from '../components/common/Toast';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -83,8 +88,18 @@ export const WritingPage: React.FC = () => {
 
   // Selection Rewrite State
   const [selectedText, setSelectedText] = useState('');
-  const [rewriteOp, setRewriteOp] = useState('simplify_complex_sentences');
+  const [rewriteOp, setRewriteOp] = useState('improve_clarity');
   const [isRewriting, setIsRewriting] = useState(false);
+
+  // Grounding Audit State
+  const [isGroundingOpen, setIsGroundingOpen] = useState(false);
+  const [groundingAudit, setGroundingAudit] = useState<any>(null);
+  const [isAuditingGrounding, setIsAuditingGrounding] = useState(false);
+
+  // References Manager State
+  const [isReferencesOpen, setIsReferencesOpen] = useState(false);
+  const [projectSources, setProjectSources] = useState<any[]>([]);
+  const [referenceSearch, setReferenceSearch] = useState('');
 
   const isDirty = text !== savedContent;
 
@@ -194,6 +209,64 @@ export const WritingPage: React.FC = () => {
     } finally {
       setIsRewriting(false);
     }
+  };
+
+  const handleRunGroundingAudit = async () => {
+    if (!activeDraftId) {
+      info('Please save the draft first to run research grounding audit.');
+      return;
+    }
+    try {
+      setIsAuditingGrounding(true);
+      info('Cross-referencing factual claims against research corpus...');
+      const audit = await writingService.getGroundingAudit(activeDraftId);
+      setGroundingAudit(audit);
+      setIsGroundingOpen(true);
+      success(`Grounding audit complete! Score: ${audit.grounding_score}% verified.`);
+    } catch (err: any) {
+      error(err.message || 'Failed to complete grounding audit.');
+    } finally {
+      setIsAuditingGrounding(false);
+    }
+  };
+
+  const handleOpenReferences = async () => {
+    setIsReferencesOpen(true);
+    try {
+      const activeDraft = savedDrafts.find(d => d.id === activeDraftId);
+      if (activeDraft && activeDraft.project_id) {
+        const proj = await projectService.getProject(activeDraft.project_id);
+        if (proj && proj.sources) {
+          setProjectSources(proj.sources);
+        }
+      } else {
+        // Fetch recent project sources as reference corpus
+        const projs = await projectService.getProjects(0, 5);
+        if (projs.items && projs.items.length > 0) {
+          const firstProj = await projectService.getProject(projs.items[0].id);
+          if (firstProj && firstProj.sources) {
+            setProjectSources(firstProj.sources);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load project references', e);
+    }
+  };
+
+  const handleInsertCitation = (citationTag: string) => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement | null;
+    if (textarea) {
+      const start = textarea.selectionStart ?? text.length;
+      const end = textarea.selectionEnd ?? text.length;
+      const newText = text.substring(0, start) + ` ${citationTag} ` + text.substring(end);
+      setText(newText);
+      success(`Inserted citation ${citationTag}`);
+    } else {
+      setText(prev => `${prev} ${citationTag}`);
+      success(`Inserted citation ${citationTag}`);
+    }
+    setIsReferencesOpen(false);
   };
 
   const handleTextSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
@@ -537,6 +610,29 @@ export const WritingPage: React.FC = () => {
 
           {activeDraftId && (
             <Button
+              onClick={handleRunGroundingAudit}
+              isLoading={isAuditingGrounding}
+              variant="outline"
+              size="sm"
+              leftIcon={<ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
+              title="Audit claim-by-claim grounding against research corpus"
+            >
+              Verify Grounding
+            </Button>
+          )}
+
+          <Button
+            onClick={handleOpenReferences}
+            variant="outline"
+            size="sm"
+            leftIcon={<BookOpen className="w-3.5 h-3.5 text-indigo-600" />}
+            title="Search connected project references"
+          >
+            References
+          </Button>
+
+          {activeDraftId && (
+            <Button
               onClick={() => setIsHistoryOpen(true)}
               variant="outline"
               size="sm"
@@ -659,11 +755,20 @@ export const WritingPage: React.FC = () => {
                         onChange={(e) => setRewriteOp(e.target.value)}
                         className="text-xs bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none"
                       >
-                        <option value="simplify_complex_sentences">Simplify Sentences</option>
-                        <option value="improve_clarity">Improve Clarity</option>
-                        <option value="remove_repetitive_content">Remove Repetition</option>
-                        <option value="strengthen_headline">Strengthen Hook</option>
-                        <option value="correct_grammar">Correct Grammar</option>
+                        <option value="improve_clarity">1. Improve Clarity</option>
+                        <option value="improve_readability">2. Improve Readability</option>
+                        <option value="fix_grammar">3. Fix Grammar & Typos</option>
+                        <option value="improve_sentence_structure">4. Improve Sentence Structure</option>
+                        <option value="reduce_repetition">5. Reduce Repetition</option>
+                        <option value="improve_transitions">6. Improve Transitions</option>
+                        <option value="simplify_language">7. Simplify Language</option>
+                        <option value="adjust_tone">8. Adjust Tone</option>
+                        <option value="generate_headlines">9. Generate Headlines</option>
+                        <option value="summarize_selection">10. Summarize Selection</option>
+                        <option value="expand_content">11. Expand Content</option>
+                        <option value="rewrite_selection">12. Rewrite Selection</option>
+                        <option value="improve_introduction">13. Improve Introduction</option>
+                        <option value="improve_conclusion">14. Improve Conclusion</option>
                       </select>
                       <Button
                         onClick={handleRewriteSelection}
@@ -672,7 +777,7 @@ export const WritingPage: React.FC = () => {
                         size="sm"
                         className="text-xs"
                       >
-                        Rewrite
+                        Apply AI Rewrite
                       </Button>
                       <Button
                         onClick={() => setSelectedText('')}
@@ -685,6 +790,58 @@ export const WritingPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* In-Editor Quick Actions Bar (Afforai & Knowee Writer style) */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-slate-100/70 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleOpenReferences}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition-colors"
+                      title="Browse project references and insert citation tags"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Cite Reference</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRewriteOp('improve_clarity');
+                        if (selectedText) handleRewriteSelection();
+                        else info('Select text to improve clarity');
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition-colors"
+                      title="Eliminate ambiguity and verbose phrasing"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Simplify</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRewriteOp('fix_grammar');
+                        if (selectedText) handleRewriteSelection();
+                        else info('Select text to fix grammar');
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition-colors"
+                      title="Fix grammatical flaws and spelling"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Fix Grammar</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                    {isDirty ? (
+                      <span className="text-amber-500 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Unsaved changes
+                      </span>
+                    ) : (
+                      <span className="text-emerald-500 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Saved
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <textarea
                   rows={16}
                   value={text}
@@ -1060,6 +1217,209 @@ export const WritingPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Reference Manager Modal (Afforai Cite Extension & Knowee Writer style) */}
+      <Modal
+        isOpen={isReferencesOpen}
+        onClose={() => setIsReferencesOpen(false)}
+        title="Reference Manager & Citation Library"
+        description="Select verified sources from your research projects to insert inline citations [1], [2] at cursor."
+      >
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder="Search references by title, author, or keyword..."
+              value={referenceSearch}
+              onChange={(e) => setReferenceSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+
+          <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+            {projectSources.length > 0 ? (
+              projectSources
+                .filter(s => !referenceSearch || s.title?.toLowerCase().includes(referenceSearch.toLowerCase()))
+                .map((src, idx) => (
+                  <div
+                    key={src.id || idx}
+                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all flex items-start justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded text-[11px]">
+                          [{idx + 1}]
+                        </span>
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                          {src.title || 'Untitled Source'}
+                        </h4>
+                      </div>
+                      {src.url && (
+                        <a
+                          href={src.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 text-[11px] text-blue-600 hover:underline"
+                        >
+                          <span className="truncate max-w-[280px]">{src.url}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                      )}
+                      {src.summary && (
+                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">
+                          {src.summary}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => handleInsertCitation(`[${idx + 1}]`)}
+                      className="shrink-0 text-[11px]"
+                      leftIcon={<Plus className="w-3 h-3" />}
+                    >
+                      Insert [{idx + 1}]
+                    </Button>
+                  </div>
+                ))
+            ) : (
+              <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-3">
+                <p className="text-xs text-slate-500">
+                  No connected project sources found for this draft yet.
+                </p>
+                <div className="flex justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleInsertCitation('[1]')}
+                    className="text-xs"
+                  >
+                    Insert [1]
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleInsertCitation('[2]')}
+                    className="text-xs"
+                  >
+                    Insert [2]
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button variant="ghost" onClick={() => setIsReferencesOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Grounding Verification Modal (ISNAD Research Workspace style) */}
+      <Modal
+        isOpen={isGroundingOpen}
+        onClose={() => setIsGroundingOpen(false)}
+        title="Research Grounding & Factual Verification"
+        description="Automated claim-by-claim verification against connected research sources and empirical evidence."
+      >
+        <div className="space-y-4">
+          {groundingAudit ? (
+            <>
+              {/* Score Header */}
+              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-900 text-white">
+                  <div className="text-base font-bold text-emerald-400">
+                    {groundingAudit.grounding_score}%
+                  </div>
+                  <div className="text-[10px] text-slate-400 uppercase">Grounded Score</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200">
+                  <div className="text-base font-bold">{groundingAudit.grounded_count ?? 0}</div>
+                  <div className="text-[10px] uppercase">Grounded</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+                  <div className="text-base font-bold">{groundingAudit.inferred_count ?? 0}</div>
+                  <div className="text-[10px] uppercase">Inferred</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200">
+                  <div className="text-base font-bold">{groundingAudit.unsupported_count ?? 0}</div>
+                  <div className="text-[10px] uppercase">Unsupported</div>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              {groundingAudit.actionable_recommendations && groundingAudit.actionable_recommendations.length > 0 && (
+                <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl space-y-1.5">
+                  <span className="text-[11px] font-semibold text-blue-900 dark:text-blue-200 uppercase tracking-wider block">
+                    Editorial Recommendations
+                  </span>
+                  <ul className="text-xs text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
+                    {groundingAudit.actionable_recommendations.map((rec: string, i: number) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Claims Breakdown */}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {groundingAudit.claims && groundingAudit.claims.length > 0 ? (
+                  groundingAudit.claims.map((claim: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full ${
+                          claim.classification === 'grounded' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
+                          claim.classification === 'inferred' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
+                          'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                        }`}>
+                          {claim.classification}
+                        </span>
+                        {claim.citation_tag && (
+                          <span className="font-mono font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950/60 px-1.5 py-0.5 rounded text-[11px]">
+                            {claim.citation_tag}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-medium text-slate-800 dark:text-slate-200">
+                        "{claim.claim_text}"
+                      </p>
+                      {claim.supporting_excerpt && (
+                        <div className="p-2 rounded bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
+                          <span className="font-semibold text-slate-700 dark:text-slate-200 block mb-0.5">Source Evidence:</span>
+                          {claim.supporting_excerpt}
+                        </div>
+                      )}
+                      {claim.warning && (
+                        <p className="text-[11px] text-rose-600 dark:text-rose-400">
+                          Warning: {claim.warning}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-500 text-center py-4">No individual claims flagged.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-6 text-xs text-slate-500">
+              Loading grounding data...
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button variant="ghost" onClick={() => setIsGroundingOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

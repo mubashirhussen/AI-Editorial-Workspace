@@ -89,3 +89,4 @@ flowchart LR
 2. **Whitespace Collapsing**: Multiple consecutive spaces and tabs are collapsed to a single space.
 3. **Carriage Return Conversion**: CRLF (`\r\n`) and CR (`\r`) are converted to standard LF (`\n`).
 4. **Blank Line Clamping**: More than two consecutive newlines are clamped to double newlines (`\n\n`), preserving clean paragraph boundaries for citation extraction.
+

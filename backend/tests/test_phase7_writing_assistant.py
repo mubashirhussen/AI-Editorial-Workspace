@@ -286,3 +286,130 @@ def test_version_history_and_restoration(client):
     # 6. Verify current draft matches restored content
     current_draft = client.get(f"/api/v1/writing/drafts/{draft_id}", headers=headers).json()
     assert "Version 1" in current_draft["revised_content"]
+
+
+def test_all_14_selection_rewrite_operations(client):
+    headers = get_auth_headers(client)
+
+    operations = [
+        "improve_clarity",
+        "improve_readability",
+        "fix_grammar",
+        "improve_sentence_structure",
+        "reduce_repetition",
+        "improve_transitions",
+        "simplify_language",
+        "adjust_tone",
+        "generate_headlines",
+        "summarize_selection",
+        "expand_content",
+        "rewrite_selection",
+        "improve_introduction",
+        "improve_conclusion"
+    ]
+
+    base_text = "In order to evaluate the very unique performance [1], it is important to note that many tests were run."
+
+    for op in operations:
+        res = client.post("/api/v1/writing/rewrite-selection", json={
+            "selected_text": base_text,
+            "operation": op,
+            "target_tone": "conversational" if op == "adjust_tone" else None
+        }, headers=headers)
+        assert res.status_code == 200, f"Failed for operation {op}: {res.text}"
+        data = res.json()
+        assert data["operation"] == op
+        assert len(data["rewritten_text"]) > 0
+        assert len(data["explanation"]) > 0
+        # Critical Phase 7 requirement: preserve inline citation [1]
+        assert "[1]" in data["rewritten_text"], f"Citation [1] was lost during {op}"
+
+
+def test_editorial_style_profile_and_default_fallback(client):
+    headers = get_auth_headers(client)
+
+    # 1. Create a draft with jargon
+    draft_res = client.post("/api/v1/writing/drafts", json={
+        "title": "Corporate Synergy Analysis",
+        "original_content": "This game-changer platform provides disruptive synergy across all departments. The end result is positive."
+    }, headers=headers)
+    assert draft_res.status_code == 201
+    draft_id = draft_res.json()["id"]
+
+    # 2. Run style check with no custom profile created (should engage safe built-in default profile without 400)
+    style_res = client.post(f"/api/v1/writing/drafts/{draft_id}/style-check", json={}, headers=headers)
+    assert style_res.status_code == 200
+    style_data = style_res.json()
+    assert "style_score" in style_data
+    assert style_data["style_score"] >= 0
+    assert "suggestions" in style_data
+    assert len(style_data["suggestions"]) > 0
+    # Checks that avoided words like 'game-changer' or 'synergy' were flagged
+    flagged_terms = [s.get("original_text", "").lower() for s in style_data["suggestions"]]
+    assert any("synergy" in term or "game-changer" in term or "disruptive" in term for term in flagged_terms)
+
+
+def test_suggestion_workflow_and_compare(client):
+    headers = get_auth_headers(client)
+
+    # 1. Create and analyze draft
+    draft_res = client.post("/api/v1/writing/drafts", json={
+        "title": "Editorial Workflow Draft",
+        "original_content": "In order to optimize teh latency, extensive testing was conducted. Basically, results were very good."
+    }, headers=headers)
+    draft_id = draft_res.json()["id"]
+
+    # 2. Run analysis
+    an_res = client.post(f"/api/v1/writing/drafts/{draft_id}/analyze", headers=headers)
+    assert an_res.status_code == 200
+    analysis = an_res.json()
+    assert len(analysis["issues"]) >= 1
+
+    # 3. Retrieve suggestions
+    sugg_res = client.get(f"/api/v1/writing/drafts/{draft_id}/suggestions", headers=headers)
+    assert sugg_res.status_code == 200
+    suggestions = sugg_res.json()
+    assert len(suggestions) >= 1
+    sugg_id = suggestions[0]["id"]
+
+    # 4. Accept suggestion
+    acc_res = client.post(f"/api/v1/writing/drafts/{draft_id}/suggestions/{sugg_id}/accept", headers=headers)
+    assert acc_res.status_code == 200
+
+    # 5. Check compare endpoint
+    comp_res = client.get(f"/api/v1/writing/drafts/{draft_id}/compare", headers=headers)
+    assert comp_res.status_code == 200
+    comp_data = comp_res.json()
+    assert comp_data["draft_id"] == draft_id
+    assert comp_data["accepted_count"] >= 1
+
+
+def test_multi_tenant_draft_isolation(client):
+    # Org A User
+    headers_a = get_auth_headers(client)
+
+    # Org B User
+    headers_b = get_auth_headers(client)
+
+    # 1. Create Draft in Org A
+    draft_res = client.post("/api/v1/writing/drafts", json={
+        "title": "Org A Confidential Editorial",
+        "original_content": "Confidential trade secrets and strategic roadmap."
+    }, headers=headers_a)
+    assert draft_res.status_code == 201
+    draft_id = draft_res.json()["id"]
+
+    # 2. Org B User attempts to read Org A draft -> 404
+    b_get = client.get(f"/api/v1/writing/drafts/{draft_id}", headers=headers_b)
+    assert b_get.status_code in (403, 404)
+
+    # 3. Org B User attempts to update Org A draft -> 404
+    b_put = client.put(f"/api/v1/writing/drafts/{draft_id}", json={
+        "title": "Hacked Title"
+    }, headers=headers_b)
+    assert b_put.status_code in (403, 404)
+
+    # 4. Org B User attempts to delete Org A draft -> 404
+    b_del = client.delete(f"/api/v1/writing/drafts/{draft_id}", headers=headers_b)
+    assert b_del.status_code in (403, 404)
+

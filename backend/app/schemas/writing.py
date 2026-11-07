@@ -194,19 +194,29 @@ class DraftGenerateResponse(BaseModel):
     estimated_cost_usd: float = 0.0
 
 SelectionRewriteOperation = Literal[
+    # Canonical Phase 7 operations
     "improve_clarity",
     "improve_readability",
+    "fix_grammar",
+    "improve_sentence_structure",
+    "reduce_repetition",
+    "improve_transitions",
+    "simplify_language",
+    "adjust_tone",
+    "generate_headlines",
+    "summarize_selection",
+    "expand_content",
+    "rewrite_selection",
+    "improve_introduction",
+    "improve_conclusion",
+    # Backwards compatibility aliases
     "correct_grammar",
     "fix_spelling",
-    "rewrite_selection",
     "simplify_complex_sentences",
-    "improve_transitions",
     "remove_repetitive_content",
     "strengthen_headline",
     "generate_intros",
     "generate_conclusions",
-    "adjust_tone",
-    "expand_content",
     "shorten_content"
 ]
 

@@ -128,6 +128,11 @@ export const writingService = {
     return res.data;
   },
 
+  async getGroundingAudit(draftId: string): Promise<any> {
+    const res = await apiClient.get(`/writing/drafts/${draftId}/grounding-audit`);
+    return res.data;
+  },
+
   async generateDraft(payload: {
     topic?: string;
     project_id?: string;
@@ -138,7 +143,7 @@ export const writingService = {
     desired_length?: number;
     editorial_instructions?: string;
   }): Promise<any> {
-    const res = await apiClient.post('/writing/generate', payload);
+    const res = await apiClient.post('/writing/drafts/generate', payload);
     return res.data;
   }
 };
