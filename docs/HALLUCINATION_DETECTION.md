@@ -77,3 +77,4 @@ The **Quellen & Vertrauen (Context Verify)** interface (`/observability`) displa
 - **Source Trustworthiness %**: Real-time aggregated confidence across all citations.
 - **Misinformations-Index %**: Ratio of ungrounded or contradicted claims to total assertions.
 - **Per-Source Citation Audit**: Lists exact citations count, verified URLs, and attributed model.
+

@@ -71,3 +71,4 @@ The `/observability` route exposes a four-tab dashboard:
 
 4. **Offline Benchmark Suite**:
    - Interactive runner executing 34 benchmark cases across research, writing, editorial, and hallucination suites.
+
