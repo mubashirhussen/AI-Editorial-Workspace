@@ -22,6 +22,11 @@ class WritingMetrics(BaseModel):
     reading_time_minutes: float = 0.0
     readability_score: Optional[float] = None
     readability_grade: Optional[str] = "Standard"
+    flesch_kincaid_grade: Optional[float] = None
+    automated_readability_index: Optional[float] = None
+    gunning_fog_index: Optional[float] = None
+    grounding_score: Optional[float] = None
+    unsupported_claims_count: Optional[int] = 0
     readability_note: Optional[str] = "Readability scores are diagnostic scanning indicators, not definitive measures of technical nuance or writing quality."
 
 class WritingAnalysisRequest(BaseModel):
@@ -46,6 +51,12 @@ class DraftCreate(BaseModel):
     original_content: Optional[str] = Field(None, max_length=500_000)
     content: Optional[str] = Field(None, max_length=500_000)
     project_id: Optional[str] = None
+    brief_id: Optional[str] = None
+    content_type: Optional[str] = "editorial_analysis"
+    target_audience: Optional[str] = "Founders, builders, and operators"
+    tone: Optional[str] = "Authoritative, analytical, objective"
+    desired_length: Optional[int] = 800
+    style_profile_id: Optional[str] = None
 
     def model_post_init(self, __context: Any) -> None:
         if not self.original_content and self.content:
@@ -61,6 +72,11 @@ class DraftUpdate(BaseModel):
     revised_content: Optional[str] = Field(None, max_length=500_000)
     final_content: Optional[str] = Field(None, max_length=500_000)
     status: Optional[str] = Field(None, max_length=50)
+    content_type: Optional[str] = None
+    target_audience: Optional[str] = None
+    tone: Optional[str] = None
+    desired_length: Optional[int] = None
+    style_profile_id: Optional[str] = None
     applied_issue_ids: Optional[List[str]] = None
 
     def model_post_init(self, __context: Any) -> None:
@@ -85,12 +101,23 @@ class DraftVersionResponse(BaseModel):
 class DraftResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    organization_id: Optional[str] = None
     project_id: Optional[str] = None
+    brief_id: Optional[str] = None
     title: str
+    content_type: Optional[str] = "editorial_analysis"
+    target_audience: Optional[str] = "Founders, builders, and operators"
+    tone: Optional[str] = "Authoritative, analytical, objective"
+    desired_length: Optional[int] = 800
     original_content: str
     revised_content: Optional[str] = ""
     current_content: Optional[str] = ""
     final_content: Optional[str] = None
+    word_count: Optional[int] = 0
+    readability_score: Optional[float] = None
+    research_grounding_score: Optional[float] = None
+    unsupported_claims_count: Optional[int] = 0
+    style_profile_id: Optional[str] = None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -119,3 +146,107 @@ class DraftCompareResponse(BaseModel):
     accepted_count: int
     rejected_count: int
     pending_count: int
+
+# --- Phase 7 Editorial Intelligence Schemas ---
+
+EditorialContentType = Literal[
+    "news",
+    "technology",
+    "ai_industry_update",
+    "editorial_analysis",
+    "explainer",
+    "research_report",
+    "opinion",
+    "summary"
+]
+
+class DraftGenerateRequest(BaseModel):
+    topic: Optional[str] = None
+    project_id: Optional[str] = None
+    brief_id: Optional[str] = None
+    content_type: str = "editorial_analysis"
+    target_audience: str = "Founders, builders, and operators"
+    tone: str = "Authoritative, analytical, objective"
+    style_profile_id: Optional[str] = None
+    desired_length: int = Field(800, ge=100, le=5000)
+    keywords: Optional[List[str]] = Field(default_factory=list)
+    editorial_instructions: Optional[str] = None
+
+class DraftSection(BaseModel):
+    heading: str
+    content: str
+    supporting_evidence_ids: List[str] = Field(default_factory=list)
+
+class DraftGenerateResponse(BaseModel):
+    draft_id: str
+    title: str
+    headline: str
+    subtitle: str
+    content: str
+    content_type: str
+    word_count: int
+    sections: List[DraftSection] = Field(default_factory=list)
+    key_takeaways: List[str] = Field(default_factory=list)
+    evidence_citations: List[Dict[str, Any]] = Field(default_factory=list)
+    unsupported_claims_warning: List[str] = Field(default_factory=list)
+    grounding_score: float = 100.0
+
+SelectionRewriteOperation = Literal[
+    "improve_clarity",
+    "improve_readability",
+    "correct_grammar",
+    "fix_spelling",
+    "rewrite_selection",
+    "simplify_complex_sentences",
+    "improve_transitions",
+    "remove_repetitive_content",
+    "strengthen_headline",
+    "generate_intros",
+    "generate_conclusions",
+    "adjust_tone",
+    "expand_content",
+    "shorten_content"
+]
+
+class SelectionRewriteRequest(BaseModel):
+    draft_id: Optional[str] = None
+    selected_text: str = Field(..., min_length=1, max_length=100_000)
+    operation: SelectionRewriteOperation
+    surrounding_context: Optional[str] = None
+    target_tone: Optional[str] = None
+    style_profile_id: Optional[str] = None
+    custom_instructions: Optional[str] = None
+
+class SelectionRewriteResponse(BaseModel):
+    operation: str
+    original_text: str
+    rewritten_text: str
+    explanation: str
+    diff_summary: Optional[str] = None
+
+class ClaimVerification(BaseModel):
+    claim_text: str
+    classification: Literal["grounded", "inferred", "unsupported", "contradictory"]
+    supporting_excerpt: Optional[str] = None
+    source_title: Optional[str] = None
+    source_url: Optional[str] = None
+    confidence: float = 0.9
+    warning: Optional[str] = None
+
+class ResearchGroundingAuditResponse(BaseModel):
+    draft_id: str
+    grounding_score: float
+    total_claims: int
+    grounded_count: int
+    inferred_count: int
+    unsupported_count: int
+    contradiction_count: int
+    claims: List[ClaimVerification] = Field(default_factory=list)
+    actionable_recommendations: List[str] = Field(default_factory=list)
+
+class DraftExportResponse(BaseModel):
+    format: str
+    filename: str
+    content: Optional[str] = None
+    mime_type: str
+    size_bytes: int

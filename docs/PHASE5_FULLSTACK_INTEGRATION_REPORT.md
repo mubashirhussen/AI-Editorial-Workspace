@@ -190,3 +190,4 @@ dist/assets/vendor-charts-CeKLxDF4.js        367.71 kB │ gzip: 107.77 kB
    - Navigate to `/writing`.
    - Edit draft content and click **Save Draft**.
    - Click **Version History** (`Clock` icon) to view the recorded snapshots and test non-destructive version restoration.
+

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from backend.app.core.database import get_db
@@ -9,7 +9,13 @@ from backend.app.schemas.writing import (
     DraftCreate,
     DraftUpdate,
     DraftResponse,
-    DraftCompareResponse
+    DraftCompareResponse,
+    DraftGenerateRequest,
+    DraftGenerateResponse,
+    SelectionRewriteRequest,
+    SelectionRewriteResponse,
+    ResearchGroundingAuditResponse,
+    DraftExportResponse
 )
 from backend.app.schemas.style import (
     StyleCheckRequest,
@@ -31,18 +37,107 @@ async def analyze_writing(req: WritingAnalysisRequest, db: Session = Depends(get
     return await writing_service.analyze_and_store(db, req)
 
 @router.post("/drafts", response_model=DraftResponse, status_code=status.HTTP_201_CREATED, summary="Create a new draft")
-def create_draft(data: DraftCreate, db: Session = Depends(get_db)):
+def create_draft(
+    data: DraftCreate,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+    org: Optional[Organization] = Depends(get_active_organization)
+):
     """Creates a new writing draft and records an initial version snapshot."""
-    return writing_service.create_draft(db, data)
+    org_id = org.id if org else None
+    user_id = current_user.id if current_user else None
+    return writing_service.create_draft(db, data, organization_id=org_id, user_id=user_id)
+
+@router.post("/drafts/generate", response_model=DraftGenerateResponse, status_code=status.HTTP_201_CREATED, summary="AI Generate editorial draft from research")
+async def generate_draft(
+    req: DraftGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+    org: Optional[Organization] = Depends(get_active_organization)
+):
+    """
+    Synthesizes a full, evidence-grounded editorial draft based on a research brief or topic.
+    Preserves source citations and factual traceability.
+    """
+    org_id = org.id if org else None
+    user_id = current_user.id if current_user else None
+    return await writing_service.generate_editorial_draft(db, req, organization_id=org_id, user_id=user_id)
+
+@router.post("/drafts/{draft_id}/duplicate", response_model=DraftResponse, status_code=status.HTTP_201_CREATED, summary="Duplicate draft")
+def duplicate_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Clones an existing writing draft non-destructively."""
+    user_id = current_user.id if current_user else None
+    return writing_service.duplicate_draft(db, draft_id, user_id=user_id)
+
+@router.post("/rewrite-selection", response_model=SelectionRewriteResponse, summary="Rewrite selected text span")
+@router.post("/drafts/{draft_id}/rewrite-selection", response_model=SelectionRewriteResponse, summary="Rewrite selected text span in draft")
+async def rewrite_selection_span(
+    req: SelectionRewriteRequest,
+    draft_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Applies surgical AI or deterministic rewriting to a highlighted text selection.
+    Preserves inline citations [1], [2] and surrounding context strictly.
+    """
+    if draft_id and not req.draft_id:
+        req.draft_id = draft_id
+    return await writing_service.rewrite_selection(db, req)
+
+@router.get("/drafts/{draft_id}/grounding-audit", response_model=ResearchGroundingAuditResponse, summary="Audit factual grounding against research")
+@router.post("/drafts/{draft_id}/grounding-audit", response_model=ResearchGroundingAuditResponse, summary="Audit factual grounding against research alias")
+def audit_grounding(
+    draft_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Cross-references claims in the draft against connected research brief evidence and sources.
+    Reports grounded, inferred, unsupported, and contradictory statements.
+    """
+    return writing_service.audit_research_grounding(db, draft_id)
+
+@router.get("/drafts/{draft_id}/export", summary="Export draft to Markdown, Text, Word, or HTML")
+def export_draft_document(
+    draft_id: str,
+    format: str = Query("markdown", description="Format: markdown, txt, docx, html"),
+    db: Session = Depends(get_db)
+):
+    """
+    Exports the latest revised draft to publication-ready formats.
+    Preserves headings, formatting, citations, and metadata.
+    """
+    file_bytes, filename, mime_type = writing_service.export_draft(db, draft_id, format)
+    return Response(
+        content=file_bytes,
+        media_type=mime_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 @router.get("/drafts", response_model=List[DraftResponse], summary="List writing drafts")
 def list_drafts(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
-    db: Session = Depends(get_db)
+    project_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    org: Optional[Organization] = Depends(get_active_organization)
 ):
-    """Retrieves paginated writing drafts ordered by most recent."""
-    return writing_service.get_drafts(db, skip=skip, limit=limit)
+    """Retrieves paginated writing drafts scoped to user organization."""
+    org_id = org.id if org else None
+    return writing_service.get_drafts(
+        db,
+        organization_id=org_id,
+        project_id=project_id,
+        status=status,
+        search=search,
+        skip=skip,
+        limit=limit
+    )
 
 @router.get("/drafts/{draft_id}", response_model=DraftResponse, summary="Get draft by ID")
 def get_draft(draft_id: str, db: Session = Depends(get_db)):
@@ -50,14 +145,26 @@ def get_draft(draft_id: str, db: Session = Depends(get_db)):
     return writing_service.get_draft(db, draft_id)
 
 @router.put("/drafts/{draft_id}", response_model=DraftResponse, summary="Update draft content")
-def update_draft(draft_id: str, data: DraftUpdate, db: Session = Depends(get_db)):
+def update_draft(
+    draft_id: str,
+    data: DraftUpdate,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """Updates draft text, title, or status, creating a version snapshot if revised."""
-    return writing_service.update_draft(db, draft_id, data)
+    user_id = current_user.id if current_user else None
+    return writing_service.update_draft(db, draft_id, data, user_id=user_id)
 
 @router.patch("/drafts/{draft_id}", response_model=DraftResponse, summary="Patch draft fields")
-def patch_draft(draft_id: str, data: DraftUpdate, db: Session = Depends(get_db)):
+def patch_draft(
+    draft_id: str,
+    data: DraftUpdate,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
     """Partially updates draft content, metadata, or status with automatic snapshot."""
-    updated = writing_service.update_draft(db, draft_id, data)
+    user_id = current_user.id if current_user else None
+    updated = writing_service.update_draft(db, draft_id, data, user_id=user_id)
     content = updated.revised_content or updated.original_content or ""
     try:
         version_service.create_snapshot(
@@ -68,6 +175,7 @@ def patch_draft(draft_id: str, data: DraftUpdate, db: Session = Depends(get_db))
             title=updated.title,
             change_type="MANUAL_EDIT",
             change_summary="Draft updated via API",
+            user_id=user_id,
             force=True
         )
     except Exception:

@@ -36,6 +36,28 @@ class ReadabilityService:
         score = 206.835 - (1.015 * asl) - (84.6 * asw)
         return max(0.0, min(100.0, round(score, 1)))
 
+    def calculate_flesch_kincaid_grade(self, total_words: int, total_sentences: int, total_syllables: int) -> float:
+        if total_words == 0 or total_sentences == 0:
+            return 0.0
+        asl = total_words / total_sentences
+        asw = total_syllables / total_words
+        grade = (0.39 * asl) + (11.8 * asw) - 15.59
+        return max(0.0, round(grade, 1))
+
+    def calculate_automated_readability_index(self, total_characters: int, total_words: int, total_sentences: int) -> float:
+        if total_words == 0 or total_sentences == 0:
+            return 0.0
+        ari = 4.71 * (total_characters / total_words) + 0.5 * (total_words / total_sentences) - 21.43
+        return max(0.0, round(ari, 1))
+
+    def calculate_gunning_fog(self, total_words: int, total_sentences: int, complex_words: int) -> float:
+        if total_words == 0 or total_sentences == 0:
+            return 0.0
+        asl = total_words / total_sentences
+        pct_complex = (complex_words / total_words) * 100.0
+        fog = 0.4 * (asl + pct_complex)
+        return max(0.0, round(fog, 1))
+
     def get_readability_interpretation(self, score: float) -> Dict[str, str]:
         """
         Interprets Flesch Reading Ease score:

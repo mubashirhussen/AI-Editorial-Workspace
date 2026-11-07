@@ -136,7 +136,25 @@ export const ResearchPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await researchApi.getProjects();
-      setProjects(res.items || []);
+      const items = res.items || [];
+      if (items.length === 0) {
+        // Auto-initialize a default project if none exist so the workspace is immediately ready
+        try {
+          const starter = await researchApi.createProject({
+            title: 'Frontier AI Research & Synthesis',
+            description: 'Automated research investigation workspace'
+          });
+          setProjects([starter]);
+          setActiveProject(starter);
+          setSources(starter.sources || []);
+          setSearchParams({ projectId: starter.id });
+        } catch (createErr) {
+          console.warn('Failed to auto-create starter project:', createErr);
+          setProjects([]);
+        }
+      } else {
+        setProjects(items);
+      }
     } catch (err: any) {
       console.error('Failed to load projects:', err);
       error('Failed to connect to backend server. Please verify backend is running on port 8000.');
@@ -213,7 +231,11 @@ export const ResearchPage: React.FC = () => {
           setSources((prev) => [...prev, newSource]);
           setSourceUrl('');
           setSourceTitle('');
-          success(`Source "${newSource.title || 'Extracted Article'}" added to investigation!`);
+          if (newSource.extraction_status === 'failed') {
+            info(`Source added, but website blocked direct crawling (${newSource.error_message || 'HTTP 403'}). Use "Paste Text" or manual edit.`);
+          } else {
+            success(`Source "${newSource.title || 'Extracted Article'}" added to investigation!`);
+          }
         } else {
           info(`Extracting and ingesting ${extractedUrls.length} sources in parallel...`);
           const results = await Promise.allSettled(
@@ -236,13 +258,19 @@ export const ResearchPage: React.FC = () => {
             setSources((prev) => [...prev, ...addedList]);
             setSourceUrl('');
             setSourceTitle('');
-            success(`Successfully added ${addedList.length} of ${extractedUrls.length} sources to investigation!`);
+            const failedScrapes = addedList.filter((s) => s.extraction_status === 'failed').length;
+            if (failedScrapes > 0) {
+              info(`Added ${addedList.length} sources (${failedScrapes} blocked by website anti-bot protection).`);
+            } else {
+              success(`Successfully added ${addedList.length} of ${extractedUrls.length} sources to investigation!`);
+            }
           } else {
             error('Failed to extract any of the provided URLs.');
           }
         }
 
         // Refresh project and project list in background to sync
+        setSearchParams({ projectId: targetProject.id });
         const updated = await researchApi.getProject(targetProject.id);
         setActiveProject(updated);
         setSources(updated.sources || []);

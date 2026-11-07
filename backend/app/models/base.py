@@ -190,16 +190,25 @@ class WritingDraft(Base):
     __tablename__ = "writing_drafts"
     __table_args__ = (
         Index("ix_drafts_project_created", "project_id", "created_at"),
+        Index("ix_drafts_org_created", "organization_id", "created_at"),
     )
 
     id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
     project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    brief_id = Column(String(36), ForeignKey("research_briefs.id", ondelete="SET NULL"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
+    content_type = Column(String(50), default="editorial_analysis", nullable=False, index=True)
+    target_audience = Column(String(100), default="Founders, builders, and operators", nullable=True)
+    tone = Column(String(100), default="Authoritative, analytical, objective", nullable=True)
+    desired_length = Column(Integer, default=800, nullable=True)
     original_content = Column(Text, nullable=False)
     revised_content = Column(Text, nullable=False)
     final_content = Column(Text, nullable=True)
     word_count = Column(Integer, default=0, nullable=False)
     readability_score = Column(Float, nullable=True)
+    research_grounding_score = Column(Float, nullable=True)
+    unsupported_claims_count = Column(Integer, default=0, nullable=False)
     style_profile_id = Column(String(36), ForeignKey("editorial_style_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
     style_score = Column(Float, nullable=True)
     author_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -209,6 +218,7 @@ class WritingDraft(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False, index=True)
 
     project = relationship("ResearchProject", back_populates="drafts")
+    brief = relationship("ResearchBrief", foreign_keys=[brief_id])
     style_profile = relationship("EditorialStyleProfile", back_populates="drafts")
     suggestions = relationship("WritingSuggestion", back_populates="draft", cascade="all, delete-orphan", lazy="selectin")
     editorial_output = relationship("EditorialOutput", back_populates="draft", uselist=False)

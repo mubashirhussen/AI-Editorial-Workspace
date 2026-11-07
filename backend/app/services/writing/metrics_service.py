@@ -37,7 +37,13 @@ class WritingMetricsService:
         reading_time = round(word_count / 225.0, 1)
 
         total_syllables = sum(readability_service.count_syllables_in_word(w) for w in words)
+        complex_words = sum(1 for w in words if readability_service.count_syllables_in_word(w) >= 3)
+        letters_count = sum(len(w) for w in words)
+
         flesch_score = readability_service.calculate_flesch_reading_ease(word_count, sentence_count, total_syllables)
+        fk_grade = readability_service.calculate_flesch_kincaid_grade(word_count, sentence_count, total_syllables)
+        ari = readability_service.calculate_automated_readability_index(letters_count, word_count, sentence_count)
+        gunning_fog = readability_service.calculate_gunning_fog(word_count, sentence_count, complex_words)
         interp = readability_service.get_readability_interpretation(flesch_score)
 
         return WritingMetrics(
@@ -49,6 +55,9 @@ class WritingMetricsService:
             reading_time_minutes=reading_time,
             readability_score=flesch_score,
             readability_grade=interp["grade"],
+            flesch_kincaid_grade=fk_grade,
+            automated_readability_index=ari,
+            gunning_fog_index=gunning_fog,
             readability_note=f"Readability score is a diagnostic heuristic scanning indicator ({interp['grade']}). {interp['explanation']} It is not a definitive measure of technical nuance or writing quality."
         )
 
