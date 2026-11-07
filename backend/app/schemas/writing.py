@@ -190,6 +190,8 @@ class DraftGenerateResponse(BaseModel):
     evidence_citations: List[Dict[str, Any]] = Field(default_factory=list)
     unsupported_claims_warning: List[str] = Field(default_factory=list)
     grounding_score: float = 100.0
+    prompt_version: str = "v1.0.0"
+    estimated_cost_usd: float = 0.0
 
 SelectionRewriteOperation = Literal[
     "improve_clarity",
@@ -226,12 +228,16 @@ class SelectionRewriteResponse(BaseModel):
 
 class ClaimVerification(BaseModel):
     claim_text: str
-    classification: Literal["grounded", "inferred", "unsupported", "contradictory"]
+    classification: Literal["grounded", "inferred", "unsupported", "contradictory", "SUPPORTED", "PARTIALLY_SUPPORTED", "UNSUPPORTED", "CONTRADICTED", "NOT_VERIFIABLE"]
+    verification_status: Optional[str] = None
+    citation_tag: Optional[str] = None
+    citation_integrity: Optional[str] = "VALID"
     supporting_excerpt: Optional[str] = None
     source_title: Optional[str] = None
     source_url: Optional[str] = None
     confidence: float = 0.9
     warning: Optional[str] = None
+    remediation_suggestion: Optional[str] = None
 
 class ResearchGroundingAuditResponse(BaseModel):
     draft_id: str
@@ -241,8 +247,11 @@ class ResearchGroundingAuditResponse(BaseModel):
     inferred_count: int
     unsupported_count: int
     contradiction_count: int
+    citation_accuracy: float = 1.0
     claims: List[ClaimVerification] = Field(default_factory=list)
     actionable_recommendations: List[str] = Field(default_factory=list)
+    unsupported_claims_summary: List[str] = Field(default_factory=list)
+    missing_citations: List[str] = Field(default_factory=list)
 
 class DraftExportResponse(BaseModel):
     format: str

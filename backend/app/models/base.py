@@ -610,6 +610,8 @@ class ProviderUsageRecord(Base):
     total_tokens = Column(Integer, default=0, nullable=False)
     duration_ms = Column(Float, default=0.0, nullable=False)
     status = Column(String(50), default="success", nullable=False)
+    prompt_version = Column(String(50), default="v1.0.0", nullable=True)
+    estimated_cost_usd = Column(Float, default=0.0, nullable=False)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 

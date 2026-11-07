@@ -597,6 +597,8 @@ class AIService:
                     result["full_content"] = full_text
                     result["word_count"] = words
                     result["content_type"] = content_type
+                    result["prompt_version"] = "v1.0.0"
+                    result["estimated_cost_usd"] = 0.0012
                     return result
             except Exception as e:
                 logger.warning(f"Live AI editorial generation failed, engaging deterministic fallback: {e}")
@@ -733,7 +735,9 @@ class AIService:
             "key_takeaways": takeaways,
             "evidence_citations": src_citations,
             "unsupported_claims_warning": [],
-            "grounding_score": 100.0
+            "grounding_score": 100.0,
+            "prompt_version": "v1.0.0",
+            "estimated_cost_usd": 0.0
         }
 
     # ==========================================

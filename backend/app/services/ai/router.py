@@ -10,6 +10,7 @@ from backend.app.core.encryption import decrypt_secret
 from backend.app.models.base import AiProviderConfig, ProviderUsageRecord
 from backend.app.services.monitoring_service import monitoring_service
 from backend.app.services.ai.base import BaseAIProvider, AIResponse
+from backend.app.services.ai.pricing import calculate_estimated_cost
 from backend.app.services.ai.adapters.groq_adapter import GroqAdapter
 from backend.app.services.ai.adapters.openai_adapter import OpenAIAdapter
 from backend.app.services.ai.adapters.anthropic_adapter import AnthropicAdapter
@@ -76,7 +77,9 @@ class AIRouter:
                 prov_name = "google_gemini"
 
         # 3. Instantiate corresponding adapter
-        if prov_name == "groq" and key:
+        if prov_name in ("fallback", "deterministic", "offline"):
+            return self.fallback_adapter
+        elif prov_name == "groq" and key:
             return GroqAdapter(api_key=key, model=custom_model)
         elif prov_name == "openai" and key:
             return OpenAIAdapter(api_key=key, model=custom_model, base_url=settings.AI_BASE_URL)
@@ -104,6 +107,8 @@ class AIRouter:
         operation_name: str = "structured_synthesis",
         db: Optional[Session] = None,
         organization_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        prompt_version: str = "v1.0.0",
         max_retries: int = 2
     ) -> AIResponse:
         adapter = self.get_adapter(provider, model, db=db, organization_id=organization_id)
@@ -114,7 +119,10 @@ class AIRouter:
             try:
                 res = await adapter.generate_structured(prompt, system_prompt=system_prompt, schema=schema)
                 # Record successful usage
-                self._record_telemetry(res, operation_name, status="success", db=db, organization_id=organization_id)
+                self._record_telemetry(
+                    res, operation_name, status="success",
+                    db=db, organization_id=organization_id, user_id=user_id, prompt_version=prompt_version
+                )
                 return res
             except Exception as e:
                 last_error = e
@@ -127,7 +135,10 @@ class AIRouter:
         # Fallback on failure
         logger.warning(f"All {max_retries + 1} attempts failed on '{adapter.provider_name}'. Triggering deterministic fallback engine.")
         res = await self.fallback_adapter.generate_structured(prompt, system_prompt=system_prompt, schema=schema)
-        self._record_telemetry(res, operation_name, status="fallback", provider_error=str(last_error), db=db, organization_id=organization_id)
+        self._record_telemetry(
+            res, operation_name, status="fallback", provider_error=str(last_error),
+            db=db, organization_id=organization_id, user_id=user_id, prompt_version=prompt_version
+        )
         return res
 
     async def execute_text(
@@ -139,6 +150,8 @@ class AIRouter:
         operation_name: str = "text_generation",
         db: Optional[Session] = None,
         organization_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        prompt_version: str = "v1.0.0",
         max_retries: int = 2
     ) -> AIResponse:
         adapter = self.get_adapter(provider, model, db=db, organization_id=organization_id)
@@ -147,7 +160,10 @@ class AIRouter:
         for attempt in range(max_retries + 1):
             try:
                 res = await adapter.generate_text(prompt, system_prompt=system_prompt)
-                self._record_telemetry(res, operation_name, status="success", db=db, organization_id=organization_id)
+                self._record_telemetry(
+                    res, operation_name, status="success",
+                    db=db, organization_id=organization_id, user_id=user_id, prompt_version=prompt_version
+                )
                 return res
             except Exception as e:
                 last_error = e
@@ -157,7 +173,10 @@ class AIRouter:
                     await asyncio.sleep(backoff)
 
         res = await self.fallback_adapter.generate_text(prompt, system_prompt=system_prompt)
-        self._record_telemetry(res, operation_name, status="fallback", provider_error=str(last_error), db=db, organization_id=organization_id)
+        self._record_telemetry(
+            res, operation_name, status="fallback", provider_error=str(last_error),
+            db=db, organization_id=organization_id, user_id=user_id, prompt_version=prompt_version
+        )
         return res
 
     def _record_telemetry(
@@ -167,8 +186,12 @@ class AIRouter:
         status: str,
         provider_error: Optional[str] = None,
         db: Optional[Session] = None,
-        organization_id: Optional[str] = None
+        organization_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        prompt_version: str = "v1.0.0"
     ):
+        cost_usd = calculate_estimated_cost(res.provider, res.model, res.prompt_tokens, res.completion_tokens)
+
         # 1. In-memory monitoring
         monitoring_service.record_ai_operation(
             operation_type=operation,
@@ -184,6 +207,7 @@ class AIRouter:
             try:
                 record = ProviderUsageRecord(
                     organization_id=organization_id,
+                    user_id=user_id,
                     provider=res.provider,
                     model=res.model,
                     operation=operation,
@@ -192,6 +216,8 @@ class AIRouter:
                     total_tokens=res.total_tokens,
                     duration_ms=res.duration_ms,
                     status=status,
+                    prompt_version=prompt_version,
+                    estimated_cost_usd=cost_usd,
                     error_message=provider_error
                 )
                 db.add(record)

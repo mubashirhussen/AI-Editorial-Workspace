@@ -372,7 +372,9 @@ class WritingService:
             key_takeaways=generated.get("key_takeaways", []),
             evidence_citations=generated.get("evidence_citations", []),
             unsupported_claims_warning=generated.get("unsupported_claims_warning", []),
-            grounding_score=generated.get("grounding_score", 100.0)
+            grounding_score=generated.get("grounding_score", 100.0),
+            prompt_version=generated.get("prompt_version", "v1.0.0"),
+            estimated_cost_usd=generated.get("estimated_cost_usd", 0.0)
         )
 
     async def rewrite_selection(self, db: Session, req: SelectionRewriteRequest) -> SelectionRewriteResponse:
@@ -402,9 +404,9 @@ class WritingService:
         )
 
     def audit_research_grounding(self, db: Session, draft_id: str) -> ResearchGroundingAuditResponse:
+        from backend.app.services.ai.claim_verification_service import claim_verification_service
+
         draft = self.get_draft(db, draft_id)
-        sentences = split_into_sentences(draft.revised_content)
-        claims: List[ClaimVerification] = []
 
         # Gather reference corpus from connected project/brief
         brief = None
@@ -422,95 +424,92 @@ class WritingService:
                 Source.extraction_status == "completed"
             ).all()
 
-        brief_text = ""
+        source_dicts = [
+            {
+                "id": s.id,
+                "title": s.title,
+                "url": s.url,
+                "extracted_content": s.extracted_content or s.raw_content or s.summary or ""
+            }
+            for s in sources
+        ]
         if brief:
-            brief_text = f"{brief.title} {brief.executive_summary} " + " ".join(brief.key_developments or [])
+            source_dicts.append({
+                "id": brief.id,
+                "title": brief.title,
+                "url": None,
+                "extracted_content": f"{brief.title} {brief.executive_summary} " + " ".join(brief.key_developments or [])
+            })
 
-        grounded_count = 0
-        inferred_count = 0
-        unsupported_count = 0
-        contradiction_count = 0
+        # Run Phase 8 Evidence Grounding & Citation Validation Engine
+        audit_rep = claim_verification_service.audit_draft(
+            draft.revised_content or draft.original_content,
+            source_dicts,
+            project_id=draft.project_id
+        )
 
-        # Heuristic claim classification
-        for sent in sentences:
-            s_clean = sent.strip()
-            if len(s_clean) < 15 or s_clean.startswith("#") or s_clean.startswith("*"):
-                continue
+        claims: List[ClaimVerification] = []
+        source_title_map = {s.get("id"): s.get("title") for s in source_dicts}
+        source_url_map = {s.get("id"): s.get("url") for s in source_dicts}
 
-            words = set(re.findall(r'\b\w{4,}\b', s_clean.lower()))
-            if not words:
-                continue
-
-            # Check direct citation tag presence [1], [2]
-            has_explicit_citation = bool(re.search(r'\[\d+\]', s_clean))
-
-            # Match against brief text
-            overlap_brief = len(words.intersection(set(re.findall(r'\b\w{4,}\b', brief_text.lower()))))
-
-            # Match against source extracted text
-            best_source = None
-            best_overlap = 0
-            for src in sources:
-                src_overlap = len(words.intersection(set(re.findall(r'\b\w{4,}\b', (src.extracted_content or "").lower()))))
-                if src_overlap > best_overlap:
-                    best_overlap = src_overlap
-                    best_source = src
-
-            if has_explicit_citation or overlap_brief >= 3 or best_overlap >= 4:
-                grounded_count += 1
-                claims.append(ClaimVerification(
-                    claim_text=s_clean,
-                    classification="grounded",
-                    supporting_excerpt=(best_source.extracted_content[:180] + "...") if best_source and best_source.extracted_content else (brief.executive_summary[:180] + "..." if brief else "Verified in research brief developments"),
-                    source_title=best_source.title if best_source else (brief.title if brief else "Research Brief"),
-                    source_url=best_source.url if best_source else None,
-                    confidence=0.96
-                ))
-            elif overlap_brief >= 1 or best_overlap >= 2:
-                inferred_count += 1
-                claims.append(ClaimVerification(
-                    claim_text=s_clean,
-                    classification="inferred",
-                    supporting_excerpt="Analytical editorial synthesis derived from research findings.",
-                    source_title=best_source.title if best_source else "Editorial Analysis",
-                    confidence=0.82
-                ))
+        for c in audit_rep.claims:
+            if c.verification_status.value == "SUPPORTED":
+                cls_val = "grounded"
+            elif c.verification_status.value == "PARTIALLY_SUPPORTED":
+                cls_val = "inferred"
+            elif c.verification_status.value == "CONTRADICTED":
+                cls_val = "contradictory"
+            elif c.verification_status.value == "UNSUPPORTED":
+                cls_val = "unsupported"
             else:
-                unsupported_count += 1
-                claims.append(ClaimVerification(
-                    claim_text=s_clean,
-                    classification="unsupported",
-                    supporting_excerpt=None,
-                    confidence=0.50,
-                    warning="No direct evidence found in connected research brief or source archives."
-                ))
+                cls_val = "inferred"
 
-        total_claims = max(1, len(claims))
-        grounding_score = round(((grounded_count + (0.5 * inferred_count)) / total_claims) * 100.0, 1)
+            claims.append(ClaimVerification(
+                claim_text=c.claim_text,
+                classification=cls_val,
+                verification_status=c.verification_status.value,
+                citation_tag=c.citation_tag,
+                citation_integrity=c.citation_integrity.value,
+                supporting_excerpt=c.supporting_excerpt,
+                source_title=source_title_map.get(c.referenced_source_id, "Research Archive") if c.referenced_source_id else None,
+                source_url=source_url_map.get(c.referenced_source_id) if c.referenced_source_id else None,
+                confidence=c.confidence_score,
+                warning=c.warning_message,
+                remediation_suggestion=c.remediation_suggestion
+            ))
+
+        grounding_score_pct = round(audit_rep.grounding_score * 100, 1)
 
         recommendations = []
-        if unsupported_count > 0:
-            recommendations.append(f"Found {unsupported_count} statement(s) lacking direct evidence citations. Consider attaching quotes or verifying numbers.")
-        if grounding_score >= 85:
+        if audit_rep.contradiction_warnings:
+            recommendations.append(f"Critical: {len(audit_rep.contradiction_warnings)} potential factual contradiction(s) flagged against source documents.")
+        if audit_rep.missing_citations:
+            recommendations.append(f"{len(audit_rep.missing_citations)} statement(s) with statistics or quotes are missing explicit citation tags.")
+        if audit_rep.unsupported_count > 0:
+            recommendations.append(f"Found {audit_rep.unsupported_count} statement(s) lacking direct evidence citations. Consider attaching quotes or verifying numbers.")
+        if grounding_score_pct >= 85:
             recommendations.append("High factual integrity: Over 85% of factual statements are substantiated by research archives.")
         else:
             recommendations.append("Grounding score is below editorial benchmark (85%). Ingest additional sources or run selection rewrite to strengthen factual backing.")
 
         # Persist updated metrics on draft
-        draft.research_grounding_score = grounding_score
-        draft.unsupported_claims_count = unsupported_count
+        draft.research_grounding_score = grounding_score_pct
+        draft.unsupported_claims_count = audit_rep.unsupported_count
         db.commit()
 
         return ResearchGroundingAuditResponse(
             draft_id=draft.id,
-            grounding_score=grounding_score,
-            total_claims=total_claims,
-            grounded_count=grounded_count,
-            inferred_count=inferred_count,
-            unsupported_count=unsupported_count,
-            contradiction_count=contradiction_count,
+            grounding_score=grounding_score_pct,
+            total_claims=audit_rep.total_claims,
+            grounded_count=audit_rep.supported_count,
+            inferred_count=audit_rep.partially_supported_count + audit_rep.not_verifiable_count,
+            unsupported_count=audit_rep.unsupported_count,
+            contradiction_count=audit_rep.contradicted_count,
+            citation_accuracy=audit_rep.citation_accuracy,
             claims=claims,
-            actionable_recommendations=recommendations
+            actionable_recommendations=recommendations,
+            unsupported_claims_summary=audit_rep.unsupported_claims_summary,
+            missing_citations=audit_rep.missing_citations
         )
 
     def export_draft(self, db: Session, draft_id: str, export_format: str) -> Tuple[bytes, str, str]:
