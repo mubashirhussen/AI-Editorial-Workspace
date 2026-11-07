@@ -61,3 +61,4 @@ def calculate_estimated_cost(
 
     cost = ((prompt_tokens / 1_000_000.0) * in_rate) + ((completion_tokens / 1_000_000.0) * out_rate)
     return round(max(0.0, cost), 6)
+

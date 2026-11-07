@@ -60,8 +60,7 @@ def test_provider_adapters_and_fallback():
     assert adapter.provider_name in ("fallback", "deterministic_fallback")
 
     # Test structured generation
-    loop = asyncio.get_event_loop()
-    res = loop.run_until_complete(
+    res = asyncio.run(
         ai_router.execute_structured(
             prompt="Analyze technical latency requirements",
             provider="fallback",
@@ -233,8 +232,7 @@ def test_multi_tenant_observability_isolation():
 def test_full_offline_evaluation_benchmark_suite():
     """Executes the full 34-case offline evaluation suite and asserts 100% pass rate."""
     runner = EvaluationRunner(mode="offline")
-    loop = asyncio.get_event_loop()
-    summary = loop.run_until_complete(runner.run_all())
+    summary = asyncio.run(runner.run_all())
 
     assert summary["total_tests"] == 34
     assert summary["passed_tests"] == 34

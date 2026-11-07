@@ -187,3 +187,4 @@ class PromptRegistry:
         return result
 
 prompt_registry = PromptRegistry()
+

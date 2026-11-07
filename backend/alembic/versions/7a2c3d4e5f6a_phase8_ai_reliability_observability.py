@@ -27,3 +27,4 @@ def downgrade():
     with op.batch_alter_table('provider_usage_records', schema=None) as batch_op:
         batch_op.drop_column('estimated_cost_usd')
         batch_op.drop_column('prompt_version')
+

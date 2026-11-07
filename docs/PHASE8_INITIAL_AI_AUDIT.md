@@ -68,3 +68,4 @@ The workspace currently features functional research brief synthesis and editori
 | **Persistent Observability & Cost Tracking** | Introduce SQLAlchemy `AIOperationLog` table with Alembic migration. Track tokens, latency, status, provider, prompt version, and estimated cost per organization. |
 | **Observability API & UI** | Add `/api/v1/observability/ai-metrics` and `/api/v1/observability/operations` endpoints. Extend Settings UI with live health, cost analytics, and claim verification telemetry. |
 | **Automated Testing Suite** | Comprehensive pytest suite (`test_phase8_ai_reliability.py`) asserting 100% pass rate across provider adapters, hallucination detection, citation integrity, and cost accounting. |
+
