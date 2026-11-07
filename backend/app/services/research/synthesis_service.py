@@ -41,9 +41,11 @@ class ResearchSynthesisService:
             excerpt = item.get("supporting_excerpt") or item.get("excerpt") or ""
             raw_classification = (item.get("evidence_classification") or item.get("evidence_type") or "REPORTED_BY_SOURCE").upper()
 
-            # Cross-project leakage defense
-            if source_id not in valid_source_ids:
-                # Default to first source if none specified
+            # Cross-project leakage defense: reject alien source_ids
+            if source_id and source_id not in valid_source_ids:
+                logger.warning(f"Rejecting cross-project evidence with alien source_id: {source_id}")
+                continue
+            elif not source_id:
                 if project_sources:
                     source_id = project_sources[0].id
                 else:
@@ -104,12 +106,12 @@ class ResearchSynthesisService:
                 else:
                     if is_speculative:
                         status = "NOT_VERIFIABLE"
-                        classification = "UNVERIFIED"
+                        classification = "INFERENCE"
                         confidence = 0.35
                         reasoning = "Forward-looking speculation or subjective projection lacking empirical grounding."
                     else:
                         status = "UNSUPPORTED"
-                        classification = "UNVERIFIED"
+                        classification = "INFERENCE"
                         confidence = 0.20
                         reasoning = "No verifiable supporting excerpt found in source text."
 

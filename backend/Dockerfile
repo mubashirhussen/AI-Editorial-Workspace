@@ -34,9 +34,11 @@ COPY --from=builder /install /usr/local
 COPY backend /app/backend
 COPY backend/alembic.ini /app/backend/alembic.ini
 COPY requirements.txt /app/requirements.txt
+COPY scripts /app/scripts
 
 # Create storage directory for SQLite/backups if needed and grant ownership
 RUN mkdir -p /app/backend/data /app/backend/backups && \
+    chmod +x /app/scripts/*.sh 2>/dev/null || true && \
     chown -R appuser:appgroup /app
 
 # Environment variables
@@ -44,7 +46,8 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     ENVIRONMENT=production \
-    PORT=8000
+    PORT=8000 \
+    RUN_MIGRATIONS=true
 
 # Switch to non-root user
 USER appuser
@@ -56,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health/live || exit 1
 
 # Production startup
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/bin/sh", "/app/scripts/entrypoint.sh"]

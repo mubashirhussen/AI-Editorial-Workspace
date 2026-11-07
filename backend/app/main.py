@@ -121,9 +121,10 @@ class InMemoryRateLimiterMiddleware(BaseHTTPMiddleware):
         self.request_records = defaultdict(list)
 
     async def dispatch(self, request: Request, call_next):
-        # Bypass in automated test suites, testclient, or health checks
+        # Bypass in automated test suites, testclient, or health checks unless explicitly testing rate limit
         client_ip = request.client.host if request.client else "unknown"
-        if (
+        force_test = request.headers.get("X-Test-Rate-Limit") == "true"
+        if not force_test and (
             client_ip == "testclient"
             or "pytest" in sys.modules
             or os.getenv("PYTEST_CURRENT_TEST") is not None
@@ -141,7 +142,8 @@ class InMemoryRateLimiterMiddleware(BaseHTTPMiddleware):
         self.request_records[client_ip] = records
 
         if len(records) >= self.requests_per_minute:
-            req_id = getattr(request.state, "request_id", str(uuid.uuid4()))
+            state_req_id = getattr(request.state, "request_id", None)
+            req_id = state_req_id if isinstance(state_req_id, str) else str(uuid.uuid4())
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 headers={"X-Request-ID": req_id, "Retry-After": "60"},
@@ -363,6 +365,10 @@ def root_liveness():
 @app.get("/health/ready")
 def root_readiness(response: Response, db: Session = Depends(get_db)):
     return health.readiness_check(response=response, db=db)
+
+@app.get("/health/startup")
+def root_startup(response: Response, db: Session = Depends(get_db)):
+    return health.startup_check(response=response, db=db)
 
 @app.get("/health")
 def root_health(db: Session = Depends(get_db)):

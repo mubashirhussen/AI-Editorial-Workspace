@@ -20,6 +20,7 @@ from backend.app.evaluation.runners.runner import EvaluationRunner
 router = APIRouter(prefix="/observability", tags=["AI Reliability & Observability"])
 
 @router.get("/ai-metrics")
+@router.get("/metrics")
 def get_ai_metrics(
     current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_active_organization),

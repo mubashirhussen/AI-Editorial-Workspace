@@ -79,10 +79,10 @@ def test_phase6_editorial_security_cross_project_rejection(client):
 
     for i in range(3):
         client.post(f"/api/v1/research/projects/{p1['id']}/sources", json={
-            "title": f"Alpha Source {i}", "source_type": "text", "text_content": "Alpha technical data."
+            "title": f"Alpha Source {i}", "source_type": "text", "text_content": f"Alpha technical data part {i}."
         })
         client.post(f"/api/v1/research/projects/{p2['id']}/sources", json={
-            "title": f"Beta Source {i}", "source_type": "text", "text_content": "Beta technical data."
+            "title": f"Beta Source {i}", "source_type": "text", "text_content": f"Beta technical data part {i}."
         })
 
     b1 = client.post(f"/api/v1/research/projects/{p1['id']}/generate-brief").json()
@@ -102,7 +102,7 @@ def test_phase6_editorial_crud_and_exports(client):
 
     for i in range(3):
         client.post(f"/api/v1/research/projects/{p_id}/sources", json={
-            "title": f"Export Source {i+1}", "source_type": "text", "text_content": "Telemetry data for exports."
+            "title": f"Export Source {i+1}", "source_type": "text", "text_content": f"Telemetry data for exports part {i+1}."
         })
 
     client.post(f"/api/v1/research/projects/{p_id}/generate-brief")
@@ -145,4 +145,3 @@ def test_phase6_editorial_crud_and_exports(client):
     # 6. Verify 404 after deletion
     get_del = client.get(f"/api/v1/editorial/{ed_id}")
     assert get_del.status_code == 404
-

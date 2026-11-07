@@ -22,6 +22,23 @@ services:
     networks:
       - editorial-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: editorial-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - editorial-network
+
   backend:
     build:
       context: .
@@ -30,6 +47,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-editorial_user}:${POSTGRES_PASSWORD:-editorial_secret_pass}@db:5432/${POSTGRES_DB:-editorial_workspace}
+      REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-editorial_prod_master_secret_key_change_in_production_32_chars}
       ENVIRONMENT: production
       TESTING: "False"
@@ -40,6 +58,8 @@ services:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - backend_data:/app/backend/data
@@ -77,6 +97,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   backend_data:
   backend_backups:
 

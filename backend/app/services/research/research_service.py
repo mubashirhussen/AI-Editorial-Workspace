@@ -1,8 +1,11 @@
 import logging
 import hashlib
+import os
+import sys
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from backend.app.core.config import settings
 from backend.app.models.base import (
     ResearchProject,
     Source,

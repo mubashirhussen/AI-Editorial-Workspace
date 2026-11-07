@@ -25,11 +25,24 @@ else:
     engine_kwargs["pool_timeout"] = 30
     engine_kwargs["pool_recycle"] = 1800
 
-engine = create_engine(
-    db_url,
-    connect_args=connect_args,
-    **engine_kwargs
-)
+def create_db_engine(target_url: str = None):
+    """Creates a SQLAlchemy engine configured with production pooling and health invariants."""
+    url = target_url or db_url
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    
+    c_args = {}
+    e_kwargs = {"pool_pre_ping": True}
+    if url.startswith("sqlite"):
+        c_args["check_same_thread"] = False
+    else:
+        e_kwargs["pool_size"] = 10
+        e_kwargs["max_overflow"] = 20
+        e_kwargs["pool_timeout"] = 30
+        e_kwargs["pool_recycle"] = 1800
+    return create_engine(url, connect_args=c_args, **e_kwargs)
+
+engine = create_db_engine(db_url)
 
 # Enable Foreign Key enforcement for SQLite databases
 @event.listens_for(engine, "connect")
