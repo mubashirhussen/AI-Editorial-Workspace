@@ -169,3 +169,4 @@ All numerical figures, percentages, and dollar amounts are extracted via regex a
   - `GET /api/v1/health/ready`: Deep dependency check (database connectivity, migration status).
 - **Request Tracing:** Unique `X-Request-ID` UUID generated per request and returned in response headers for distributed trace correlation.
 - **Cost Accounting:** Real-time token tracking ($USD) based on live provider pricing models, queryable by tenant.
+

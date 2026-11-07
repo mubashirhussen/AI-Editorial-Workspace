@@ -101,3 +101,4 @@ Financial Governance           Opaque monthly bills            Exact $USD Token 
 - **Phase 11 (Multimodal Document Parsing):** Integration with PyMuPDF and vision models to parse embedded charts, loss curves, and architectural diagrams directly from arXiv PDFs.
 - **Phase 12 (Direct CMS & Newsletter Webhooks):** Automated one-click publishing into Substack, Ghost, Beehiiv, and WordPress APIs.
 - **Phase 13 (Fine-Tuned Domain Process Reward Model):** Deployment of an in-house open-weights PRM specifically trained on technical editorial guidelines to perform sub-10ms claim verification on local CPU/GPU hardware.
+

@@ -118,3 +118,4 @@ npm run build --prefix frontend
 1. **Cloudflare Bot Gates:** External websites protected by Cloudflare Turnstile or aggressive WAFs reject automated crawlers with HTTP 403. The system gracefully surfaces a toast instructing the user to paste source text directly.
 2. **Deterministic Fallback Scope:** While the deterministic engine ensures zero downtime, its text generation uses template-based heuristics rather than novel semantic extrapolation.
 3. **Database Dialect:** SQLite is used for local development convenience; production deployments should point `DATABASE_URL` to PostgreSQL.
+

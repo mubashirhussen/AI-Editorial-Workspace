@@ -100,3 +100,4 @@
 | **Draft Versioning** | Full text snapshot in `draft_versions` | Higher database storage over time | Introduce git-style delta compression for very large articles |
 | **Real-time Editing** | REST polling & optimistic UI updates | Lacks real-time multiplayer cursor visibility | Implement WebSocket-based CRDTs (Yjs / Automerge) |
 | **Cloudflare Gated Sites** | Graceful failure toast with Paste Text fallback | Cannot scrape heavily protected sites directly | Integrate headless browser proxy (Playwright) with stealth plugins |
+
