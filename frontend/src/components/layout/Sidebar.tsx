@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  Users
+  Users,
+  Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Editorial Studio', to: '/editorial', icon: Newspaper },
     { name: 'Research Projects', to: '/projects', icon: FolderKanban },
     { name: 'Organization', to: '/organization', icon: Users },
+    { name: 'AI Observability', to: '/observability', icon: Activity },
     { name: 'Settings', to: '/settings', icon: Settings },
   ];
 

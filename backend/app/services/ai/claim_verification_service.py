@@ -22,6 +22,7 @@ class CitationIntegrity(str, Enum):
     ORPHANED = "ORPHANED"
     FABRICATED = "FABRICATED"
     MISSING = "MISSING"
+    TAMPERED = "TAMPERED"
 
 class VerifiedClaim(BaseModel):
     claim_text: str
@@ -226,6 +227,8 @@ class ClaimVerificationService:
                 # Unsupported numbers: Figures present in text but absent from source documents
                 status = VerificationStatus.UNSUPPORTED
                 unsupported_cnt += 1
+                if cite_matches and referenced_id:
+                    cite_status = CitationIntegrity.TAMPERED
                 warning = f"Numerical figure(s) {', '.join(unsupported_numbers)} appear in the statement but cannot be corroborated by any source document."
                 unsupported_summaries.append(s_clean)
                 remediation = "Verify exact numbers against research materials or remove ungrounded statistics."

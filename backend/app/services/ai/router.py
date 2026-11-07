@@ -109,7 +109,8 @@ class AIRouter:
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
         prompt_version: str = "v1.0.0",
-        max_retries: int = 2
+        max_retries: int = 2,
+        timeout_seconds: Optional[float] = 30.0
     ) -> AIResponse:
         adapter = self.get_adapter(provider, model, db=db, organization_id=organization_id)
         last_error = None
@@ -117,7 +118,11 @@ class AIRouter:
         # Execute with bounded exponential backoff
         for attempt in range(max_retries + 1):
             try:
-                res = await adapter.generate_structured(prompt, system_prompt=system_prompt, schema=schema)
+                coro = adapter.generate_structured(prompt, system_prompt=system_prompt, schema=schema)
+                if timeout_seconds:
+                    res = await asyncio.wait_for(coro, timeout=timeout_seconds)
+                else:
+                    res = await coro
                 # Record successful usage
                 self._record_telemetry(
                     res, operation_name, status="success",
@@ -152,14 +157,19 @@ class AIRouter:
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
         prompt_version: str = "v1.0.0",
-        max_retries: int = 2
+        max_retries: int = 2,
+        timeout_seconds: Optional[float] = 30.0
     ) -> AIResponse:
         adapter = self.get_adapter(provider, model, db=db, organization_id=organization_id)
         last_error = None
 
         for attempt in range(max_retries + 1):
             try:
-                res = await adapter.generate_text(prompt, system_prompt=system_prompt)
+                coro = adapter.generate_text(prompt, system_prompt=system_prompt)
+                if timeout_seconds:
+                    res = await asyncio.wait_for(coro, timeout=timeout_seconds)
+                else:
+                    res = await coro
                 self._record_telemetry(
                     res, operation_name, status="success",
                     db=db, organization_id=organization_id, user_id=user_id, prompt_version=prompt_version
