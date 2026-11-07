@@ -1,3 +1,5 @@
+import hashlib
+from urllib.parse import urlparse
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, Text, Integer, Float, ForeignKey, JSON, Index, Boolean
@@ -137,6 +139,33 @@ class Source(Base):
         elif "url" in kwargs and "original_url" not in kwargs:
             kwargs["original_url"] = kwargs["url"]
         super().__init__(**kwargs)
+
+    @property
+    def content_hash(self) -> str:
+        text = self.extracted_content or self.raw_content or ""
+        return hashlib.sha256(text.strip().encode("utf-8")).hexdigest() if text.strip() else ""
+
+    @property
+    def word_count(self) -> int:
+        text = self.extracted_content or self.raw_content or ""
+        return len(text.split()) if text else 0
+
+    @property
+    def char_count(self) -> int:
+        text = self.extracted_content or self.raw_content or ""
+        return len(text) if text else 0
+
+    @property
+    def domain(self) -> str:
+        u = self.url or self.original_url
+        if u:
+            try:
+                parsed = urlparse(u)
+                return parsed.netloc or ""
+            except Exception:
+                return ""
+        return ""
+
 
 class SourceAnalysis(Base):
     __tablename__ = "source_analyses"

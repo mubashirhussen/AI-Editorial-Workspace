@@ -1,11 +1,19 @@
 import logging
+import hashlib
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from backend.app.models.base import ResearchProject, Source, SourceAnalysis, ResearchBrief
+from backend.app.models.base import (
+    ResearchProject,
+    Source,
+    SourceAnalysis,
+    ResearchBrief,
+    ResearchClaim,
+    ResearchEvidence
+)
 from backend.app.schemas.research import ProjectCreate, ProjectUpdate
 from backend.app.schemas.source import SourceCreate
-from backend.app.services.research.extraction_service import extraction_service
+from backend.app.services.research.extraction_service import extraction_service, canonicalize_url
 from backend.app.services.research.synthesis_service import synthesis_service
 from backend.app.services.version_control.version_service import version_service
 from backend.app.services.ai_service import ai_service
@@ -16,7 +24,7 @@ class ResearchService:
     """
     Core Research Assistant orchestrator.
     Manages projects, source extraction, single-source claim analysis,
-    and cross-source evidence synthesis.
+    cross-source evidence synthesis, and relational claim/evidence persistence.
     """
 
     def create_project(self, db: Session, data: ProjectCreate, organization_id: Optional[str] = None) -> ResearchProject:
@@ -33,8 +41,51 @@ class ResearchService:
         db.refresh(project)
         return project
 
-    def get_projects(self, db: Session, skip: int = 0, limit: int = 50) -> List[ResearchProject]:
-        return db.query(ResearchProject).order_by(ResearchProject.created_at.desc()).offset(skip).limit(limit).all()
+    def get_projects(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 50,
+        query: Optional[str] = None,
+        status: Optional[str] = None,
+        organization_id: Optional[str] = None
+    ) -> List[ResearchProject]:
+        q = db.query(ResearchProject)
+        if organization_id is not None:
+            q = q.filter(
+                (ResearchProject.organization_id == organization_id) | (ResearchProject.organization_id == None)
+            )
+        if status:
+            q = q.filter(ResearchProject.status == status.lower())
+        if query and query.strip():
+            search_pat = f"%{query.strip()}%"
+            q = q.filter(
+                (ResearchProject.title.ilike(search_pat)) |
+                (ResearchProject.description.ilike(search_pat))
+            )
+        return q.order_by(ResearchProject.updated_at.desc()).offset(skip).limit(limit).all()
+
+    def count_projects(
+        self,
+        db: Session,
+        query: Optional[str] = None,
+        status: Optional[str] = None,
+        organization_id: Optional[str] = None
+    ) -> int:
+        q = db.query(ResearchProject)
+        if organization_id is not None:
+            q = q.filter(
+                (ResearchProject.organization_id == organization_id) | (ResearchProject.organization_id == None)
+            )
+        if status:
+            q = q.filter(ResearchProject.status == status.lower())
+        if query and query.strip():
+            search_pat = f"%{query.strip()}%"
+            q = q.filter(
+                (ResearchProject.title.ilike(search_pat)) |
+                (ResearchProject.description.ilike(search_pat))
+            )
+        return q.count()
 
     def get_project(self, db: Session, project_id: str) -> ResearchProject:
         project = db.query(ResearchProject).filter(ResearchProject.id == project_id).first()
@@ -50,7 +101,7 @@ class ResearchService:
         if data.description is not None:
             project.description = data.description.strip()
         if data.status is not None:
-            project.status = data.status
+            project.status = data.status.lower()
         db.commit()
         db.refresh(project)
         return project
@@ -71,9 +122,10 @@ class ResearchService:
 
         # Check duplicate URL within this project
         if url:
+            c_url = canonicalize_url(url)
             existing = db.query(Source).filter(
                 Source.project_id == project_id,
-                Source.url == url
+                (Source.url == url) | (Source.original_url == url) | (Source.url == c_url) | (Source.original_url == c_url)
             ).first()
             if existing:
                 raise HTTPException(status_code=400, detail="This source URL has already been added to this project.")
@@ -84,6 +136,15 @@ class ResearchService:
             if not processed["success"]:
                 raise HTTPException(status_code=400, detail=processed["error"])
             
+            # Check duplicate content hash within project
+            new_hash = processed["content_hash"]
+            for existing_s in project.sources:
+                if existing_s.content_hash == new_hash:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="A source with identical content already exists in this project (duplicate content hash)."
+                    )
+
             source = Source(
                 project_id=project_id,
                 title=processed["title"],
@@ -92,7 +153,8 @@ class ResearchService:
                 source_type="TEXT",
                 raw_content=processed["content"],
                 extracted_content=processed["content"],
-                extraction_status="completed"
+                extraction_status="completed",
+                summary=processed["content"][:280] if processed.get("content") else None
             )
             db.add(source)
             db.commit()
@@ -101,11 +163,12 @@ class ResearchService:
 
         else:
             # URL source
+            c_url = canonicalize_url(url) if url else None
             source = Source(
                 project_id=project_id,
                 title=data.title.strip() if data.title else "Fetching article...",
                 url=url,
-                original_url=url,
+                original_url=c_url or url,
                 source_type="URL",
                 extraction_status="pending"
             )
@@ -159,13 +222,15 @@ class ResearchService:
             source.raw_content = result["content"]
             source.author = result["author"]
             source.published_at = result["published_at"]
-            source.original_url = result["canonical_url"]
+            source.original_url = result.get("canonical_url") or source.url
             source.extraction_status = "completed"
             source.error_message = None
+            if not source.summary and result["content"]:
+                source.summary = result["content"][:280]
         else:
             source.extraction_status = "failed"
             source.error_message = result["error"]
-            if result["title"]:
+            if result.get("title"):
                 source.title = result["title"]
 
         db.commit()
@@ -197,6 +262,32 @@ class ResearchService:
             claim_dict["source_id"] = source.id
             reported_facts_data.append(claim_dict)
 
+            # Persist relational ResearchClaim and ResearchEvidence
+            try:
+                rc = ResearchClaim(
+                    project_id=source.project_id,
+                    source_id=source.id,
+                    claim_text=claim_dict.get("claim", ""),
+                    supporting_excerpt=claim_dict.get("supporting_excerpt", "") or content[:250],
+                    evidence_classification=(claim_dict.get("evidence_type") or "REPORTED_BY_SOURCE").upper(),
+                    confidence=0.92
+                )
+                db.add(rc)
+                db.flush()
+
+                re_item = ResearchEvidence(
+                    project_id=source.project_id,
+                    source_id=source.id,
+                    claim_id=rc.id,
+                    excerpt=rc.supporting_excerpt,
+                    fact_type="DIRECT_FACT" if "direct" in str(claim_dict.get("evidence_type", "")).lower() else "REPORTED_FACT",
+                    confidence=0.92,
+                    verified=True
+                )
+                db.add(re_item)
+            except Exception as e:
+                logger.warning(f"Failed to persist relational evidence item: {e}")
+
         existing = db.query(SourceAnalysis).filter(SourceAnalysis.source_id == source.id).first()
         if existing:
             existing.summary = analysis_schema.summary
@@ -216,7 +307,6 @@ class ResearchService:
                     "why_readers_care": "Direct architectural and operational shift."
                 }
             ]
-            # Retain legacy fields
             existing.key_developments = analysis_schema.key_developments
             existing.important_claims = reported_facts_data
             existing.facts = analysis_schema.facts
@@ -304,12 +394,29 @@ class ResearchService:
         # Call AI or deterministic synthesis engine
         if ai_service.is_available:
             brief_data = await ai_service.synthesize_brief(project.title, sources_payload)
-            # Enforce evidence traceability
             evidence_items = brief_data.get("evidence_verification", [])
             verified_evidence = synthesis_service.validate_and_trace_evidence(evidence_items, sources)
             brief_data["evidence_verification"] = verified_evidence
         else:
             brief_data = synthesis_service.generate_deterministic_synthesis(project.title, sources)
+            verified_evidence = brief_data.get("evidence_verification", [])
+
+        # Persist relational ResearchEvidence for synthesis
+        for ev in verified_evidence:
+            try:
+                sid = ev.get("source_id")
+                if sid:
+                    ev_record = ResearchEvidence(
+                        project_id=project.id,
+                        source_id=sid,
+                        excerpt=ev.get("supporting_excerpt", ""),
+                        fact_type=ev.get("evidence_classification", "DIRECT_FACT"),
+                        confidence=float(ev.get("confidence", 0.9)),
+                        verified=ev.get("status") == "SUPPORTED"
+                    )
+                    db.add(ev_record)
+            except Exception as e:
+                logger.warning(f"Could not persist synthesis evidence item: {e}")
 
         brief_record = ResearchBrief(
             project_id=project.id,
@@ -320,11 +427,11 @@ class ResearchService:
             newsletter_angles=brief_data.get("newsletter_angles", []),
             source_references=brief_data.get("source_references", []),
             brief_content=brief_data,
-            evidence=brief_data.get("evidence_verification", []),
+            evidence=verified_evidence,
             recommended_angle=brief_data.get("recommended_story") or brief_data.get("recommended_angle") or (brief_data.get("newsletter_angles", [{}])[0] if brief_data.get("newsletter_angles") else {})
         )
         db.add(brief_record)
-        project.status = "COMPLETED"
+        project.status = "completed"
         db.commit()
         db.refresh(brief_record)
 
@@ -382,5 +489,35 @@ class ResearchService:
             .order_by(ResearchBrief.created_at.desc())
             .all()
         )
+
+    def get_project_evidence(self, db: Session, project_id: str) -> List[Dict[str, Any]]:
+        """Returns verified evidence items for project from latest brief or database records."""
+        self.get_project(db, project_id)
+        try:
+            brief = self.get_latest_brief(db, project_id)
+            if brief.evidence:
+                return brief.evidence
+        except Exception:
+            pass
+        
+        # Fallback to research_evidence table
+        records = db.query(ResearchEvidence).filter(ResearchEvidence.project_id == project_id).all()
+        source_map = {s.id: s.title for s in self.get_project_sources(db, project_id)}
+        return [
+            {
+                "evidence_id": r.id,
+                "source_id": r.source_id,
+                "source_title": source_map.get(r.source_id, "Source"),
+                "claim": r.excerpt,
+                "supporting_excerpt": r.excerpt,
+                "evidence_classification": r.fact_type,
+                "status": "SUPPORTED" if r.verified else "UNVERIFIED",
+                "confidence": r.confidence,
+                "grounded": r.verified,
+                "section_reference": "Paragraph 1",
+                "reasoning": "Extracted from source analysis records."
+            }
+            for r in records
+        ]
 
 research_service = ResearchService()

@@ -3,9 +3,11 @@ export interface ClaimItem {
   evidence: string;
   evidence_type: 'direct' | 'reported' | 'inferred';
   supporting_excerpt: string;
+  source_id?: string;
 }
 
 export interface SourceAnalysis {
+  source_id?: string;
   source_title: string;
   source_url?: string;
   summary: string;
@@ -24,8 +26,14 @@ export interface Source {
   project_id: string;
   title: string;
   url?: string;
-  source_type: 'url' | 'text';
+  original_url?: string;
+  source_type: 'url' | 'text' | 'pdf' | 'document' | 'image' | string;
+  domain?: string;
+  word_count?: number;
+  char_count?: number;
+  content_hash?: string;
   extracted_content?: string;
+  raw_content?: string;
   summary?: string;
   author?: string;
   published_at?: string;
@@ -33,6 +41,26 @@ export interface Source {
   error_message?: string;
   created_at: string;
   analysis?: SourceAnalysis;
+}
+
+export interface VerifiedEvidenceItem {
+  evidence_id?: string;
+  source_id: string;
+  source_title: string;
+  source_url?: string;
+  claim: string;
+  supporting_excerpt: string;
+  evidence_classification?: string;
+  status: 'SUPPORTED' | 'PARTIALLY_SUPPORTED' | 'UNSUPPORTED' | 'CONTRADICTED' | 'NOT_VERIFIABLE';
+  confidence: number;
+  grounded: boolean;
+  section_reference?: string;
+  reasoning?: string;
+  corroboration?: Array<{
+    source_id: string;
+    source_title: string;
+    matched_keywords: string[];
+  }>;
 }
 
 export interface NewsletterAngle {
@@ -54,12 +82,7 @@ export interface ResearchBriefContent {
     business_operators: string;
     ai_researchers: string;
   };
-  evidence_verification: Array<{
-    claim: string;
-    supporting_excerpt: string;
-    source_title: string;
-    source_url: string;
-  }>;
+  evidence_verification: VerifiedEvidenceItem[];
   facts_vs_analysis: {
     facts: string[];
     analysis: string[];
@@ -83,7 +106,7 @@ export interface ResearchBrief {
   project_id: string;
   executive_summary: string;
   brief_content: ResearchBriefContent;
-  evidence: any[];
+  evidence: VerifiedEvidenceItem[];
   newsletter_angles: NewsletterAngle[];
   recommended_angle: {
     headline: string;
@@ -100,7 +123,6 @@ export interface AddSourceUrlPayload {
 }
 
 export interface AddSourceTextPayload {
-  title: string;
+  title?: string;
   text_content: string;
 }
-

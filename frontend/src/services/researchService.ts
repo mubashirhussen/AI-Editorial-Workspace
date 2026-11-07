@@ -4,7 +4,8 @@ import {
   Source, 
   ResearchBrief, 
   AddSourceUrlPayload, 
-  AddSourceTextPayload 
+  AddSourceTextPayload,
+  VerifiedEvidenceItem
 } from '../types';
 
 export const researchService = {
@@ -86,6 +87,11 @@ export const researchService = {
 
   async getBrief(projectId: string): Promise<ResearchBrief> {
     const res = await apiClient.get(`/research/projects/${projectId}/brief`);
+    return res.data;
+  },
+
+  async getProjectEvidence(projectId: string): Promise<VerifiedEvidenceItem[]> {
+    const res = await apiClient.get(`/research/projects/${projectId}/evidence`);
     return res.data;
   },
 };

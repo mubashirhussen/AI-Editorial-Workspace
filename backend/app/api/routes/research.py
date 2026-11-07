@@ -3,7 +3,7 @@ from backend.app.api.v1.endpoints.projects import check_project_tenant_access
 from backend.app.models.base import User, Organization
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from backend.app.core.database import get_db
 from backend.app.models.base import ResearchProject, Source, WritingDraft, EditorialOutput
 from backend.app.schemas.research import (
@@ -75,6 +75,8 @@ def create_project(
 def list_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    q: Optional[str] = Query(None, description="Search query for project title or description"),
+    status: Optional[str] = Query(None, description="Filter by project status (draft, in_progress, analyzed, completed, archived)"),
     current_user: User = Depends(get_current_user),
     org: Organization = Depends(get_active_organization),
     db: Session = Depends(get_db)
@@ -83,6 +85,14 @@ def list_projects(
     query = db.query(ResearchProject).filter(
         (ResearchProject.organization_id == org.id) | (ResearchProject.organization_id == None)
     )
+    if status and status.strip():
+        query = query.filter(ResearchProject.status == status.strip().lower())
+    if q and q.strip():
+        search_filter = f"%{q.strip()}%"
+        query = query.filter(
+            (ResearchProject.title.ilike(search_filter)) |
+            (ResearchProject.description.ilike(search_filter))
+        )
     total = query.count()
     projects = query.order_by(ResearchProject.updated_at.desc()).offset(skip).limit(limit).all()
     return {"items": projects, "total": total}
@@ -196,3 +206,15 @@ def get_project_results(project_id: str, db: Session = Depends(get_db)):
 def get_project_sources_list(project_id: str, db: Session = Depends(get_db)):
     """List sources belonging to a research project."""
     return research_service.get_project_sources(db, project_id)
+
+
+@router.get("/projects/{project_id}/evidence")
+def get_project_evidence(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieves claim-to-evidence mappings with verification statuses for a project."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.get_project_evidence(db, project_id)

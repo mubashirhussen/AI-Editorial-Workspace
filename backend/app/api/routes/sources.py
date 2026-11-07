@@ -36,6 +36,15 @@ async def upload_project_source_file(
     if not extracted.get("success"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=extracted.get("error", "Failed to extract content from file."))
 
+    new_hash = extracted.get("content_hash")
+    if new_hash:
+        for existing_s in project.sources:
+            if existing_s.content_hash == new_hash:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="A source with identical content already exists in this project (duplicate content hash)."
+                )
+
     source_title = title.strip() if title and title.strip() else extracted["title"]
     source = Source(
         project_id=project_id,

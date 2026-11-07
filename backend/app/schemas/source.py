@@ -42,6 +42,7 @@ class SourceResponse(BaseModel):
     project_id: str
     title: str
     url: Optional[str] = None
+    original_url: Optional[str] = None
     source_type: str
     extracted_content: Optional[str] = None
     summary: Optional[str] = None
@@ -49,10 +50,14 @@ class SourceResponse(BaseModel):
     published_at: Optional[str] = None
     extraction_status: str
     error_message: Optional[str] = None
+    domain: Optional[str] = None
+    word_count: Optional[int] = 0
+    char_count: Optional[int] = 0
+    content_hash: Optional[str] = None
     created_at: datetime
     analysis: Optional[SourceAnalysisSchema] = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 class SourceListResponse(BaseModel):
     items: List[SourceResponse]

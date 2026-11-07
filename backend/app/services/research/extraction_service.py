@@ -1,3 +1,4 @@
+import hashlib
 import httpx
 import logging
 import ipaddress
@@ -10,6 +11,25 @@ from backend.app.core.config import settings
 from backend.app.utils.security import is_safe_url
 
 logger = logging.getLogger(__name__)
+
+
+def canonicalize_url(url: str) -> str:
+    """Strips tracking parameters and trailing slashes for stable canonical URL representation."""
+    if not url:
+        return ""
+    try:
+        from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+        parsed = urlparse(url.strip())
+        # Filter tracking query parameters
+        filtered_queries = [
+            (k, v) for k, v in parse_qsl(parsed.query)
+            if not k.lower().startswith("utm_") and k.lower() not in ("ref", "fbclid", "gclid", "mc_cid", "mc_eid")
+        ]
+        new_query = urlencode(filtered_queries)
+        path = parsed.path.rstrip("/") if parsed.path != "/" else "/"
+        return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), path, parsed.params, new_query, ""))
+    except Exception:
+        return url.strip()
 
 class ResearchExtractionService:
     """
@@ -259,14 +279,21 @@ class ResearchExtractionService:
             domain = urlparse(final_canonical).netloc or "Web Source"
             title = f"Article from {domain}"
 
+        clean_body = final_content.strip()
+        c_hash = hashlib.sha256(clean_body.encode("utf-8")).hexdigest()
+        c_url = canonicalize_url(final_canonical)
         return {
             "success": True,
             "error": None,
             "title": title,
-            "content": final_content.strip(),
+            "content": clean_body,
             "author": author,
             "published_at": published_at,
-            "canonical_url": final_canonical,
+            "canonical_url": c_url,
+            "content_hash": c_hash,
+            "word_count": len(clean_body.split()),
+            "char_count": len(clean_body),
+            "domain": urlparse(c_url).netloc,
             "extraction_status": "completed"
         }
 
@@ -292,11 +319,16 @@ class ResearchExtractionService:
             if not title:
                 title = "Pasted Technical Document"
 
+        c_hash = hashlib.sha256(clean_text.encode("utf-8")).hexdigest()
         return {
             "success": True,
             "error": None,
             "title": title,
             "content": clean_text,
+            "content_hash": c_hash,
+            "word_count": len(clean_text.split()),
+            "char_count": len(clean_text),
+            "domain": "pasted_text",
             "extraction_status": "completed"
         }
 
