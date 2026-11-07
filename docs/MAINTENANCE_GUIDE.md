@@ -70,3 +70,4 @@ backend\venv\Scripts\pip-audit -r backend/requirements.txt
 # Node.js frontend audit
 npm audit --prefix frontend
 ```
+

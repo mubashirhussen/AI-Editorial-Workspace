@@ -59,3 +59,4 @@ Vite production bundling configured with manual chunk splitting in `frontend/vit
 - Core App Bundle: 97.72 kB (gzipped: 33.23 kB)
 - **First Contentful Paint (FCP):** 0.42 seconds on local broadband.
 - **Lighthouse Performance Score:** 98 / 100.
+

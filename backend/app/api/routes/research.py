@@ -15,6 +15,7 @@ from backend.app.schemas.research import (
 )
 from backend.app.schemas.source import SourceResponse
 from backend.app.services.research_service import research_service
+from backend.app.services.analytics_service import analytics_service
 
 router = APIRouter(prefix="/research", tags=["Research"])
 
@@ -66,7 +67,9 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     target_org_id = getattr(data, "organization_id", None) or (org.id if org else None)
-    return research_service.create_project(db, data, organization_id=target_org_id)
+    proj = research_service.create_project(db, data, organization_id=target_org_id)
+    analytics_service.track_event(db, target_org_id, "project_created")
+    return proj
 
 @router.get("/projects", response_model=ProjectListResponse)
 def list_projects(
@@ -136,7 +139,9 @@ async def generate_brief(
 ):
     project = research_service.get_project(db, project_id)
     check_project_tenant_access(db, project, current_user)
-    return await research_service.generate_research_brief(db, project_id)
+    brief = await research_service.generate_research_brief(db, project_id)
+    analytics_service.track_event(db, getattr(project, "organization_id", None), "brief_generated")
+    return brief
 
 @router.get("/projects/{project_id}/brief", response_model=ResearchBriefResponse)
 def get_brief(

@@ -9,6 +9,7 @@ from backend.app.services.research_service import research_service
 from backend.app.api.deps import get_current_user
 from backend.app.api.v1.endpoints.projects import check_project_tenant_access
 from backend.app.services.research.document_extractor import extract_from_bytes
+from backend.app.services.analytics_service import analytics_service
 
 router = APIRouter(tags=['Sources'])
 
@@ -99,6 +100,12 @@ async def add_source(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project with ID '{project_id}' not found.")
     check_project_tenant_access(db, project, current_user, OrgPermission.ADD_SOURCES)
     source = await research_service.add_source(db, project_id, data)
+    status_label = "success" if getattr(source, "extraction_status", "") != "failed" else "failed"
+    org_id = getattr(project, "organization_id", None)
+    if status_label == "success":
+        analytics_service.track_event(db, org_id, "source_processed", metadata={"status": "success"})
+    else:
+        analytics_service.track_event(db, org_id, "workflow_failed", metadata={"category": "source_extraction"})
     return source
 
 @router.get("/research/projects/{project_id}/sources", response_model=List[SourceResponse], summary="List sources for project")

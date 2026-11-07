@@ -26,6 +26,7 @@ from backend.app.services.writing_service import writing_service
 from backend.app.services.style_intelligence.style_analyzer import style_analyzer
 from backend.app.services.version_control.version_service import version_service
 from backend.app.services.writing import writing_analyzer, metrics_service, suggestion_service
+from backend.app.services.analytics_service import analytics_service
 from backend.app.models.base import WritingDraft, WritingSuggestion, ResearchProject, EditorialStyleProfile, User, Organization
 from backend.app.api.deps import get_current_user, get_active_organization
 
@@ -46,7 +47,9 @@ def create_draft(
     """Creates a new writing draft and records an initial version snapshot."""
     org_id = org.id if org else None
     user_id = current_user.id if current_user else None
-    return writing_service.create_draft(db, data, organization_id=org_id, user_id=user_id)
+    draft = writing_service.create_draft(db, data, organization_id=org_id, user_id=user_id)
+    analytics_service.track_event(db, org_id, "draft_created")
+    return draft
 
 @router.post("/drafts/generate", response_model=DraftGenerateResponse, status_code=status.HTTP_201_CREATED, summary="AI Generate editorial draft from research")
 async def generate_draft(
@@ -61,7 +64,9 @@ async def generate_draft(
     """
     org_id = org.id if org else None
     user_id = current_user.id if current_user else None
-    return await writing_service.generate_editorial_draft(db, req, organization_id=org_id, user_id=user_id)
+    res = await writing_service.generate_editorial_draft(db, req, organization_id=org_id, user_id=user_id)
+    analytics_service.track_event(db, org_id, "draft_created", metadata={"status": "success"})
+    return res
 
 @router.post("/drafts/{draft_id}/duplicate", response_model=DraftResponse, status_code=status.HTTP_201_CREATED, summary="Duplicate draft")
 def duplicate_draft(
@@ -86,7 +91,10 @@ async def rewrite_selection_span(
     """
     if draft_id and not req.draft_id:
         req.draft_id = draft_id
-    return await writing_service.rewrite_selection(db, req)
+    res = await writing_service.rewrite_selection(db, req)
+    op_name = getattr(req.operation, "value", str(req.operation)) if hasattr(req, "operation") else "rewrite"
+    analytics_service.track_event(db, None, "writing_improved", metadata={"category": op_name})
+    return res
 
 @router.get("/drafts/{draft_id}/grounding-audit", response_model=ResearchGroundingAuditResponse, summary="Audit factual grounding against research")
 @router.post("/drafts/{draft_id}/grounding-audit", response_model=ResearchGroundingAuditResponse, summary="Audit factual grounding against research alias")
@@ -111,6 +119,7 @@ def export_draft_document(
     Preserves headings, formatting, citations, and metadata.
     """
     file_bytes, filename, mime_type = writing_service.export_draft(db, draft_id, format)
+    analytics_service.track_event(db, None, "export_executed", metadata={"format": format})
     return Response(
         content=file_bytes,
         media_type=mime_type,

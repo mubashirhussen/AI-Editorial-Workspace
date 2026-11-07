@@ -53,3 +53,4 @@ Survey conducted across 12 pilot editorial staff members:
 1. **Custom Publication Style Dictionaries (Priority: P1):** Enable publications to define bespoke banned buzzwords (e.g., "game-changer", "paradigm shift", "supercharged") with custom replacements.
 2. **One-Click Export to Substack / Beehiiv (Priority: P1):** Direct API integration to publish formatted newsletters directly into drafts.
 3. **Automated arXiv PDF Ingestion (Priority: P2):** Direct paste of arXiv IDs (`2401.xxxxx`) with automatic extraction of abstract, method, and benchmark tables.
+

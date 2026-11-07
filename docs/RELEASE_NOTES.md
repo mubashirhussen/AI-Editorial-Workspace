@@ -52,3 +52,4 @@ To upgrade existing database schemas to this release:
 alembic -c backend/alembic.ini upgrade head
 ```
 Head revision: `7a2c3d4e5f6a`
+

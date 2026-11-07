@@ -65,3 +65,4 @@ Q3 2027     Custom Editorial Style Guide Engine 70%     2.0      90%          2.
   - WebSocket-backed real-time cursor tracking and conflict-free editing via Yjs / CRDTs.
   - Review comment threads linked to specific character ranges in `editorial_drafts`.
   - Enforced approval gating: drafts cannot transition to `FINALIZED` without an `OWNER` or `ADMIN` digital sign-off.
+

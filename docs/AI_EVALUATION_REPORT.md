@@ -66,3 +66,4 @@ All untrusted web text is encapsulated in `<source_content>` delimiters with ant
 > [!IMPORTANT]
 > **No AI system is 100% immune to hallucination or interpretive bias.**
 > The AI Editorial Workspace is designed as an **editorial intelligence copilot**, not an autonomous publisher. It drastically reduces research friction, detects obvious discrepancies, and validates citation links, but human editorial oversight by a qualified journalist or lead editor remains indispensable for final publication sign-off.
+

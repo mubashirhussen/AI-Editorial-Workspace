@@ -22,7 +22,7 @@ from backend.app.models.base import (
     WritingSuggestion,
     EditorialOutput
 )
-from backend.app.api.routes import health, research, sources, writing, editorial, editorial_review, auth, organizations, research_intelligence, styles, documents, dashboard, integrations, ai, observability
+from backend.app.api.routes import health, research, sources, writing, editorial, editorial_review, auth, organizations, research_intelligence, styles, documents, dashboard, integrations, ai, observability, analytics
 from backend.app.api.v1.api import api_router as v1_endpoints_router
 from backend.app.services.monitoring_service import monitoring_service
 
@@ -238,6 +238,7 @@ app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(integrations.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
 app.include_router(observability.router, prefix=settings.API_V1_PREFIX)
+app.include_router(analytics.router, prefix=settings.API_V1_PREFIX)
 app.include_router(v1_endpoints_router, prefix=settings.API_V1_PREFIX)
 
 @app.exception_handler(RequestValidationError)
