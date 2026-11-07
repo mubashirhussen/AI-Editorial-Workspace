@@ -101,3 +101,4 @@ All endpoints follow the `/api/v1/writing` namespace:
 - `GET /api/v1/writing/drafts/{id}/versions`: List chronological version snapshots.
 - `POST /api/v1/writing/drafts/{id}/restore/{version_id}`: Non-destructively restore snapshot as new head version.
 - `GET /api/v1/writing/drafts/{id}/compare`: Side-by-side diff between baseline and revised content.
+

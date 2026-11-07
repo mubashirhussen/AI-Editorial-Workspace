@@ -72,3 +72,4 @@ flowchart LR
 2. **Terminology Checker**: Matches draft tokens against preferred vocabulary and flags prohibited marketing jargon.
 3. **Consistency Checker**: Audits sentence length variance, capitalization standards, and paragraph structure.
 4. **Style Scorer**: Calculates a normalized 0–100 style compliance score, balancing readability targets against structural constraints.
+

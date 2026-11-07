@@ -68,3 +68,4 @@ The workspace provides real-time comparison between baseline (original) content 
 - Readability improvement ($\Delta \text{Flesch}$).
 - Accepted, rejected, and pending suggestion counts.
 - Side-by-side or inline highlighted diff view in the React UI.
+

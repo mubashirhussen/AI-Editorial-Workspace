@@ -55,3 +55,4 @@ The implications for enterprise technology leaders are immediate:
 * **[1] FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness** (Dao et al., 2022) — [https://arxiv.org/abs/2205.14135](https://arxiv.org/abs/2205.14135)
 * **[2] DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model** (DeepSeek-AI, 2024) — [https://arxiv.org/abs/2405.04434](https://arxiv.org/abs/2405.04434)
 * **[3] Rigorous Evaluation & Grounding in Frontier LLM Workspaces** (Editorial Intelligence Lab, 2025)
+
