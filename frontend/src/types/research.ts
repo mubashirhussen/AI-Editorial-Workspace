@@ -41,6 +41,19 @@ export interface Source {
   error_message?: string;
   created_at: string;
   analysis?: SourceAnalysis;
+  is_pinned?: boolean;
+  why_saved?: string;
+  tags?: string[];
+  ai_enrichment_model?: string;
+  retrieval_chunks?: Array<{
+    id: string;
+    chunk_index: number;
+    content: string;
+    char_offset: number;
+    tokens: number;
+  }>;
+  outline?: string[];
+  key_claims?: string[];
 }
 
 export interface VerifiedEvidenceItem {

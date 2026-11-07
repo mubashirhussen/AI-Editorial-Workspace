@@ -39,6 +39,7 @@ import { useToast } from '../components/common/Toast';
 import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ResearchIntelligenceDashboard } from '../components/research/ResearchIntelligenceDashboard';
+import { LocalLibraryView } from '../components/research/LocalLibraryView';
 
 export const ResearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -61,6 +62,7 @@ export const ResearchPage: React.FC = () => {
 
   // Preview / Inspector Modal
   const [selectedSourceForPreview, setSelectedSourceForPreview] = useState<Source | null>(null);
+  const [isLocalLibraryOpen, setIsLocalLibraryOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
@@ -431,6 +433,15 @@ export const ResearchPage: React.FC = () => {
               {sources.length >= 3 ? 'Ready for cross-source synthesis' : `Requires ${3 - sources.length} more sources`}
             </div>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsLocalLibraryOpen(true)}
+            className="flex items-center gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100"
+            leftIcon={<BookOpen className="w-3.5 h-3.5 text-blue-600" />}
+          >
+            Local Library
+          </Button>
           <Button
             size="sm"
             variant="primary"
@@ -1065,71 +1076,27 @@ export const ResearchPage: React.FC = () => {
         </div>
       </div>
 
-      {/* SOURCE READER / INSPECTOR MODAL (Inspired by Atelier & Afforai) */}
-      {selectedSourceForPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-200 flex items-start justify-between bg-slate-50">
-              <div className="space-y-1 pr-6">
-                <span className="text-[10px] font-mono uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">
-                  {selectedSourceForPreview.source_type || 'SOURCE'}
-                </span>
-                <h3 className="text-base font-bold text-slate-900">{selectedSourceForPreview.title}</h3>
-                <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                  {selectedSourceForPreview.domain && <span>Domain: {selectedSourceForPreview.domain}</span>}
-                  {selectedSourceForPreview.author && <span>• Author: {selectedSourceForPreview.author}</span>}
-                  {selectedSourceForPreview.published_at && <span>• Published: {selectedSourceForPreview.published_at}</span>}
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedSourceForPreview(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content Body */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs font-mono bg-slate-50/30">
-              {/* Metadata snippet card */}
-              <div className="grid grid-cols-3 gap-2 p-3 bg-white rounded-lg border border-slate-200 font-sans text-[11px]">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">WORD COUNT</span>
-                  <span className="font-semibold text-slate-800">{selectedSourceForPreview.word_count || selectedSourceForPreview.extracted_content?.split(' ').length || 0} words</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">EXTRACTION STATUS</span>
-                  <span className="font-semibold text-emerald-700">{selectedSourceForPreview.extraction_status}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">CONTENT FINGERPRINT</span>
-                  <span className="font-mono text-[10px] text-slate-600 truncate block">
-                    {selectedSourceForPreview.content_hash ? selectedSourceForPreview.content_hash.slice(0, 16) + '...' : 'SHA-256 verified'}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <h5 className="font-sans font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-2">
-                  Extracted Body Passage
-                </h5>
-                <pre className="whitespace-pre-wrap font-sans text-xs text-slate-800 leading-relaxed bg-white p-4 rounded-xl border border-slate-200">
-                  {selectedSourceForPreview.extracted_content || selectedSourceForPreview.raw_content || 'No text extracted.'}
-                </pre>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-200 bg-white flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedSourceForPreview(null)}
-              >
-                Close Reader
-              </Button>
-            </div>
+      {/* LOCAL LIBRARY / SOURCE INSPECTOR MODAL (Image 1 Style) */}
+      {(isLocalLibraryOpen || selectedSourceForPreview) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in">
+          <div className="max-w-6xl w-full max-h-[92vh] overflow-hidden rounded-2xl shadow-2xl">
+            <LocalLibraryView
+              sources={sources}
+              activeProjectId={activeProject?.id}
+              onSelectSource={(s) => setSelectedSourceForPreview(s)}
+              onSaveCuration={(sourceId, curation) => {
+                setSources(prev => prev.map(s => s.id === sourceId ? { ...s, title: curation.title, why_saved: curation.whySaved, tags: curation.tags } : s));
+              }}
+              onOpenImport={() => {
+                setIsLocalLibraryOpen(false);
+                const el = document.getElementById('research-file-input');
+                if (el) el.click();
+              }}
+              onClose={() => {
+                setIsLocalLibraryOpen(false);
+                setSelectedSourceForPreview(null);
+              }}
+            />
           </div>
         </div>
       )}
