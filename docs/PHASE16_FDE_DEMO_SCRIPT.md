@@ -176,3 +176,4 @@ flowchart LR
 | **Backend Crashes / Restarts** | Process kill / network glitch | Frontend detects status within 2s, displays non-destructive warning, and auto-recovers upon restart without data loss. | < 3 seconds |
 | **Database Reset Needed** | Corrupted demo records | Execute `python backend/scripts/seed_demo_environment.py --reset` to restore pristine baseline. | < 2 seconds |
 | **Port Conflict on 8000** | Port 8000 already in use | Run `uvicorn backend.app.main:app --port 8001` and update `VITE_API_BASE_URL`. | < 30 seconds |
+

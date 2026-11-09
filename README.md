@@ -7,8 +7,8 @@ Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluatio
 [![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-212%2F212%20Passed%20(100%25)-emerald)](docs/TEST_REPORT.md)
 [![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-34%2F34%20Passed-blue)](docs/TEST_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 16 Status](https://img.shields.io/badge/Status-Ready%20for%20Demonstration-purple)](docs/PHASE16_FINAL_REVIEW.md)
-[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase16--final--product--polish-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
+[![Phase 17 Verification](https://img.shields.io/badge/Phase%2017-Verified%20Defect%20Closure-purple)](PHASE17_FINAL_EXECUTION_REPORT.md)
+[![Branch](https://img.shields.io/badge/Branch-fix%2Fphase17--final--defect--closure-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
@@ -18,6 +18,9 @@ This repository is prepared for final technical assessment, live demonstration, 
 
 | Deliverable | Description | Location |
 | :--- | :--- | :--- |
+| **Final Execution Report** | Phase 17 Final execution sign-off, defect closure & assessment readiness | [`PHASE17_FINAL_EXECUTION_REPORT.md`](PHASE17_FINAL_EXECUTION_REPORT.md) |
+| **Current Implementation Status** | Phase 17 Feature-by-feature implementation status & evidence ledger | [`PHASE17_CURRENT_IMPLEMENTATION_STATUS.md`](PHASE17_CURRENT_IMPLEMENTATION_STATUS.md) |
+| **Prioritized Defect Register** | Phase 17 Complete P0–P3 defect tracking ledger, root cause & resolution | [`PHASE17_DEFECT_REGISTER.md`](PHASE17_DEFECT_REGISTER.md) |
 | **Final Product Review** | Phase 16 Codebase health audit, debt elimination & UI polish | [`docs/PHASE16_FINAL_REVIEW.md`](docs/PHASE16_FINAL_REVIEW.md) |
 | **FDE Live Demo Playbook** | 7–10 minute live technical demonstration script across 14 segments | [`docs/PHASE16_FDE_DEMO_SCRIPT.md`](docs/PHASE16_FDE_DEMO_SCRIPT.md) |
 | **Final Test Report** | 212/212 Pytest tests, 34 AI benchmarks, and Vite build results | [`docs/PHASE16_FINAL_TEST_REPORT.md`](docs/PHASE16_FINAL_TEST_REPORT.md) |

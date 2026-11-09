@@ -103,3 +103,4 @@ graph LR
 - **SSRF Guardrail:** Probing RFC 1918 subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), loopback (`127.0.0.1`), and AWS metadata (`169.254.169.254`) is deterministically blocked.
 - **Tenant Isolation:** Cross-tenant resource queries via spoofed headers or URL guessing return `403 Forbidden` or `404 Not Found`.
 - **Key Decoupling:** Authentication `SECRET_KEY` is decoupled from Fernet provider `ENCRYPTION_KEY`.
+
