@@ -2,9 +2,9 @@ name: CI/CD Pipeline - Continuous Integration
 
 on:
   push:
-    branches: [ main, master, 'feat/**' ]
+    branches: [ main, master, 'feat/**', 'release/**', 'docs/**' ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, 'release/**' ]
   schedule:
     - cron: '0 4 * * 1' # Weekly Monday health run
   workflow_dispatch:

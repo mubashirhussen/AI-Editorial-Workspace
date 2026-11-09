@@ -84,3 +84,4 @@ $$\text{Frontend Component} \longrightarrow \text{API Client Function} \longrigh
 | **List Style Profiles** | `SettingsPage.tsx` | `settingsService.getStyles()` | `GET /api/v1/styles` | `style_analyzer.py` | `EditorialStyleProfile` (List default and custom org profiles) |
 | **Create Custom Profile** | `SettingsPage.tsx` | `settingsService.createStyle()` | `POST /api/v1/styles` | `style_analyzer.py` | `EditorialStyleProfile` (Insert preferred terminology & rules) |
 | **Theme / Sidebar Persistence**| `SettingsPage.tsx` | Client `localStorage` | *Client-Side Local Storage* | *Browser Storage Engine* | Synchronized with `document.documentElement.classList` |
+

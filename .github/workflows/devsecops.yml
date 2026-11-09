@@ -2,9 +2,9 @@ name: 00 - Main DevSecOps CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, "feat/**" ]
+    branches: [ main, master, "feat/**", "release/**", "docs/**" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, "release/**" ]
   workflow_dispatch:
 
 concurrency:
