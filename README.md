@@ -7,8 +7,8 @@ Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluatio
 [![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-212%2F212%20Passed%20(100%25)-emerald)](docs/TEST_REPORT.md)
 [![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-34%2F34%20Passed-blue)](docs/TEST_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 17 Verification](https://img.shields.io/badge/Phase%2017-Verified%20Defect%20Closure-purple)](PHASE17_FINAL_EXECUTION_REPORT.md)
-[![Branch](https://img.shields.io/badge/Branch-fix%2Fphase17--final--defect--closure-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
+[![Phase 18 Sign-Off](https://img.shields.io/badge/Final%20Sign--Off-Ready%20for%20Submission-brightgreen)](PHASE18_FINAL_SIGNOFF.md)
+[![Branch](https://img.shields.io/badge/Branch-audit%2Fphase18--independent--signoff-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
@@ -18,21 +18,29 @@ This repository is prepared for final technical assessment, live demonstration, 
 
 | Deliverable | Description | Location |
 | :--- | :--- | :--- |
+| **Final Sign-Off & Verdict** | Phase 18 Final evaluator verdict, sign-off & submission recommendation | [`PHASE18_FINAL_SIGNOFF.md`](PHASE18_FINAL_SIGNOFF.md) |
+| **Independent Technical Audit** | Phase 18 Comprehensive independent audit across all 8 functional modules | [`PHASE18_INDEPENDENT_AUDIT.md`](PHASE18_INDEPENDENT_AUDIT.md) |
+| **Backend Architecture Audit** | Phase 18 FastAPI route contracts, schemas, auth, and error handling | [`PHASE18_BACKEND_AUDIT.md`](PHASE18_BACKEND_AUDIT.md) |
+| **Database Architecture Audit** | Phase 18 SQLAlchemy 34-table model catalog, constraints & Alembic lineage | [`PHASE18_DATABASE_AUDIT.md`](PHASE18_DATABASE_AUDIT.md) / [`DATABASE_ARCHITECTURE_AUDIT.md`](DATABASE_ARCHITECTURE_AUDIT.md) |
+| **Security Audit** | Phase 18 Threat model, OWASP Top 10 mitigations & secret storage audit | [`PHASE18_SECURITY_AUDIT.md`](PHASE18_SECURITY_AUDIT.md) / [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) |
+| **AI Quality Report** | Phase 18 9-case evaluation dataset results and factual grounding benchmarks | [`PHASE18_AI_QUALITY_REPORT.md`](PHASE18_AI_QUALITY_REPORT.md) |
+| **Frontend & UX Audit** | Phase 18 Viewport adaptability, accessibility, and zero-defect UI audit | [`PHASE18_FRONTEND_UX_AUDIT.md`](PHASE18_FRONTEND_UX_AUDIT.md) |
+| **Test & Build Verification** | Phase 18 Empirical test logs: 212/212 backend tests, 34 benchmarks | [`PHASE18_TEST_VERIFICATION.md`](PHASE18_TEST_VERIFICATION.md) |
+| **FDE Assessment Evaluation** | Phase 18 12-competency evaluation rubric scoring 96/100 | [`PHASE18_FDE_ASSESSMENT_REPORT.md`](PHASE18_FDE_ASSESSMENT_REPORT.md) |
 | **Final Execution Report** | Phase 17 Final execution sign-off, defect closure & assessment readiness | [`PHASE17_FINAL_EXECUTION_REPORT.md`](PHASE17_FINAL_EXECUTION_REPORT.md) |
 | **Current Implementation Status** | Phase 17 Feature-by-feature implementation status & evidence ledger | [`PHASE17_CURRENT_IMPLEMENTATION_STATUS.md`](PHASE17_CURRENT_IMPLEMENTATION_STATUS.md) |
 | **Prioritized Defect Register** | Phase 17 Complete P0–P3 defect tracking ledger, root cause & resolution | [`PHASE17_DEFECT_REGISTER.md`](PHASE17_DEFECT_REGISTER.md) |
-| **Final Product Review** | Phase 16 Codebase health audit, debt elimination & UI polish | [`docs/PHASE16_FINAL_REVIEW.md`](docs/PHASE16_FINAL_REVIEW.md) |
 | **FDE Live Demo Playbook** | 7–10 minute live technical demonstration script across 14 segments | [`docs/PHASE16_FDE_DEMO_SCRIPT.md`](docs/PHASE16_FDE_DEMO_SCRIPT.md) |
-| **Final Test Report** | 212/212 Pytest tests, 34 AI benchmarks, and Vite build results | [`docs/PHASE16_FINAL_TEST_REPORT.md`](docs/PHASE16_FINAL_TEST_REPORT.md) |
 | **Demonstration Seeder** | Pristine demo environment seed script (`--reset` supported) | [`backend/scripts/seed_demo_environment.py`](backend/scripts/seed_demo_environment.py) |
 | **Requirements Traceability Matrix** | Phase 15 End-to-end requirement mapping: UI $\rightarrow$ API $\rightarrow$ Service $\rightarrow$ Model $\rightarrow$ Test | [`docs/PHASE15_REQUIREMENTS_TRACEABILITY.md`](docs/PHASE15_REQUIREMENTS_TRACEABILITY.md) |
 | **User Acceptance Test Report** | Phase 15 Scenarios A, B, C & independent audits of Modules A through H | [`docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md`](docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md) |
 | **Data Validation Report** | Empirical validation of frontend metrics vs backend endpoints and DB records | [`docs/PHASE15_DATA_VALIDATION_REPORT.md`](docs/PHASE15_DATA_VALIDATION_REPORT.md) |
-| **AI Quality Evaluation** | 9-scenario evaluation dataset testing factual grounding and hallucination detection | [`docs/PHASE15_AI_QUALITY_EVALUATION.md`](docs/PHASE15_AI_QUALITY_EVALUATION.md) |
-| **Consolidated Defect Register** | Complete P0–P3 defect tracking ledger, root cause analysis, and fixes | [`docs/PHASE15_DEFECT_REGISTER.md`](docs/PHASE15_DEFECT_REGISTER.md) |
-| **FDE Assessment Evaluation** | Comprehensive evaluation across 15 Forward Deployed Engineer competencies | [`docs/FDE_ASSESSMENT_EVALUATION.md`](docs/FDE_ASSESSMENT_EVALUATION.md) |
 | **Product Note** | User problem statement, editorial workflows, differentiators, and roadmap | [`PRODUCT_NOTE.md`](PRODUCT_NOTE.md) / [`docs/PRODUCT_NOTE.md`](docs/PRODUCT_NOTE.md) |
 | **Technical Architecture** | End-to-end system design, 3-tier containerization, internal DNS, and pipelines | [`TECHNICAL_ARCHITECTURE.md`](TECHNICAL_ARCHITECTURE.md) / [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) |
+| **Engineering Decisions** | Architectural Decision Records (ADRs) for framework and database selections | [`ENGINEERING_DECISIONS.md`](ENGINEERING_DECISIONS.md) / [`docs/ENGINEERING_DECISIONS.md`](docs/ENGINEERING_DECISIONS.md) |
+| **Test Report** | Real test evidence: 212/212 backend tests, 34 benchmarks, Vite production build | [`TEST_REPORT.md`](TEST_REPORT.md) / [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) |
+| **Sample Editorial** | Real-world publication output with verified citations and before/after audit | [`SAMPLE_EDITORIAL.md`](SAMPLE_EDITORIAL.md) / [`docs/SAMPLE_EDITORIAL.md`](docs/SAMPLE_EDITORIAL.md) |
+| **Live Demo Playbook (Summary)** | 5–7 minute quick walkthrough playbook | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) / [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
 | **Engineering Decisions** | Architectural Decision Records (ADRs) for framework and database selections | [`ENGINEERING_DECISIONS.md`](ENGINEERING_DECISIONS.md) / [`docs/ENGINEERING_DECISIONS.md`](docs/ENGINEERING_DECISIONS.md) |
 | **Test Report** | Real test evidence: 212/212 backend tests, 34 benchmarks, Vite production build | [`TEST_REPORT.md`](TEST_REPORT.md) / [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) |
 | **Sample Editorial** | Real-world publication output with verified citations and before/after audit | [`SAMPLE_EDITORIAL.md`](SAMPLE_EDITORIAL.md) / [`docs/SAMPLE_EDITORIAL.md`](docs/SAMPLE_EDITORIAL.md) |
