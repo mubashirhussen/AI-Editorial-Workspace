@@ -109,3 +109,4 @@
 4. **P3 (Testing & Documentation):**
    - Create `docs/FRONTEND_BACKEND_API_MAPPING.md` and `docs/KNOWN_ISSUES.md`.
    - Run backend tests, frontend build, and full regression verification.
+

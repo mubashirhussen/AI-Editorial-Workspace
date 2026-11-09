@@ -19,6 +19,10 @@ This repository is prepared for final technical assessment and grading. All core
 | Deliverable | Description | Location |
 | :--- | :--- | :--- |
 | **Execution Audit Report** | Phase 11 Final Execution Audit, Bug Fixing & Release Verification | [`FINAL_EXECUTION_AUDIT.md`](FINAL_EXECUTION_AUDIT.md) / [`docs/FINAL_EXECUTION_AUDIT.md`](docs/FINAL_EXECUTION_AUDIT.md) |
+| **Backend Architecture Audit** | Complete FastAPI backend audit, middleware pipeline & service layer | [`docs/BACKEND_ARCHITECTURE_AUDIT.md`](docs/BACKEND_ARCHITECTURE_AUDIT.md) |
+| **Database Architecture Audit** | SQLAlchemy 34-table model catalog, constraints & Alembic lineage | [`docs/DATABASE_ARCHITECTURE_AUDIT.md`](docs/DATABASE_ARCHITECTURE_AUDIT.md) |
+| **API Database Mapping** | End-to-end endpoint mapping to models, methods & CRUD operations | [`docs/API_DATABASE_MAPPING.md`](docs/API_DATABASE_MAPPING.md) |
+| **Backup & Recovery Runbook** | Database snapshot procedures, SHA-256 validation & rollback steps | [`docs/DATABASE_BACKUP_AND_RECOVERY.md`](docs/DATABASE_BACKUP_AND_RECOVERY.md) |
 | **UI/UX Functionality Audit** | Phase 12 UI/UX audit, screen observations, backend route mapping & fixes | [`docs/UI_FUNCTIONALITY_AUDIT.md`](docs/UI_FUNCTIONALITY_AUDIT.md) |
 | **API Mapping Matrix** | Frontend-to-backend endpoint mapping across all 6 core functional areas | [`docs/FRONTEND_BACKEND_API_MAPPING.md`](docs/FRONTEND_BACKEND_API_MAPPING.md) |
 | **Known Issues & Resolutions**| Root cause analysis, issue tracking, and verification log for P0-P2 fixes | [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) |

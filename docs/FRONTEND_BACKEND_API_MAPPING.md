@@ -93,3 +93,4 @@ This document provides a comprehensive traceability mapping between every fronte
 | **Test AI Connection** | `SettingsPage.tsx` | `POST` | `/api/v1/ai/connections/{id}/test` | AI Provider Probe | **VERIFIED** |
 | **Rotate AI API Key** | `SettingsPage.tsx` | `POST` | `/api/v1/ai/connections/{id}/rotate` | `AIProviderConfig` | **VERIFIED** |
 | **Health Diagnostics** | `SettingsPage.tsx` | `GET` | `/health` | DB, Redis, AI Diagnostics | **VERIFIED** |
+

@@ -53,3 +53,4 @@ assert(countSyllables('protracted') === 3, 'protracted is 3 syllables');
 assert(countSyllables('extraordinarily') >= 6, 'extraordinarily is >= 6 syllables');
 
 console.log('ALL textAnalysis tests passed successfully!');
+

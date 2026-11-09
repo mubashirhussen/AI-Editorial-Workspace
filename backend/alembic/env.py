@@ -24,10 +24,24 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
+    # Priority 1: Environment variable or application settings
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url and hasattr(settings, "DATABASE_URL") and settings.DATABASE_URL:
+        db_url = settings.DATABASE_URL
+    
+    if db_url and not db_url.startswith("driver://"):
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
+        return db_url
+
+    # Priority 2: Config file option
     url = config.get_main_option("sqlalchemy.url")
-    if url:
+    if url and not url.startswith("driver://"):
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
         return url
-    return os.environ.get("DATABASE_URL") or settings.DATABASE_URL
+
+    return "sqlite:///./editorial.db"
 
 def run_migrations_offline() -> None:
     url = get_url()
