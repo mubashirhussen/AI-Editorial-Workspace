@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 class OrgRole(str, Enum):
@@ -9,6 +9,10 @@ class OrgRole(str, Enum):
     EDITOR = "EDITOR"
     REVIEWER = "REVIEWER"
     VIEWER = "VIEWER"
+
+class SystemRole(str, Enum):
+    ADMIN = "ADMIN"
+    USER = "USER"
 
 class OrgPermission(str, Enum):
     MANAGE_ORG = "manage_org"
@@ -76,19 +80,40 @@ def has_permission(role: str, permission: OrgPermission) -> bool:
 class UserRegisterRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=255)
     password: str = Field(..., min_length=6, max_length=128)
+    confirm_password: Optional[str] = Field(None, max_length=128)
     full_name: str = Field(..., min_length=2, max_length=255)
     organization_name: Optional[str] = Field(None, max_length=255)
+    terms_accepted: bool = Field(True, description="Acceptance of Terms of Service")
 
 class UserLoginRequest(BaseModel):
     email: str
     password: str
+    remember_me: bool = Field(False, description="Extend session duration to 30 days")
 
 class UserResponse(BaseModel):
     id: str
     email: str
     full_name: str
+    role: str = "USER"
     is_active: bool
+    is_verified: bool = True
+    profile_image: Optional[str] = None
+    last_login_at: Optional[datetime] = None
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class UserProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    profile_image: Optional[str] = Field(None, max_length=50000)
+
+class UserSessionResponse(BaseModel):
+    id: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created_at: datetime
+    last_activity_at: Optional[datetime] = None
+    expires_at: datetime
+    is_current: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 class OrganizationResponse(BaseModel):
@@ -143,8 +168,6 @@ class InvitationResponse(BaseModel):
 class InvitationAcceptRequest(BaseModel):
     token: str
 
-
-
 class PasswordForgotRequest(BaseModel):
     email: str = Field(..., min_length=3, max_length=255)
 
@@ -156,6 +179,28 @@ class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=8, max_length=128)
 
+class EmailVerificationRequest(BaseModel):
+    token: str = Field(..., min_length=16, description="Verification token")
+
 class TokenRefreshResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class PasswordStrengthCheckRequest(BaseModel):
+    password: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+
+class PasswordStrengthCheckResponse(BaseModel):
+    is_valid: bool
+    score: int
+    strength_label: str
+    error_message: str
+    requirements: Dict[str, bool]
+
+# Admin management schemas
+class AdminUserStatusUpdate(BaseModel):
+    is_active: bool
+
+class AdminUserRoleUpdate(BaseModel):
+    role: str = Field(..., pattern="^(ADMIN|USER)$")

@@ -5,16 +5,30 @@ import {
   Organization,
   Membership,
   Invitation,
-  OrgRole
+  OrgRole,
+  User,
+  UserSession,
+  PasswordStrengthResponse
 } from '../types/auth';
 
 export const authService = {
-  async register(payload: { email: string; password: string; full_name: string; organization_name?: string }): Promise<AuthResponse> {
+  async register(payload: {
+    email: string;
+    password: string;
+    confirm_password?: string;
+    full_name: string;
+    organization_name?: string;
+    terms_accepted?: boolean;
+  }): Promise<AuthResponse> {
     const res = await apiClient.post<AuthResponse>('/auth/register', payload);
     return res.data;
   },
 
-  async login(payload: { email: string; password: string }): Promise<AuthResponse> {
+  async login(payload: {
+    email: string;
+    password: string;
+    remember_me?: boolean;
+  }): Promise<AuthResponse> {
     const res = await apiClient.post<AuthResponse>('/auth/login', payload);
     return res.data;
   },
@@ -27,6 +41,8 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       await apiClient.post('/auth/logout');
+    } catch (e) {
+      // Ignore network errors on logout
     } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('active_org_id');
@@ -56,6 +72,64 @@ export const authService = {
     return res.data;
   },
 
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    const res = await apiClient.post('/auth/verify-email', { token });
+    return res.data;
+  },
+
+  async checkPasswordStrength(
+    password: string,
+    email?: string,
+    full_name?: string
+  ): Promise<PasswordStrengthResponse> {
+    const res = await apiClient.post<PasswordStrengthResponse>('/auth/check-password-strength', {
+      password,
+      email,
+      full_name
+    });
+    return res.data;
+  },
+
+  // User Profile & Sessions
+  async getUserProfile(): Promise<User> {
+    const res = await apiClient.get<User>('/users/me');
+    return res.data;
+  },
+
+  async updateUserProfile(payload: { full_name?: string; profile_image?: string }): Promise<User> {
+    const res = await apiClient.put<User>('/users/me', payload);
+    return res.data;
+  },
+
+  async getUserSessions(): Promise<UserSession[]> {
+    const res = await apiClient.get<UserSession[]>('/users/me/sessions');
+    return res.data;
+  },
+
+  async revokeSession(sessionId: string): Promise<{ success: boolean; message: string }> {
+    const res = await apiClient.delete(`/users/me/sessions/${sessionId}`);
+    return res.data;
+  },
+
+  // Admin Management
+  async adminListUsers(skip = 0, limit = 20, search?: string) {
+    const params: any = { skip, limit };
+    if (search) params.search = search;
+    const res = await apiClient.get('/admin/users', { params });
+    return res.data;
+  },
+
+  async adminUpdateUserStatus(userId: string, is_active: boolean): Promise<User> {
+    const res = await apiClient.patch<User>(`/admin/users/${userId}/status`, { is_active });
+    return res.data;
+  },
+
+  async adminUpdateUserRole(userId: string, role: string): Promise<User> {
+    const res = await apiClient.patch<User>(`/admin/users/${userId}/role`, { role });
+    return res.data;
+  },
+
+  // Organizations
   async getOrganizations(): Promise<Organization[]> {
     const res = await apiClient.get<Organization[]>('/organizations');
     return res.data;

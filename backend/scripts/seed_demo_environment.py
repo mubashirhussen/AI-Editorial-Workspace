@@ -82,6 +82,7 @@ def seed_demo_environment(reset: bool = False):
                 email=DEMO_USER_EMAIL,
                 hashed_password=hash_password("DemoEditor2026!"),
                 full_name="Alex Vance (Staff Editor)",
+                role="ADMIN",
                 is_active=True,
                 is_verified=True
             )

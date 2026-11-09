@@ -19,11 +19,22 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), default="", nullable=False)
+    role = Column(String(50), default="USER", nullable=False, index=True)  # "ADMIN" | "USER"
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     is_verified = Column(Boolean, default=True, nullable=False)
+    profile_image = Column(Text, nullable=True)
+    last_login_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    @property
+    def is_email_verified(self) -> bool:
+        return self.is_verified
+
+    @is_email_verified.setter
+    def is_email_verified(self, val: bool):
+        self.is_verified = val
 
     memberships = relationship("OrganizationMembership", back_populates="user", cascade="all, delete-orphan", lazy="selectin")
 
@@ -514,6 +525,38 @@ class EditorialVersion(Base):
 # PHASE 4 DATA MODEL EXTENSIONS: AUTH, AI, JOBS, ANALYTICS & AUDIT LOGS
 # ==============================================================================
 
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    name = Column(String(50), unique=True, nullable=False, index=True)  # ADMIN, USER
+    description = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    permissions = relationship("Permission", secondary="role_permissions", back_populates="roles")
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    description = Column(String(255), nullable=True)
+
+    roles = relationship("Role", secondary="role_permissions", back_populates="permissions")
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    __table_args__ = (
+        Index("uq_role_permission", "role_id", "permission_id", unique=True),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    role_id = Column(String(36), ForeignKey("roles.id", ondelete="CASCADE"), nullable=False, index=True)
+    permission_id = Column(String(36), ForeignKey("permissions.id", ondelete="CASCADE"), nullable=False, index=True)
+
+
 class UserSession(Base):
     __tablename__ = "user_sessions"
     __table_args__ = (
@@ -527,6 +570,7 @@ class UserSession(Base):
     user_agent = Column(String(255), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_revoked = Column(Boolean, default=False, nullable=False)
+    last_activity_at = Column(DateTime(timezone=True), default=utc_now, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 

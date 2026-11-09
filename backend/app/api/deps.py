@@ -95,6 +95,26 @@ def get_current_user(
     )
 
 
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    """Enforces that the authenticated user possesses the system administrator role."""
+    if getattr(user, "role", "USER") != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrative privileges required to access this resource."
+        )
+    return user
+
+
+def get_current_active_user(user: User = Depends(get_current_user)) -> User:
+    """Verifies that the authenticated user account is in an active state."""
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is deactivated."
+        )
+    return user
+
+
 def get_active_organization(
     request: Request,
     user: User = Depends(get_current_user),

@@ -31,6 +31,9 @@ const ObservabilityPage = lazy(() =>
 const AuthPage = lazy(() =>
   import('./pages/AuthPage').then((m) => ({ default: m.AuthPage }))
 );
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
 import { AuthProvider } from './context/AuthContext';
 import { HealthProvider } from './context/HealthContext';
 
@@ -56,6 +59,22 @@ export const App: React.FC = () => {
           />
           <Route
             path="/register"
+            element={
+              <Suspense fallback={<ViewSuspenseFallback />}>
+                <AuthPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <Suspense fallback={<ViewSuspenseFallback />}>
+                <AuthPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/reset-password"
             element={
               <Suspense fallback={<ViewSuspenseFallback />}>
                 <AuthPage />
@@ -149,6 +168,14 @@ export const App: React.FC = () => {
               element={
                 <Suspense fallback={<ViewSuspenseFallback />}>
                   <ObservabilityPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <ProfilePage />
                 </Suspense>
               }
             />

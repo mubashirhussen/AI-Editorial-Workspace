@@ -44,8 +44,8 @@ class TestDatabaseIntegrity:
     def test_alembic_head_revision_matches_latest(self, db_session):
         """Verify that the database schema is at Alembic migration head."""
         result = db_session.execute(text("SELECT version_num FROM alembic_version")).scalar()
-        # Supports the progressive schema revisions from Phase 3 through Phase 8
-        valid_revisions = {"5e9a2f1b4c3d", "6f1b2a3c4d5e", "7a2c3d4e5f6a"}
+        # Supports the progressive schema revisions from Phase 3 through Phase 20
+        valid_revisions = {"5e9a2f1b4c3d", "6f1b2a3c4d5e", "7a2c3d4e5f6a", "8b3c4d5e6f7a"}
         assert result in valid_revisions, f"Database must be at a recognized head revision, found '{result}'"
 
     def test_unique_constraint_user_email(self, db_session):
