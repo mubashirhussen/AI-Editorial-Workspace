@@ -158,3 +158,4 @@ Executed: `alembic upgrade head` on a newly created SQLite instance:
 1. **Organization Scoping:** Every business entity contains a direct or relational foreign key to `organizations.id`.
 2. **Cascading Deletions:** Deleting an organization or research project cleanly cascades to sources, analyses, and drafts without leaving orphan records.
 3. **Cross-Tenant Test Verification:** Passed 15 out of 15 automated multi-tenancy tests in [`test_phase24_multi_tenancy.py`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/backend/tests/test_phase24_multi_tenancy.py). Organization A cannot read, query, update, or delete Organization B's records.
+

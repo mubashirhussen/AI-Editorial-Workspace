@@ -80,3 +80,4 @@ All endpoints serialize output using Pydantic models in `backend/app/schemas/`:
 1. Sensitive fields (`hashed_password`, `encrypted_api_key`) are stripped from response schemas via `Field(exclude=True)` or dedicated public schemas (`UserPublic`, `AiProviderConfigRead`).
 2. Paginated responses use `skip` and `limit` query parameters, returning standard structure `{ "items": [...], "total": int, "page": int, "size": int }`.
 3. Multi-tenant scoping filters all queries by `organization_id == current_org.id`, preventing cross-tenant leakage.
+

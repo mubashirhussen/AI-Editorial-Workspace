@@ -130,3 +130,4 @@ python -m alembic upgrade head
 
 1. **Test Isolation:** Automated test suites (`pytest backend/tests/`) NEVER touch the production `editorial.db` file. Test fixtures instantiate in-memory SQLite instances (`sqlite:///:memory:`) or isolated temporary database files with automatic cleanup.
 2. **Seed Data:** Standard editorial style profiles (e.g., *This Week in AI Standard*) are provisioned through idempotent application lifecycle handlers (`backend/app/main.py:lifespan`), ensuring repeatable setup on fresh databases.
+
