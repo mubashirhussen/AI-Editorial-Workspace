@@ -39,3 +39,4 @@ Engineering production software involves making conscious trade-offs between del
 - **Current Architecture:** Operates with high performance on local SQLite (with WAL mode and busy timeout enabled) or single-instance PostgreSQL via SQLAlchemy.
 - **Trade-off:** Perfect for developer setup and single-tenant enterprise deployments. Does not currently include multi-region active-active read replica routing.
 - **Enterprise Roadmap:** Configure AWS Aurora PostgreSQL with multi-AZ replication and read-replica connection pooling via PgBouncer.
+

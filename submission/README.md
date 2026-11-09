@@ -81,3 +81,4 @@ npm run dev
 - **Frontend TypeScript Build:** **0 type errors**, built cleanly via Vite in 7.00 seconds.
 - **Database Migrations:** Alembic head `7a2c3d4e5f6a` covering 34 normalized tables.
 - **Zero-Dependency Fallback:** Built-in heuristic engine allows full end-to-end operation even without cloud LLM keys.
+

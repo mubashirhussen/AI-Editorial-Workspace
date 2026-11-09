@@ -72,3 +72,4 @@ Generative AI will not replace human editors. Instead, it elevates editors into 
 2. Reduced average sentence length from 36.2 words down to 18.4 words.
 3. Added concrete factual citations `[SRC-001]` and `[SRC-002]`.
 4. Increased Flesch Reading Ease score from 41.2 to 68.4.
+

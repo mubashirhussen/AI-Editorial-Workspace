@@ -82,3 +82,4 @@ npm --prefix frontend run dev
   - Request tracing via `X-Request-ID` across every client request.
   - **Graceful Fallback Resilience:** Explain that if external LLM APIs fail, the built-in deterministic heuristic engine takes over with zero downtime.
   - Conclude and invite technical questions from the evaluators.
+

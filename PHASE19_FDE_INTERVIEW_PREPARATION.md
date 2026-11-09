@@ -136,3 +136,4 @@ As an FDE, my diagnostic playbook would be:
    - If parser timeout occurred: Check `httpx` timeout limits (default 30s) or PDF text extractor memory overhead.
    - If token window overflowed: Ensure the text chunker splits oversized documents into 4,000-token chunks before ingestion.
 3. **Provide Hotfix / Configuration Update:** Ship a scoped configuration fix or update the chunking pipeline without destabilizing existing customer workflows.
+

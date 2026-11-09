@@ -109,3 +109,4 @@ All 18 automated security assertions in `test_phase21_security_hardening.py` pas
 - Oversized payload (> 10MB) -> **BLOCKED** (HTTP 413)
 - Non-whitelisted file extension -> **BLOCKED** (HTTP 400)
 - SQL injection string in project title -> **SANITIZED & ESCAPED** via SQLAlchemy parameterized queries.
+

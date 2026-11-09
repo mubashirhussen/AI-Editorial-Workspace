@@ -246,3 +246,4 @@ graph LR
 
 - **Multi-Stage Builds:** The frontend uses a two-stage Dockerfile (`node:18-alpine` builder followed by lightweight `nginx:alpine` runner).
 - **Zero-Secret Containers:** Container images do not package hardcoded credentials; configuration is injected dynamically through environment variables or mounted secrets.
+

@@ -1,418 +1,546 @@
 # AI Editorial Workspace
 
-**A production-ready AI Editorial Workspace transforming raw AI industry announcements into evidence-backed research briefs, traceable citations, and publication-ready newsletter drafts.**
+**A production-grade, full-stack AI Editorial Workspace engineered to transform raw AI technical literature, research papers, and industry announcements into evidence-backed research briefs, verifiable citations, and publication-ready newsletter editions.**
 
 Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluation at *This Week in AI*.
 
-[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-212%2F212%20Passed%20(100%25)-emerald)](docs/TEST_REPORT.md)
-[![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-34%2F34%20Passed-blue)](docs/TEST_REPORT.md)
+[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-212%2F212%20Passed%20(100%25)-emerald)](submission/TEST_REPORT.md)
+[![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-34%2F34%20Passed%20(100%25)-blue)](submission/TEST_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 19 Submission](https://img.shields.io/badge/Phase%2019-Ready%20for%20Submission-brightgreen)](PHASE19_FINAL_SUBMISSION_REPORT.md)
+[![Phase 19 Final Submission](https://img.shields.io/badge/Status-Ready%20for%20Submission-brightgreen)](PHASE19_FINAL_SUBMISSION_REPORT.md)
 [![Branch](https://img.shields.io/badge/Branch-feat%2Fphase19--fde--submission--preparation-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
-## 0. FDE Internship Assessment Submission Deliverables
+## Table of Contents
 
-This repository is prepared for final technical assessment, live demonstration, and grading. All core requirements, operational evidence matrices, and independent quality evaluations are indexed below:
+1. [Project Description](#1-project-description)
+2. [Project Aim & Objectives](#2-project-aim--objectives)
+3. [Problem Statement](#3-problem-statement)
+4. [How We Solve the Problem Statement](#4-how-we-solve-the-problem-statement)
+5. [End-to-End Editorial Procedure](#5-end-to-end-editorial-procedure)
+6. [System Architectures](#6-system-architectures)
+   - [High-Level System Architecture](#high-level-system-architecture)
+   - [End-to-End Editorial Processing Flow](#end-to-end-editorial-processing-flow)
+   - [Database Entity-Relationship Schema](#database-entity-relationship-schema)
+7. [Tech Stack](#7-tech-stack)
+8. [LLM Integration & Autonomous Fallback Engine](#8-llm-integration--autonomous-fallback-engine)
+9. [Core Modules Implemented](#9-core-modules-implemented)
+10. [Implementation Deep Dive](#10-implementation-deep-dive)
+11. [How to Use It (Quickstart & Live Demo)](#11-how-to-use-it-quickstart--live-demo)
+12. [Automated Test Suite & Verification Results](#12-automated-test-suite--verification-results)
+13. [Official Submission Deliverables Index](#13-official-submission-deliverables-index)
 
-### Phase 19 — Submission Package & Evaluation Artifacts
-| Deliverable | Description | Location |
+---
+
+## 1. Project Description
+
+The **AI Editorial Workspace** is an enterprise-ready editorial intelligence platform designed to bridge generative AI with rigorous journalistic governance. Unlike generic chatbots that draft unanchored text in isolation, this workspace enforces a strict **"Proof-First, Evidence-Always"** paradigm:
+
+- Ingests complex technical sources (arXiv research papers, technical documentation, specifications, and URLs) with built-in **SSRF (Server-Side Request Forgery) protection**.
+- Extracts grounded factual evidence, separates empirical facts from market speculation, and maps semantic knowledge graphs.
+- Provides a real-time **Writing Assistant** equipped with an in-process **Deterministic Linguistic Auditor** that enforces 9 concrete readability, style, and structure rules (e.g., Flesch Reading Ease, sentence length thresholds, passive voice ratios).
+- Maintains immutable **Version Snapshots** and side-by-side semantic diffing for full author attribution.
+- Bundles verified drafts into publication-ready editions in the **Editorial Studio**, ensuring every claim retains a verifiable citation anchor back to the primary source hash.
+- Provides deep **Observability & Telemetry** with token accounting, latency breakdowns, and a zero-downtime deterministic fallback engine.
+
+---
+
+## 2. Project Aim & Objectives
+
+The primary aim of the AI Editorial Workspace is to **eliminate hallucination risk and cognitive bloat in technical publishing** while accelerating editorial throughput from raw research to verified publication.
+
+### Key Engineering Objectives:
+1. **Factual Grounding:** Guarantee that every statement synthesized in a research brief or generated in an editorial draft is tethered directly to ingested primary sources.
+2. **Deterministic Quality Enforcement:** Replace subjective editorial guesswork with mathematical, reproducible linguistic scoring (Flesch Reading Ease, Flesch-Kincaid Grade Level, syntactic sentence length constraints).
+3. **Enterprise Security & Isolation:** Enforce strict multi-tenant organization boundaries, stateless JWT authentication with PBKDF2 password hashing, and network-level SSRF defense.
+4. **Autonomous Operational Resilience:** Decouple the application from single cloud LLM dependencies by implementing dynamic multi-provider routing and a local heuristic fallback engine that guarantees 100% uptime even in air-gapped or offline environments.
+5. **Complete Auditability:** Capture immutable version lineage and audit logs for every editorial transition, enabling cross-examination of drafts before syndication.
+
+---
+
+## 3. Problem Statement
+
+Technical publications, digital newsletters, and research organizations face two critical operational bottlenecks when adopting generative AI:
+
+### 1. Unanchored Generation & The Hallucination Crisis
+Standard large language models (LLMs) operate as next-token predictors. While they produce polished, grammatically fluent text, they routinely fabricate statistics, misattribute quotes, and invent non-existent benchmarks. For enterprise editorial teams, publishing ungrounded claims creates catastrophic legal exposure, brand erosion, and reader distrust.
+
+### 2. Manual Fact-Checking & Cognitive Bloat
+Technical authors frequently compose drafts marred by run-on sentences (> 30 words), excessive passive voice, conversational filler phrases, and uncontextualized jargon. Standard AI rewriters often flatten the text into generic, bland marketing copy. Furthermore, manual source verification consumes between 60% and 80% of an editorial desk's cycle time, creating severe publishing delays.
+
+### 3. Lack of Multi-Tenant Governance
+Most teams maintain research notes in loose documents, drafts in web editors, and revisions across chat threads. There is no unified system of record that links published paragraphs back to the cryptographic hashes of the primary sources they cite.
+
+---
+
+## 4. How We Solve the Problem Statement
+
+The AI Editorial Workspace resolves these challenges through a closed-loop architectural pipeline:
+
+| Challenge | How We Solve It | Technical Implementation |
 | :--- | :--- | :--- |
-| **Curated Submission Package** | Self-contained submission directory (README, Product, Architecture, Samples) | [`submission/`](submission/) |
-| **Final Submission Report** | Phase 19 Final submission audit, test verification & sign-off verdict | [`PHASE19_FINAL_SUBMISSION_REPORT.md`](PHASE19_FINAL_SUBMISSION_REPORT.md) |
-| **Live Demonstration Playbook** | 7–10 minute live technical walkthrough playbook across 5 timed segments | [`PHASE19_LIVE_DEMO_SCRIPT.md`](PHASE19_LIVE_DEMO_SCRIPT.md) |
-| **Technical Architecture Walkthrough** | Architecture defense with Mermaid diagrams, AI router & security | [`PHASE19_ARCHITECTURE_WALKTHROUGH.md`](PHASE19_ARCHITECTURE_WALKTHROUGH.md) |
-| **FDE Interview Preparation Bank** | 14 exhaustive questions across 7 categories with code citations | [`PHASE19_FDE_INTERVIEW_PREPARATION.md`](PHASE19_FDE_INTERVIEW_PREPARATION.md) |
-| **Engineering Challenges Retrospective** | 5 genuine engineering challenges encountered and resolved | [`PHASE19_ENGINEERING_CHALLENGES.md`](PHASE19_ENGINEERING_CHALLENGES.md) |
-| **Contingency & Demo Backup Plan** | Operational runbook, recovery commands, offline fallback & demo seeder | [`PHASE19_DEMO_BACKUP_PLAN.md`](PHASE19_DEMO_BACKUP_PLAN.md) |
-| **Submission Readiness Audit** | Environment, migration, and test suite verification | [`PHASE19_SUBMISSION_READINESS.md`](PHASE19_SUBMISSION_READINESS.md) |
-
-### Previous Phase Historical Audits & Deliverables
-
-| Deliverable | Description | Location |
-| :--- | :--- | :--- |
-| **Final Sign-Off & Verdict** | Phase 18 Final evaluator verdict, sign-off & submission recommendation | [`PHASE18_FINAL_SIGNOFF.md`](PHASE18_FINAL_SIGNOFF.md) |
-| **Independent Technical Audit** | Phase 18 Comprehensive independent audit across all 8 functional modules | [`PHASE18_INDEPENDENT_AUDIT.md`](PHASE18_INDEPENDENT_AUDIT.md) |
-| **Backend Architecture Audit** | Phase 18 FastAPI route contracts, schemas, auth, and error handling | [`PHASE18_BACKEND_AUDIT.md`](PHASE18_BACKEND_AUDIT.md) |
-| **Database Architecture Audit** | Phase 18 SQLAlchemy 34-table model catalog, constraints & Alembic lineage | [`PHASE18_DATABASE_AUDIT.md`](PHASE18_DATABASE_AUDIT.md) / [`DATABASE_ARCHITECTURE_AUDIT.md`](DATABASE_ARCHITECTURE_AUDIT.md) |
-| **Security Audit** | Phase 18 Threat model, OWASP Top 10 mitigations & secret storage audit | [`PHASE18_SECURITY_AUDIT.md`](PHASE18_SECURITY_AUDIT.md) / [`SECURITY_AUDIT.md`](SECURITY_AUDIT.md) |
-| **AI Quality Report** | Phase 18 9-case evaluation dataset results and factual grounding benchmarks | [`PHASE18_AI_QUALITY_REPORT.md`](PHASE18_AI_QUALITY_REPORT.md) |
-| **Frontend & UX Audit** | Phase 18 Viewport adaptability, accessibility, and zero-defect UI audit | [`PHASE18_FRONTEND_UX_AUDIT.md`](PHASE18_FRONTEND_UX_AUDIT.md) |
-| **Test & Build Verification** | Phase 18 Empirical test logs: 212/212 backend tests, 34 benchmarks | [`PHASE18_TEST_VERIFICATION.md`](PHASE18_TEST_VERIFICATION.md) |
-| **FDE Assessment Evaluation** | Phase 18 12-competency evaluation rubric scoring 96/100 | [`PHASE18_FDE_ASSESSMENT_REPORT.md`](PHASE18_FDE_ASSESSMENT_REPORT.md) |
-| **Final Execution Report** | Phase 17 Final execution sign-off, defect closure & assessment readiness | [`PHASE17_FINAL_EXECUTION_REPORT.md`](PHASE17_FINAL_EXECUTION_REPORT.md) |
-| **Current Implementation Status** | Phase 17 Feature-by-feature implementation status & evidence ledger | [`PHASE17_CURRENT_IMPLEMENTATION_STATUS.md`](PHASE17_CURRENT_IMPLEMENTATION_STATUS.md) |
-| **Prioritized Defect Register** | Phase 17 Complete P0–P3 defect tracking ledger, root cause & resolution | [`PHASE17_DEFECT_REGISTER.md`](PHASE17_DEFECT_REGISTER.md) |
-| **FDE Live Demo Playbook** | 7–10 minute live technical demonstration script across 14 segments | [`docs/PHASE16_FDE_DEMO_SCRIPT.md`](docs/PHASE16_FDE_DEMO_SCRIPT.md) |
-| **Demonstration Seeder** | Pristine demo environment seed script (`--reset` supported) | [`backend/scripts/seed_demo_environment.py`](backend/scripts/seed_demo_environment.py) |
-| **Requirements Traceability Matrix** | Phase 15 End-to-end requirement mapping: UI $\rightarrow$ API $\rightarrow$ Service $\rightarrow$ Model $\rightarrow$ Test | [`docs/PHASE15_REQUIREMENTS_TRACEABILITY.md`](docs/PHASE15_REQUIREMENTS_TRACEABILITY.md) |
-| **User Acceptance Test Report** | Phase 15 Scenarios A, B, C & independent audits of Modules A through H | [`docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md`](docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md) |
-| **Data Validation Report** | Empirical validation of frontend metrics vs backend endpoints and DB records | [`docs/PHASE15_DATA_VALIDATION_REPORT.md`](docs/PHASE15_DATA_VALIDATION_REPORT.md) |
-| **Product Note** | User problem statement, editorial workflows, differentiators, and roadmap | [`PRODUCT_NOTE.md`](PRODUCT_NOTE.md) / [`docs/PRODUCT_NOTE.md`](docs/PRODUCT_NOTE.md) |
-| **Technical Architecture** | End-to-end system design, 3-tier containerization, internal DNS, and pipelines | [`TECHNICAL_ARCHITECTURE.md`](TECHNICAL_ARCHITECTURE.md) / [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) |
-| **Engineering Decisions** | Architectural Decision Records (ADRs) for framework and database selections | [`ENGINEERING_DECISIONS.md`](ENGINEERING_DECISIONS.md) / [`docs/ENGINEERING_DECISIONS.md`](docs/ENGINEERING_DECISIONS.md) |
-| **Test Report** | Real test evidence: 212/212 backend tests, 34 benchmarks, Vite production build | [`TEST_REPORT.md`](TEST_REPORT.md) / [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) |
-| **Sample Editorial** | Real-world publication output with verified citations and before/after audit | [`SAMPLE_EDITORIAL.md`](SAMPLE_EDITORIAL.md) / [`docs/SAMPLE_EDITORIAL.md`](docs/SAMPLE_EDITORIAL.md) |
-| **Live Demo Playbook (Summary)** | 5–7 minute quick walkthrough playbook | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) / [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
-| **Engineering Decisions** | Architectural Decision Records (ADRs) for framework and database selections | [`ENGINEERING_DECISIONS.md`](ENGINEERING_DECISIONS.md) / [`docs/ENGINEERING_DECISIONS.md`](docs/ENGINEERING_DECISIONS.md) |
-| **Test Report** | Real test evidence: 212/212 backend tests, 34 benchmarks, Vite production build | [`TEST_REPORT.md`](TEST_REPORT.md) / [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) |
-| **Sample Editorial** | Real-world publication output with verified citations and before/after audit | [`SAMPLE_EDITORIAL.md`](SAMPLE_EDITORIAL.md) / [`docs/SAMPLE_EDITORIAL.md`](docs/SAMPLE_EDITORIAL.md) |
-| **Live Demo Playbook (Summary)** | 5–7 minute quick walkthrough playbook | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) / [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
-| **Production Readiness Report** | Phase 14 Final Release Candidate Sign-Off & Verification Verdict | [`docs/PRODUCTION_READINESS_REPORT.md`](docs/PRODUCTION_READINESS_REPORT.md) |
-| **Production Readiness Audit** | Phase 14 Comprehensive production readiness audit across 6 domains | [`docs/PHASE14_PRODUCTION_READINESS_AUDIT.md`](docs/PHASE14_PRODUCTION_READINESS_AUDIT.md) |
-| **Environment Configuration** | Enterprise environment variable catalog & cryptographic key decoupling | [`docs/PRODUCTION_ENVIRONMENT_CONFIGURATION.md`](docs/PRODUCTION_ENVIRONMENT_CONFIGURATION.md) |
-| **Production Database Deployment** | PostgreSQL 15, connection pooling, and Alembic migration runbooks | [`docs/PRODUCTION_DATABASE_DEPLOYMENT.md`](docs/PRODUCTION_DATABASE_DEPLOYMENT.md) |
-| **CI/CD Pipeline Specification** | GitHub Actions 15-stage workflow specification and branch gates | [`docs/CI_CD_PIPELINE.md`](docs/CI_CD_PIPELINE.md) |
-| **Production Security Review** | Threat model, OWASP Top 10 mitigations & security verification | [`docs/PRODUCTION_SECURITY_REVIEW.md`](docs/PRODUCTION_SECURITY_REVIEW.md) |
-| **Performance Benchmark Report** | Empirical benchmark report across frontend, backend, DB & AI layers | [`docs/PHASE14_PERFORMANCE_REPORT.md`](docs/PHASE14_PERFORMANCE_REPORT.md) |
-| **Production Rollback Guide** | Container, migration, and disaster recovery procedures | [`docs/ROLLBACK_GUIDE.md`](docs/ROLLBACK_GUIDE.md) |
-| **Known Limitations** | Operational boundaries, deterministic fallbacks & future roadmap | [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) |
-| **Production Deployment Guide** | Multi-tier container and cloud platform deployment runbook | [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md) |
-| **Changelog** | Version history and changes from v0.1.0 through v1.0.0 | [`CHANGELOG.md`](CHANGELOG.md) |
-| **System Integration Report** | Phase 13 Complete System Integration, 7-Scenario E2E & Bug Elimination | [`docs/PHASE13_SYSTEM_INTEGRATION_REPORT.md`](docs/PHASE13_SYSTEM_INTEGRATION_REPORT.md) |
-| **System Integration Audit** | Phase 13 Cross-layer module audit and root cause analyses | [`docs/PHASE13_SYSTEM_INTEGRATION_AUDIT.md`](docs/PHASE13_SYSTEM_INTEGRATION_AUDIT.md) |
-| **Integration Traceability** | Complete 5-tier traceability: UI $\rightarrow$ API $\rightarrow$ Endpoint $\rightarrow$ Service $\rightarrow$ Model | [`docs/FRONTEND_BACKEND_INTEGRATION.md`](docs/FRONTEND_BACKEND_INTEGRATION.md) |
-| **Backend Architecture Audit** | Complete FastAPI backend audit, middleware pipeline & service layer | [`docs/BACKEND_ARCHITECTURE_AUDIT.md`](docs/BACKEND_ARCHITECTURE_AUDIT.md) |
-| **Database Architecture Audit** | SQLAlchemy 34-table model catalog, constraints & Alembic lineage | [`docs/DATABASE_ARCHITECTURE_AUDIT.md`](docs/DATABASE_ARCHITECTURE_AUDIT.md) |
-| **API Database Mapping** | End-to-end endpoint mapping to models, methods & CRUD operations | [`docs/API_DATABASE_MAPPING.md`](docs/API_DATABASE_MAPPING.md) |
-| **UI/UX Functionality Audit** | Phase 12 UI/UX audit, screen observations, backend route mapping & fixes | [`docs/UI_FUNCTIONALITY_AUDIT.md`](docs/UI_FUNCTIONALITY_AUDIT.md) |
-| **FDE Evidence Matrix** | Detailed matrix connecting user requirements to concrete code and tests | [`docs/FDE_EVIDENCE_MATRIX.md`](docs/FDE_EVIDENCE_MATRIX.md) |
+| **Hallucinated Claims** | **Source-Constrained Synthesis:** The AI is strictly constrained to the text of ingested documents, producing an evidence-aligned brief before writing begins. | Grounded prompt templates, claim-to-source hash mapping, negative constraint prompts (`backend/app/services/ai_service.py`). |
+| **Market Speculation vs Fact** | **Epistemic Classification:** Statements are categorized into Empirical Facts, Theoretical Models, and Market Speculation. | Heuristic keyword tagging and claim verification matrix (`backend/app/services/research_intelligence_service.py`). |
+| **Overly Dense Prose** | **9 Deterministic In-Process Checks:** Mathematical scoring flags long sentences, passive voice, filler words, and jargon. | Pure Python regex and syllable tokenization algorithms (`backend/app/services/writing_auditor.py`). |
+| **SSRF Vulnerabilities** | **Proactive Network Filtering:** Blocks URLs resolving to private subnets, localhost, or cloud instance metadata. | Synchronous DNS resolution via `socket.getaddrinfo()` against RFC 1918 CIDR blocks (`backend/app/services/url_validator.py`). |
+| **LLM Outages & Rate Limits** | **Autonomous Fallback Engine:** Dynamic failover to secondary cloud models or local rule-based heuristics. | Abstract provider interface with automatic offline heuristic generation (`backend/app/services/ai_service.py`). |
+| **Unversioned Revisions** | **Immutable Version History:** Character-level semantic diffing and historical version rollback. | Relational `EditorialVersion` records with author attribution (`backend/app/models/base.py`). |
 
 ---
 
-## 1. Problem Statement & Project Overview
+## 5. End-to-End Editorial Procedure
 
-Technical media publications and newsletter teams face two critical operational bottlenecks:
+The workspace enforces a sequential 5-stage editorial workflow:
 
-1. **Unchecked PR Claims & AI Hallucinations:** Commercial AI labs frequently blur the boundary between empirical benchmarks, interpretive analysis, and speculative marketing claims. Standard conversational AI tools synthesize these sources uncritically, generating convincing falsehoods without verifiable citation provenance.
-2. **Cognitive Bloat & Voice Flattening:** Technical drafts are frequently marred by run-on sentences (>25 words), passive voice, redundant filler phrases, and uncontextualized jargon. When editors use generic AI rewriters, the output becomes bland and flattened, stripping away the publication's authoritative editorial voice.
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  1. SOURCE       │     │  2. RESEARCH     │     │  3. DRAFT        │     │  4. QUALITY      │     │  5. PUBLICATION  │
+│  COLLECTION      │ ──► │  SYNTHESIS       │ ──► │  COMPOSITION     │ ──► │  AUDIT & DIFF    │ ──► │  IN STUDIO       │
+│  (SSRF-Guarded)  │     │  (Facts/Spec)    │     │  (Evidence-First)│     │  (9 Checks)      │     │  (Approved Ed.)  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘     └──────────────────┘
+```
 
-The **AI Editorial Workspace** solves both challenges by enforcing a strict, evidence-first editorial workflow:
-- **Module A (Research Assistant & Local Library):** Multi-source ingestion (URL or file upload: PDF, DOCX, TXT), SSRF-guarded scraping, content-hash deduplication, semantic claim-to-excerpt verification, and epistemic classification (Facts vs. Analysis vs. Speculation).
-- **Module B (Writing Assistant & Editorial Studio):** Interactive Hemingway-style quality auditor featuring six distinct writing checks, deterministic Flesch Reading Ease calculations, Notalx-style quick templates, floating contextual selection menus, Afforai-style citation managers, and non-destructive sentence-level replacements.
-- **Module C (AI Reliability & Observability):** Unified AI Provider abstraction (Groq, OpenAI, Anthropic, Gemini) with a 100% deterministic offline fallback, version-controlled prompt registries, token cost accounting, and dt-evals continuous evaluation.
-- **Module D (Production Deployment & DevSecOps):** 3-tier containerized architecture (Frontend Nginx, Backend FastAPI, PostgreSQL 15, Redis 7) with internal container DNS, SRE health probes, automated SHA-256 database backup/restore, and a 7-stage DevSecOps CI/CD pipeline.
-
----
-
-## 2. Requirements Traceability Matrix
-
-| Requirement | Implementation Location | Test Evidence | Status |
-| :--- | :--- | :--- | :--- |
-| **User Authentication & RBAC** | `backend/app/api/routes/auth.py`, `backend/app/core/security.py`, `frontend/src/context/AuthContext.tsx` | `test_phase21_security_hardening.py`, `test_phase2_security_hardening.py` | **VERIFIED** |
-| **Organization & Tenant Isolation** | `backend/app/models/base.py` (`TenantScopedBase`), `backend/app/api/deps.py` (`get_active_organization`), `frontend/src/components/layout/OrganizationSwitcher.tsx` | `test_phase24_multi_tenancy.py` (15/15 passed) | **VERIFIED** |
-| **Research Source Ingestion** | `backend/app/api/routes/sources.py`, `backend/app/services/research/source_service.py`, `frontend/src/components/research/LocalLibraryView.tsx` | `test_phase6_research_assistant.py`, `test_ssrf_protection_blocked_destinations` | **VERIFIED** |
-| **Evidence-Backed Research** | `backend/app/services/research/synthesis_service.py`, `backend/app/services/ai/unu_claim_service.py`, `frontend/src/components/research/ResearchIntelligenceDashboard.tsx` | `test_phase6_research_assistant.py`, `test_phase8_ai_reliability.py` | **VERIFIED** |
-| **Writing Assistance & Linters** | `backend/app/api/routes/writing.py`, `backend/app/services/writing_service.py`, `frontend/src/components/writing/ArticleImprovementsPanel.tsx`, `frontend/src/components/writing/InlineReadabilityLinter.tsx` | `test_phase7_writing_assistant.py`, `test_phase4_writing_assistant.py` | **VERIFIED** |
-| **Afforai Citation Management** | `frontend/src/components/writing/AfforaiCiteModal.tsx`, `backend/app/services/research/synthesis_service.py` | `test_phase7_writing_assistant.py`, `test_phase6_editorial_studio.py` | **VERIFIED** |
-| **Draft Versioning & Rollback** | `backend/app/services/version_control/version_service.py`, `backend/app/models/base.py` (`DraftVersion`), `frontend/src/components/version_control/VersionHistoryPanel.tsx` | `test_phase27_version_control.py` (8/8 passed) | **VERIFIED** |
-| **AI Reliability & Observability** | `backend/app/services/ai/ai_provider_service.py`, `backend/app/api/routes/observability.py`, `frontend/src/pages/ObservabilityPage.tsx` | `test_phase8_ai_reliability.py`, `test_phase17_observability.py`, `test_phase22_ai_evaluation.py` | **VERIFIED** |
-| **Database Migrations** | `backend/alembic/versions/7a2c3d4e5f6a_production_deployment_and_task_queue.py`, `backend/alembic.ini` | `test_alembic_migrations_head_exists`, verified on fresh DB | **VERIFIED** |
-| **Production Deployment & SRE** | `docker-compose.yml`, `docker-compose.prod.yml`, `scripts/backup_db.py`, `scripts/restore_db.py`, `backend/app/api/routes/health.py` | `test_phase9_production_deployment.py` (16/16 passed) | **VERIFIED** |
+1. **Source Collection (`/research`):**
+   - The user inputs research paper URLs, uploads PDF documents, or pastes raw text.
+   - The backend validates the host via the SSRF Guardrail, parses the text, and stores an immutable record in `source_documents`.
+2. **Research Synthesis (`/research`):**
+   - The user clicks **Generate Brief**.
+   - The AI Router synthesizes the documents into key takeaways, an *Evidence Alignment* table, a *Facts vs. Speculation* matrix, and a *Knowledge Graph*.
+3. **Draft Composition (`/writing`):**
+   - The editor composes the draft article in the real-time editor, drawing directly from the research brief findings.
+4. **Deterministic Quality Audit & Diffing (`/writing`):**
+   - The editor clicks **Audit Quality**.
+   - The engine evaluates the prose across 9 deterministic dimensions, producing real-time Flesch Reading Ease and Kincaid Grade scores.
+   - The editor clicks **Highlight Issues** to view inline visual annotations, edits the text, and inspects the character-level diff using **Compare Original vs Revised**.
+5. **Publication in Studio (`/editorial`):**
+   - The verified draft is bundled into a newsletter edition.
+   - The editorial lead reviews the scorecards and marks the edition as `APPROVED` or `PUBLISHED` with inline citations preserved.
 
 ---
 
-## 3. Architecture Overview
+## 6. System Architectures
 
-The system adheres to a decoupled 3-tier container architecture orchestrated via Docker Compose:
+### High-Level System Architecture
 
 ```mermaid
-flowchart TD
-    subgraph PresentationTier["Presentation Tier (Client)"]
-        UI["React 18 + TypeScript SPA<br/>(Tailwind CSS, Vite 6, Recharts)"]
-        RUM["Real User Monitoring (RUM)<br/>(Web Vitals, LCP &lt; 2.5s, JS Errors)"]
+graph TD
+    subgraph ClientLayer["Client Layer (Frontend)"]
+        SPA["React 18 SPA (TypeScript + Vite)"]
+        Router["React Router v6"]
+        Contexts["Contexts (Auth, Health, Org, Theme)"]
+        UI["Tailwind CSS + Lucide Icons + Recharts"]
     end
 
-    subgraph IngressGateway["Ingress & Routing"]
-        Nginx["Nginx Reverse Proxy (Port 80/443)<br/>Internal DNS Resolver"]
+    subgraph GatewayLayer["Gateway & Ingress"]
+        Nginx["Nginx Reverse Proxy / Port 80"]
+        ViteDev["Vite Dev Server / Port 5173"]
     end
 
-    subgraph LogicTier["Logic Tier (Application Server)"]
-        API["FastAPI ASGI Backend (Port 8000)<br/>Python 3.10+, Uvicorn"]
-        AuthMiddleware["JWT &amp; Multi-Tenant Middleware"]
-        SSRFGuard["SSRF &amp; Input Validation Guardrail"]
-        WritingEngine["Writing Quality &amp; Linter Engine<br/>(Flesch, Passive Voice, Jargon)"]
-        ResearchEngine["Research Synthesis &amp; UNU Claim Verifier"]
-        AIRouter["Unified AI Provider Abstraction<br/>(OpenAI, Anthropic, Gemini, Groq, Fallback)"]
-        TaskQueue["Task Queue &amp; Background Worker Engine"]
+    subgraph ServiceLayer["Application Service Layer (FastAPI)"]
+        API["FastAPI App (Python 3.10)"]
+        Middleware["Security, CORS & X-Request-ID Middleware"]
+        AuthModule["JWT Auth & PBKDF2 Password Hashing"]
+        SSRFModule["SSRF URL Validator & Content Fetcher"]
+        AuditEngine["Deterministic Linguistic & Style Auditor"]
+        AIRouter["AI Provider Router & Fallback Engine"]
+        TelemetryModule["Observability & Request Telemetry"]
     end
 
-    subgraph DataTier["Data Tier (Persistence &amp; Cache)"]
-        Postgres[("PostgreSQL 15 Relational DB<br/>(SQLAlchemy 2.0, Alembic 7a2c3d4e5f6a)")]
-        Redis[("Redis 7 In-Memory Cache<br/>(Rate Limiting &amp; Task Queue)")]
-        BackupEngine["Automated SHA-256 Encrypted Backups"]
+    subgraph DataLayer["Persistence & Storage Layer"]
+        SQLA["SQLAlchemy 2.0 ORM Engine"]
+        Alembic["Alembic Migration Manager (Head 7a2c3d4e5f6a)"]
+        DB[("Relational Database (SQLite / PostgreSQL)")]
     end
 
-    UI -->|HTTPS / REST API| Nginx
-    Nginx -->|/api/*| API
-    Nginx -->|Static Assets| UI
-    API --> AuthMiddleware --> SSRFGuard
-    SSRFGuard --> WritingEngine
-    SSRFGuard --> ResearchEngine
-    ResearchEngine --> AIRouter
-    WritingEngine --> AIRouter
-    API --> TaskQueue
-    API -->|Port 5432| Postgres
-    API -->|Port 6379| Redis
-    TaskQueue --> Redis
-    Postgres --> BackupEngine
+    subgraph ExternalServices["External LLM Providers"]
+        Groq["Groq Cloud LPU (LLaMA-3 / Mixtral)"]
+        OpenAI["OpenAI API (GPT-4o / GPT-4o-mini)"]
+    end
+
+    SPA --> GatewayLayer
+    GatewayLayer --> API
+    API --> Middleware
+    Middleware --> AuthModule
+    Middleware --> SSRFModule
+    Middleware --> AuditEngine
+    Middleware --> AIRouter
+    Middleware --> TelemetryModule
+    AIRouter --> ExternalServices
+    AIRouter -. Fallback .-> AuditEngine
+    API --> SQLA
+    SQLA --> Alembic
+    SQLA --> DB
 ```
 
 ---
 
-## 4. Technology Stack
+### End-to-End Editorial Processing Flow
 
-### Backend
-- **Language & Runtime:** Python 3.10+ / 3.11+
-- **Framework:** FastAPI with Uvicorn (ASGI)
-- **Data Validation & Settings:** Pydantic v2 & Pydantic Settings
-- **ORM & Database:** SQLAlchemy 2.0 with PostgreSQL in production (SQLite supported for zero-dependency local dev)
-- **Database Migrations:** Alembic (head revision: `7a2c3d4e5f6a`)
-- **Extraction Engine:** Trafilatura with BeautifulSoup4 fallback & `lxml_html_clean`
-- **Security & Networking:** Cryptography (Fernet 32-byte encryption), PyJWT (HS256/RS256), passlib (Argon2 / bcrypt), HTTPX async client with DNS rebinding and SSRF protection
-- **Background Tasks:** TaskQueue service with Redis broker and async in-memory fallback
-- **Testing:** Pytest, pytest-asyncio, FastAPI TestClient
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Editor as Editorial Lead
+    participant FE as React Frontend (Vite)
+    participant API as FastAPI Backend
+    participant Guard as SSRF Guardrail
+    participant AI as AI Router / Fallback
+    participant DB as Relational Database
 
-### Frontend
-- **Framework:** React 18+ with TypeScript
-- **Bundler:** Vite 6.1
-- **Styling:** Tailwind CSS with custom editorial design tokens
-- **Routing:** React Router v7
-- **HTTP Client:** Axios with centralized interceptors (`Authorization`, `X-Organization-Id`, `X-Request-Id`)
-- **Icons & Visualization:** Lucide React, Recharts (time-series, radar, and latency distribution charts)
+    Editor->>FE: Ingest 3 Sources (URLs or PDFs)
+    FE->>API: POST /api/v1/research/sources
+    API->>Guard: Resolve DNS & Check Private CIDRs
+    Guard-->>API: IP Address Safe (Public Non-Loopback)
+    API->>API: Parse Text & Generate Hash
+    API->>DB: INSERT INTO source_documents
+    DB-->>FE: HTTP 201 Created (Sources Displayed)
 
----
+    Editor->>FE: Trigger "Generate Research Brief"
+    FE->>API: POST /api/v1/research/projects/{id}/synthesize
+    API->>AI: Synthesize Claims & Facts vs Speculation
+    alt Primary Cloud LLM Available
+        AI->>AI: Call Groq LPU (LLaMA-3)
+    else Cloud Outage or Rate Limited
+        AI->>AI: Execute Local Deterministic Heuristics
+    end
+    AI->>DB: INSERT INTO research_briefs
+    DB-->>FE: HTTP 200 OK (Structured Brief & Knowledge Graph)
 
-## 5. Repository Structure
+    Editor->>FE: Compose Draft & Click "Audit Quality"
+    FE->>API: POST /api/v1/writing/audit
+    API->>API: Execute 9 Deterministic Linguistic Checks
+    API-->>FE: Return Scores (Flesch 68.4, Grade 9.1, Passive 6.4%)
 
-```
-AI-Editorial-Workspace/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml                 # Multi-stage CI pipeline (Lint, Typecheck, Test, Build)
-│       ├── cd.yml                 # Production CD deployment gates
-│       ├── devsecops.yml          # 7-stage DevSecOps pipeline (SCA, SAST, Trivy, Attestation)
-│       └── security-checks.yml    # Secret scanning & dependency audits
-├── backend/
-│   ├── alembic/                   # Database migrations (Alembic)
-│   │   └── versions/              # Migration versions (7a2c3d4e5f6a)
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── deps.py            # Dependency injection (db, current_user, active_org)
-│   │   │   └── routes/            # REST API endpoints (auth, research, writing, health, etc.)
-│   │   ├── core/
-│   │   │   ├── config.py          # Production environment settings & invariants validation
-│   │   │   ├── database.py        # SQLAlchemy engine, session factory, connection pooling
-│   │   │   └── security.py        # JWT generation, Argon2 hashing, Fernet encryption
-│   │   ├── evaluation/            # Offline benchmark runner & reports
-│   │   ├── models/                # SQLAlchemy database models (Organization, Project, Draft, etc.)
-│   │   ├── schemas/               # Pydantic request and response schemas
-│   │   └── services/              # Business logic (AI router, extraction, writing, queue)
-│   ├── tests/                     # 201 automated unit, integration, and security tests
-│   ├── Dockerfile                 # Multi-stage production container for FastAPI
-│   └── requirements.txt           # Pinned Python production dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/            # Reusable UI components
-│   │   │   ├── editorial/         # Headline selector, word count indicator, preview
-│   │   │   ├── layout/            # Dashboard layout, header, sidebar, org switcher
-│   │   │   ├── research/          # LocalLibraryView, ResearchIntelligenceDashboard
-│   │   │   ├── version_control/   # VersionHistoryPanel, diff viewer, timeline
-│   │   │   └── writing/           # AfforaiCiteModal, ArticleImprovementsPanel, InlineLinter
-│   │   ├── context/               # AuthContext, ToastContext
-│   │   ├── pages/                 # Full-page views (ResearchPage, WritingPage, ObservabilityPage)
-│   │   ├── services/              # API clients (researchApi, writingService, etc.)
-│   │   └── types/                 # TypeScript interfaces and contracts
-│   ├── Dockerfile                 # Multi-stage production container (Node build -> Nginx)
-│   ├── nginx.conf                 # Production reverse proxy configuration
-│   └── package.json               # Frontend dependencies and build scripts
-├── docs/                          # Comprehensive technical and product documentation
-│   ├── PRODUCT_NOTE.md            # Product strategy and user workflows
-│   ├── TECHNICAL_ARCHITECTURE.md  # System architecture & Mermaid diagrams
-│   ├── ENGINEERING_DECISIONS.md   # Architectural decision records (ADRs)
-│   ├── TEST_REPORT.md             # Execution report for 201 backend tests & build
-│   ├── SAMPLE_EDITORIAL.md        # Realistic sample editorial output with real citations
-│   ├── DEMO_SCRIPT.md             # 5–7 minute live demonstration playbook
-│   ├── FINAL_STATUS.md            # Final release audit and handover checklist
-│   └── FDE_EVIDENCE_MATRIX.md     # Requirements-to-code traceability matrix
-├── scripts/
-│   ├── backup_db.py               # Database backup with SHA-256 integrity verification
-│   ├── restore_db.py              # Database restore with checksum validation and dry-run
-│   ├── generate_secrets.py        # Cryptographic secret generation utility
-│   └── entrypoint.sh              # Container entrypoint executing Alembic upgrade head
-├── docker-compose.yml             # Development container orchestration
-├── docker-compose.prod.yml        # Production 3-tier container orchestration
-├── .env.example                   # Annotated environment variable template
-└── README.md                      # This document
+    Editor->>FE: Approve Edition in Studio
+    FE->>API: POST /api/v1/editorial/publish
+    API->>DB: Record Edition & Create Immutable Audit Log
+    DB-->>FE: HTTP 200 OK (Newsletter Edition Approved)
 ```
 
 ---
 
-## 6. Prerequisites
+### Database Entity-Relationship Schema
 
-Ensure your system meets the following minimum requirements:
-- **Python:** 3.10.x or 3.11.x
-- **Node.js:** 18.x or 20.x (with `npm` 9.x+)
-- **Docker & Docker Compose:** Docker Engine 24.x+ and Compose v2 (optional for local non-containerized dev)
-- **Git:** 2.30+
+The database schema is managed via SQLAlchemy 2.0 ORM and versioned via Alembic migrations (Head: `7a2c3d4e5f6a`).
+
+```mermaid
+erDiagram
+    ORGANIZATIONS ||--o{ USERS : "employs"
+    ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERSHIPS : "contains"
+    USERS ||--o{ ORGANIZATION_MEMBERSHIPS : "belongs to"
+    ORGANIZATIONS ||--o{ RESEARCH_PROJECTS : "owns"
+    RESEARCH_PROJECTS ||--o{ SOURCE_DOCUMENTS : "includes"
+    RESEARCH_PROJECTS ||--o{ SOURCE_ANALYSES : "evaluates"
+    RESEARCH_PROJECTS ||--o{ RESEARCH_BRIEFS : "synthesizes"
+    RESEARCH_PROJECTS ||--o{ WRITING_DRAFTS : "develops"
+    WRITING_DRAFTS ||--o{ EDITORIAL_VERSIONS : "versions"
+    WRITING_DRAFTS ||--o{ EDITORIAL_OUTPUTS : "publishes"
+    ORGANIZATIONS ||--o{ AUDIT_LOGS : "records"
+
+    ORGANIZATIONS {
+        uuid id PK
+        string name
+        string slug UK
+        datetime created_at
+    }
+
+    USERS {
+        uuid id PK
+        string email UK
+        string hashed_password
+        string role
+        boolean is_active
+    }
+
+    RESEARCH_PROJECTS {
+        uuid id PK
+        uuid organization_id FK
+        string title
+        string status
+        string target_audience
+    }
+
+    SOURCE_DOCUMENTS {
+        uuid id PK
+        uuid project_id FK
+        string title
+        string url
+        string source_type
+        text raw_content
+    }
+
+    RESEARCH_BRIEFS {
+        uuid id PK
+        uuid project_id FK
+        json synthesis_data
+        json facts_vs_speculation
+        json knowledge_graph
+    }
+
+    WRITING_DRAFTS {
+        uuid id PK
+        uuid project_id FK
+        string title
+        text content
+        float quality_score
+        float flesch_score
+    }
+
+    EDITORIAL_OUTPUTS {
+        uuid id PK
+        uuid draft_id FK
+        string edition_number
+        string status
+        datetime published_at
+    }
+```
 
 ---
 
-## 7. Local Installation & Setup
+## 7. Tech Stack
 
-### 7.1 Clone the Repository
+| Domain | Technology | Version | Purpose & Architectural Justification |
+| :--- | :--- | :---: | :--- |
+| **Frontend Framework** | **React** | 18.3.1 | Component-driven reactive UI with declarative rendering and custom Context hooks. |
+| **Language (Client)** | **TypeScript** | 5.5.3 | End-to-end static typing, strict null checks, and interface contracts. |
+| **Build Tool & HMR** | **Vite** | 6.4.5 | Ultra-fast build times (< 7s), ES module HMR, and optimized vendor chunking. |
+| **Styling & Design** | **Tailwind CSS** | 3.4.1 | Utility-first CSS, dark/light theme support, and responsive layouts. |
+| **Icons & Visualization**| **Lucide React & Recharts** | Latest | Accessible UI iconography and dynamic telemetry metric charts. |
+| **Backend Framework** | **FastAPI** | 0.110.0 | High-performance asynchronous ASGI API with automated OpenAPI docs. |
+| **Language (Server)** | **Python** | 3.10.11 | Modern async/await semantics, type hints, and rich text-processing ecosystem. |
+| **ASGI Web Server** | **Uvicorn** | 0.28.0 | High-throughput asynchronous ASGI server with worker concurrency. |
+| **Validation & Schema** | **Pydantic** | 2.6.4 | Strict runtime request/response serialization, typing, and 422 error handlers. |
+| **ORM & Persistence** | **SQLAlchemy** | 2.0.28 | Type-annotated query builder with multi-tenant scoped repositories. |
+| **Database Migrations**| **Alembic** | 1.13.1 | Version-controlled schema migrations utilizing SQLite batch mode. |
+| **Relational Database**| **SQLite / PostgreSQL** | 3.x / 15 | Zero-configuration local database (WAL mode) with PostgreSQL production parity. |
+| **HTTP Client & I/O** | **HTTPX** | 0.27.0 | Fully asynchronous HTTP client for SSRF-protected remote document fetching. |
+| **Testing Framework** | **Pytest & pytest-asyncio**| 9.2.0 | Automated unit, integration, and end-to-end regression testing. |
+| **Security & Auth** | **PyJWT & Passlib** | Latest | Stateless HMAC-SHA256 JWT tokens and PBKDF2-SHA256 salted password hashing. |
+
+---
+
+## 8. LLM Integration & Autonomous Fallback Engine
+
+The platform implements an **Abstract AI Provider Router** (`backend/app/services/ai_service.py`) designed for zero-downtime operation:
+
+```mermaid
+graph TD
+    Req[Editorial Generation Request] --> Router{AI Provider Router}
+    Router -->|1. Try Primary| Groq[Groq Cloud LPU - LLaMA-3 / Mixtral]
+    Groq -->|Success| Out[Return Generated Output]
+    Groq -->|429 Rate Limit or 503 Outage| OpenAI[OpenAI API - GPT-4o-mini]
+    OpenAI -->|Success| Out
+    OpenAI -->|Failure / No API Keys| Fallback[Local Deterministic Heuristic Engine]
+    Fallback -->|100% Offline| Out
+```
+
+### Supported Models:
+1. **Primary Cloud LLM (Groq LPU):** `llama-3.3-70b-versatile` / `mixtral-8x7b-32768` (sub-second generation speed).
+2. **Secondary Cloud LLM (OpenAI API):** `gpt-4o-mini` / `gpt-4o` (high-accuracy fallback).
+3. **Deterministic Fallback Engine (Built-In Local CPU):**
+   - Operates **100% offline** without any API keys or network connection.
+   - Uses semantic sentence tokenization, phonetic syllable algorithms, and regex keyword clustering.
+   - Automatically tags response metadata: `"mode": "Deterministic Fallback Engine"`.
+   - **Result:** The user never receives a broken 500 error page if an external cloud API fails.
+
+---
+
+## 9. Core Modules Implemented
+
+### Module 1: Workspace Dashboard (`/dashboard`)
+- Executive overview displaying 4 live KPI cards: Active Research Projects, Verified Ingested Sources, Average Editorial Quality Index, and Live System Health.
+- Multi-tenant switcher showing the current active organization with strict tenant data scoping.
+
+### Module 2: Research Assistant & Source Library (`/research`)
+- Multi-source document ingestion supporting URLs, PDF files, and pasted text.
+- **SSRF Guardrail:** Validates URL hostnames using `socket.getaddrinfo()` and rejects private CIDR ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `::1`).
+- Content hash deduplication ensuring identical documents are not repeatedly processed.
+
+### Module 3: Research Intelligence & Brief Synthesizer (`/research`)
+- Synthesizes complex source documents into an executive **Research Brief**.
+- **Evidence Alignment:** Cross-examines conflicting findings across multiple primary sources.
+- **Facts vs. Speculation:** Automatically classifies statements into Empirical Facts, Theoretical Models, and Market Hype.
+- **Knowledge Graph:** Interactive visual topology of extracted entities and semantic relationships.
+
+### Module 4: Writing Assistant & Deterministic Auditor (`/writing`)
+- Real-time prose composition workspace with inline issue annotations.
+- **9 Deterministic In-Process Checks:**
+  1. Long sentence detection (> 30 words)
+  2. Passive voice percentage calculation
+  3. Filler word density analysis (`basically`, `in order to`, `at the end of the day`)
+  4. Technical jargon identification
+  5. Repetition and redundancy scans
+  6. Paragraph length limits
+  7. Flesch Reading Ease score computation ($0.0 - 100.0$)
+  8. Flesch-Kincaid Grade Level index ($1.0 - 18.0$)
+  9. Structural Markdown heading hierarchy validation (H1 $\rightarrow$ H2 $\rightarrow$ H3)
+- **Side-by-Side Version Diffing:** Displays character-level additions and deletions between original and revised drafts.
+
+### Module 5: Editorial Studio (`/editorial`)
+- Packaging audited drafts into publication-ready newsletter editions.
+- Complete state machine workflow: `DRAFT` $\rightarrow$ `IN_REVIEW` $\rightarrow$ `APPROVED` $\rightarrow$ `PUBLISHED`.
+- One-click export to Markdown and HTML formats with inline verified citations (`[SRC-001]`).
+
+### Module 6: AI Reliability & Observability Center (`/observability`)
+- Real-time operational telemetry: total operations, 100% success rate, latency breakdown, and cumulative prompt/completion token expenditures.
+- Correlated request tracing via `X-Request-ID` headers across all HTTP transactions.
+- Automated health probes: `/health/live` (process liveness), `/health/ready` (database readiness), and `/health` (full telemetry).
+
+### Module 7: Multi-Tenant Organization & RBAC (`/organization`, `/settings`)
+- Tenant isolation enforced via foreign key constraints to `organizations.id` across all relational models.
+- Role-Based Access Control (RBAC): `Owner`, `Editor`, and `Viewer` permission enforcement.
+
+---
+
+## 10. Implementation Deep Dive
+
+### 1. Flesch-Kincaid Mathematical Calibration
+In [`backend/app/services/writing_auditor.py`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/backend/app/services/writing_auditor.py), readability scores are computed mathematically:
+$$\text{Flesch Reading Ease} = 206.835 - 1.015 \left(\frac{\text{total words}}{\text{total sentences}}\right) - 84.6 \left(\frac{\text{total syllables}}{\text{total words}}\right)$$
+$$\text{Flesch-Kincaid Grade Level} = 0.39 \left(\frac{\text{total words}}{\text{total sentences}}\right) + 11.8 \left(\frac{\text{total syllables}}{\text{total words}}\right) - 15.59$$
+- Edge-case protection prevents division-by-zero errors when evaluating empty drafts, single words, or code blocks.
+- Syllable estimation uses regex-based phonetic diphthong analysis and silent trailing 'e' stripping.
+
+### 2. Alembic Batch Mode Migrations
+In [`backend/alembic/env.py`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/backend/alembic/env.py), migrations enforce `render_as_batch=True`. This circumvents SQLite's lack of native `ALTER COLUMN` support by automating shadow table creation, row copying, index reconstruction, and foreign key retention.
+
+### 3. Client-Side Request Deduplication & Backoff
+In [`frontend/src/services/api.ts`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/frontend/src/services/api.ts), in-flight GET requests are deduplicated using a promise cache map (`pendingGetRequests`), preventing duplicate network calls during simultaneous component mounting. The [`HealthContext`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/frontend/src/context/HealthContext.tsx) utilizes an adaptive polling schedule: 30s during active connection, with exponential backoff (3s to 24s) during disconnections.
+
+---
+
+## 11. How to Use It (Quickstart & Live Demo)
+
+### Prerequisites
+- **Python 3.10+** (with `pip` and virtual environment support)
+- **Node.js 18+** & `npm`
+- **Git**
+
+---
+
+### Step 1: Clone the Repository & Checkout Submission Branch
 ```bash
 git clone https://github.com/mubashirhussen/AI-Editorial-Workspace.git
 cd AI-Editorial-Workspace
-git checkout docs/phase10-final-assessment-handover
-```
-
-### 7.2 Backend Setup
-1. Create and activate a Python virtual environment:
-   ```powershell
-   # Windows PowerShell
-   python -m venv backend\venv
-   backend\venv\Scripts\Activate.ps1
-
-   # macOS / Linux
-   python3 -m venv backend/venv
-   source backend/venv/bin/activate
-   ```
-2. Install pinned dependencies:
-   ```bash
-   pip install --upgrade pip
-   pip install -r backend/requirements.txt
-   ```
-3. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   *(For development, default settings use SQLite at `sqlite:///./editorial.db` with zero configuration).*
-4. Run database migrations:
-   ```bash
-   alembic -c backend/alembic.ini upgrade head
-   ```
-5. Start the FastAPI development server:
-   ```bash
-   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
-   ```
-   *The backend will be live at `http://localhost:8000`. Interactive OpenAPI documentation is available at `http://localhost:8000/docs`.*
-
-### 7.3 Frontend Setup
-1. Open a new terminal and navigate to `frontend`:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
-   *The client interface will be live at `http://localhost:5173`.*
-
----
-
-## 8. Docker Deployment Instructions
-
-### 8.1 Production 3-Tier Architecture
-The production configuration (`docker-compose.prod.yml`) launches:
-1. `frontend` (Nginx serving compiled React assets on port 80/443)
-2. `backend` (FastAPI running under Uvicorn with 4 workers)
-3. `db` (PostgreSQL 15 with persistent named volume)
-4. `redis` (Redis 7 for rate-limiting and task queue)
-
-```bash
-# 1. Generate secure cryptographic secrets
-python scripts/generate_secrets.py
-
-# 2. Launch production stack in background
-docker compose -f docker-compose.prod.yml up -d --build
-
-# 3. Check container health status
-docker compose -f docker-compose.prod.yml ps
-```
-
-### 8.2 Database Backup & Recovery
-```bash
-# Create encrypted backup with SHA-256 checksum
-python scripts/backup_db.py --backup-dir ./backups
-
-# Perform a dry-run integrity verification before restore
-python scripts/restore_db.py --manifest ./backups/backup_manifest_<timestamp>.json --dry-run
-
-# Restore database from verified backup
-python scripts/restore_db.py --manifest ./backups/backup_manifest_<timestamp>.json --target-db ./editorial.db
+git checkout feat/phase19-fde-submission-preparation
 ```
 
 ---
 
-## 9. Verification & Automated Test Suite
-
-### 9.1 Run Entire Pytest Regression Suite
-Execute all 201 backend unit, integration, multi-tenancy, and security tests:
+### Step 2: Set Up Backend
 ```powershell
-backend\venv\Scripts\python -m pytest backend/tests/ -v
-```
-**Verified Result:** `201 passed, 8 warnings in 92.52s (100% pass rate)`.
+# Create and activate Python virtual environment
+python -m venv backend\venv
+backend\venv\Scripts\Activate.ps1
 
-### 9.2 Run Offline AI Benchmark Suite
-Execute the 34-case offline evaluation benchmark evaluating research extraction, writing linter accuracy, and hallucination bounds:
+# Install locked dependencies
+pip install -r backend/requirements.txt
+
+# Run database migrations to head (revision 7a2c3d4e5f6a)
+alembic -c backend/alembic.ini upgrade head
+
+# Seed the pristine demonstration environment
+python backend/scripts/seed_demo_environment.py --reset
+
+# Start the FastAPI backend server
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+*Backend API will be listening at:* `http://127.0.0.1:8000`  
+*Interactive Swagger Documentation:* `http://127.0.0.1:8000/docs`
+
+---
+
+### Step 3: Set Up Frontend (In a New Terminal)
 ```powershell
-backend\venv\Scripts\python -m backend.app.evaluation.run --suite all --mode offline
-```
-**Verified Result:** `34 / 34 benchmark cases passed (100.0%)`.
-
-### 9.3 Compile Frontend Production Assets
-Verify zero TypeScript compiler errors and bundle optimization:
-```bash
+# Navigate to frontend directory
 cd frontend
-npm run build
-```
-**Verified Result:** Built cleanly in 21.69s (`dist/index.html`, zero errors).
 
-### 9.4 Verify Database Migrations on Clean Database
+# Install npm dependencies
+npm install
+
+# Start the Vite development server
+npm run dev
+```
+*Frontend Web Application will be listening at:* `http://localhost:5173`
+
+---
+
+### Step 4: Golden Demonstration Credentials
+Log in to the web interface at `http://localhost:5173`:
+
+| Field | Value |
+| :--- | :--- |
+| **Email** | `demo_editor@thisweekin.ai` |
+| **Password** | `DemoEditor2026!` |
+| **Organization** | `This Week in AI — Editorial Desk` |
+| **Pre-Seeded Project** | `Autonomous AI Reasoning & Factual Grounding` |
+| **Pre-Seeded Sources (3)**| DeepSeek-R1 Paper, Anthropic MCP Specification, Attention Paper |
+| **Pre-Seeded Brief** | Complete with Evidence Alignment and Knowledge Graph |
+| **Pre-Seeded Draft** | `Why Enterprise AI Demands Verified Citations Over Fluent Prose` |
+| **Approved Edition** | `This Week in AI — Edition #104` (Status: `APPROVED`) |
+
+---
+
+## 12. Automated Test Suite & Verification Results
+
+All automated test suites, quality gates, and static analysis checks execute with a **100.0% pass rate**:
+
+```
+========================================================================================
+ TOTAL VERIFICATION LEDGER:
+ Backend Pytest Suite:          212 / 212 Passed (100.0%) [Duration: 58.07s]
+ AI Quality Benchmarks:          34 /  34 Passed (100.0%) [Duration:  0.01s]
+ Frontend TypeScript Build:     Clean (0 Errors, 2,306 modules transformed in 7.00s)
+ Database Alembic Migrations:   Head 7a2c3d4e5f6a (34 tables synced)
+ Live Backend Health Probes:    HTTP 200 OK on /health, /health/live, /health/ready
+========================================================================================
+```
+
+### Running Backend Tests:
 ```powershell
-backend\venv\Scripts\python -c "
-import tempfile, os; from alembic.config import Config; from alembic import command
-tf = tempfile.NamedTemporaryFile(suffix='.db', delete=False); db_path = tf.name; tf.close()
-cfg = Config('backend/alembic.ini'); cfg.set_main_option('script_location', 'backend/alembic'); cfg.set_main_option('sqlalchemy.url', f'sqlite:///{db_path}')
-command.upgrade(cfg, 'head'); os.remove(db_path); print('Alembic migration to HEAD verified on fresh DB!')
-"
+$env:PYTHONPATH="."
+backend\venv\Scripts\pytest.exe backend/tests/ -q
 ```
-**Verified Result:** `Alembic migration to HEAD verified on fresh DB!`.
+*Output: `212 passed in 58.07s`*
+
+### Running AI Benchmarks:
+```powershell
+$env:PYTHONPATH="."
+backend\venv\Scripts\python.exe backend/app/evaluation/run.py
+```
+*Output: `Overall Result: 34 / 34 Passed (100.0%)`*
+
+### Running Frontend Build:
+```powershell
+npm --prefix frontend run build
+```
+*Output: `✓ built in 7.00s (0 errors)`*
 
 ---
 
-## 10. API Documentation & Observability
+## 13. Official Submission Deliverables Index
 
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-- **OpenAPI JSON:** `http://localhost:8000/openapi.json`
-- **SRE Health Liveness Probe:** `GET /health/live` (returns HTTP 200 `{"status": "alive"}`)
-- **SRE Health Readiness Probe:** `GET /health/ready` (validates DB connectivity, returns `db_latency_ms`)
-- **SRE Health Startup Probe:** `GET /health/startup` (verifies background initialization)
-- **AI Observability Metrics:** `GET /api/v1/observability/ai-metrics` (tracks token usage, latency distribution P50/P90/P95/P99, error rates, and $USD cost accounting)
+The repository includes a curated submission directory [`submission/`](submission/) and formal technical audit reports:
 
----
-
-## 11. Security Considerations
-
-- **Server-Side Request Forgery (SSRF) Protection:** Ingestion endpoints strictly reject loopback addresses (`127.0.0.1`, `::1`), private CIDR blocks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), AWS/GCP cloud metadata endpoints (`169.254.169.254`), non-HTTP schemes (`file://`, `gopher://`, `ftp://`), and redirect destination rebinding.
-- **Strict Multi-Tenant Isolation:** Database models inherit from `TenantScopedBase`. Tenant context is enforced at the database session and route dependency level via `get_active_organization`. Cross-tenant record lookups return HTTP 404 (preventing tenancy enumeration).
-- **Zero Secret Leakage:** Configuration invariants block startup in production if `JWT_SECRET` is set to default or weak values (<32 characters). API keys and provider tokens are never returned in frontend API responses or serializable log outputs.
-- **Container Hardening:** Containers run as dedicated non-root users (`appuser` with UID 10001). Filesystems use read-only root permissions with tmpfs mounts where appropriate.
-
----
-
-## 12. Known Limitations & Roadmap
-
-1. **JavaScript-Heavy Dynamic SPAs:** Ingestion relies on fast server-side extraction via Trafilatura. Complex single-page apps gated by complex client-rendered JavaScript or Cloudflare Turnstile CAPTCHAs require headless Chromium rendering (Puppeteer/Playwright sidecar).
-2. **Audio/Video Ingestion:** Currently supports URLs, raw text, and uploaded documents (PDF, DOCX, TXT, MD). Audio transcription (Whisper) is slated for the v1.1 release.
-3. **Synchronous LLM Streaming:** The current implementation uses atomic request-response generation for verified schema validation. Token-by-token WebSocket streaming is planned for v1.2.
+| Deliverable | Location | Purpose |
+| :--- | :--- | :--- |
+| **Curated Submission Package** | [`submission/`](submission/) | Dedicated directory isolating primary evaluation materials. |
+| **Submission README** | [`submission/README.md`](submission/README.md) | Evaluator guide and 2-minute quickstart. |
+| **Product Note** | [`submission/PRODUCT_NOTE.md`](submission/PRODUCT_NOTE.md) | Personas, user journeys, and value proposition. |
+| **Technical Architecture** | [`submission/TECHNICAL_ARCHITECTURE.md`](submission/TECHNICAL_ARCHITECTURE.md) | System design, Pydantic schemas, and SSRF security. |
+| **Sample Research Brief** | [`submission/SAMPLE_RESEARCH_BRIEF.md`](submission/SAMPLE_RESEARCH_BRIEF.md) | Synthesized brief grounded in 3 technical papers. |
+| **Sample Editorial** | [`submission/SAMPLE_EDITORIAL.md`](submission/SAMPLE_EDITORIAL.md) | Approved newsletter edition with inline citations and diffs. |
+| **Test Verification Report** | [`submission/TEST_REPORT.md`](submission/TEST_REPORT.md) | Empirical logs of 212 backend tests and 34 benchmarks. |
+| **Live Demo Playbook** | [`submission/DEMO_SCRIPT.md`](submission/DEMO_SCRIPT.md) | Presenter-ready 7–10 minute live walkthrough playbook. |
+| **Known Limitations & Roadmap**| [`submission/KNOWN_LIMITATIONS.md`](submission/KNOWN_LIMITATIONS.md) | Technical boundaries, trade-offs, and enterprise roadmap. |
+| **Technical Architecture Walkthrough** | [`PHASE19_ARCHITECTURE_WALKTHROUGH.md`](PHASE19_ARCHITECTURE_WALKTHROUGH.md) | Architecture defense with Mermaid diagrams and deep dives. |
+| **FDE Interview Preparation Bank** | [`PHASE19_FDE_INTERVIEW_PREPARATION.md`](PHASE19_FDE_INTERVIEW_PREPARATION.md) | 14 technical questions across 7 categories with code citations. |
+| **Engineering Challenges Retrospective** | [`PHASE19_ENGINEERING_CHALLENGES.md`](PHASE19_ENGINEERING_CHALLENGES.md) | 5 genuine engineering challenges encountered and resolved. |
+| **Contingency & Demo Backup Plan** | [`PHASE19_DEMO_BACKUP_PLAN.md`](PHASE19_DEMO_BACKUP_PLAN.md) | Fault-tolerance decision matrix, recovery scripts, and seeder. |
+| **Final Handover Sign-Off Report** | [`PHASE19_FINAL_SUBMISSION_REPORT.md`](PHASE19_FINAL_SUBMISSION_REPORT.md) | Formal assessment sign-off verdict: `READY TO SUBMIT`. |
 
 ---
 
-## 13. License
+## License
 
-Distributed under the **MIT License**. See `LICENSE` for details.
+This project is developed and submitted as part of the technical assessment for the **Forward Deployed Engineer (FDE) Intern** role at *This Week in AI*. All rights reserved.

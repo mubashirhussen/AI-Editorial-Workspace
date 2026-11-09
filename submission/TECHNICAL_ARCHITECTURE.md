@@ -138,3 +138,4 @@ Input URL
   - `GET /health/live`: Fast process liveness verification.
   - `GET /health/ready`: Deep dependency readiness verifying database connectivity and query latency.
   - `GET /health`: Comprehensive operational telemetry exposing uptime, active AI engine mode, token consumption, and recent system events.
+

@@ -159,3 +159,4 @@ npm --prefix frontend run dev
 | **Demo data modified by previous run** | Run `python backend/scripts/seed_demo_environment.py --reset` | *"Running our idempotent seed script to restore the golden benchmark state."* |
 | **No Internet Access / LLM Offline** | System defaults automatically to Fallback Engine. | *"Highlighting our offline deterministic fallback engine running without cloud dependencies."* |
 | **Accidental Logout** | Use demo credentials: `demo_editor@thisweekin.ai` / `DemoEditor2026!` | *"Re-authenticating through our JWT bearer token flow."* |
+
