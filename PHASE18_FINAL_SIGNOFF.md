@@ -77,3 +77,4 @@ In accordance with professional forward deployed engineering integrity, the foll
 2. **Execute Live Demo:** Follow the 7–10 minute playbook in [`DEMO_SCRIPT.md`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/DEMO_SCRIPT.md), demonstrating the complete flow:
    $$\text{Project Creation} \longrightarrow \text{Ingest 3 Sources} \longrightarrow \text{Synthesize Brief} \longrightarrow \text{Audit Quality} \longrightarrow \text{Publish Newsletter}$$
 3. **Seed Clean Baseline:** If presenting live, run `python backend/scripts/seed_demo_environment.py --reset` prior to the presentation.
+

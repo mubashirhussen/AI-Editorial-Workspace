@@ -97,3 +97,4 @@ Both valid (happy path) and invalid (hostile/error path) requests were executed 
   - Spoofed organization header $\rightarrow$ `HTTP 403 Forbidden`.
   - Valid research project creation $\rightarrow$ `HTTP 201 Created`.
   - Readability audit on draft $\rightarrow$ `HTTP 200 OK` with structured issue array.
+

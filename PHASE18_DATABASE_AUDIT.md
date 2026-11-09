@@ -93,3 +93,4 @@ The database models are designed to ensure seamless parity between development (
 - **Passwords:** Never stored in plaintext. Hashed exclusively using salted bcrypt (`hash_password()` via `passlib[bcrypt]`).
 - **Dynamic Provider API Keys:** Stored in `AiProviderConfig` as encrypted ciphertext using AES-256-CBC via Python `cryptography.fernet.Fernet`. The encryption key is cryptographically isolated from the JWT authentication key.
 - **Tokens:** Password reset tokens are stored as SHA-256 hashes (`PasswordResetToken.token_hash`), preventing token harvesting in the event of database dumps.
+

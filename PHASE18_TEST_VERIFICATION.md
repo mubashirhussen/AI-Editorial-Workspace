@@ -121,3 +121,4 @@ Every test suite in the repository was executed in the workspace environment. Ze
 ## 3. Test Integrity Declaration
 
 No tests were mocked to produce artificial passes. The test suite exercises live FastAPI dependency overrides, SQLite/PostgreSQL in-memory sessions, real regex linters, real token pricing calculators, and genuine HTTP error responses.
+

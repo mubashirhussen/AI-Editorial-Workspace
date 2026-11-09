@@ -109,3 +109,4 @@ radar
 - **Strengths:** Clear, precise, enterprise-grade engineering prose with Mermaid architecture diagrams, KaTeX formulas, and reproducible commands.
 - **Weaknesses:** High volume of documentation benefits from a curated index for fast evaluator navigation.
 - **Interview Talking Point:** Walk through the live demonstration playbook ([`DEMO_SCRIPT.md`](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/FDE%20intern/DEMO_SCRIPT.md)).
+

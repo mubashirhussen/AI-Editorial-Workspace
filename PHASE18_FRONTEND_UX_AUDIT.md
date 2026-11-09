@@ -79,3 +79,4 @@ flowchart TD
 | **Export Markdown** | Editorial Studio | Downloads formatted `.md` file | **FUNCTIONAL** |
 | **Run Benchmarks** | Observability Page | Triggers 34 offline evaluations | **FUNCTIONAL** |
 | **Theme Toggle** | Header | Toggles dark/light root class | **FUNCTIONAL** |
+

@@ -76,3 +76,4 @@ The evaluation suite was executed against a structured 9-scenario dataset repres
 ### 4.2 Non-Destructive Revision Guarantees
 - AI transformations generate proposed revision cards displaying a side-by-side diff.
 - The editor must explicitly click **"Accept Replacement"** before the active draft buffer is updated, completely preventing catastrophic content replacement on network or provider errors.
+
