@@ -19,6 +19,9 @@ This repository is prepared for final technical assessment and grading. All core
 | Deliverable | Description | Location |
 | :--- | :--- | :--- |
 | **Execution Audit Report** | Phase 11 Final Execution Audit, Bug Fixing & Release Verification | [`FINAL_EXECUTION_AUDIT.md`](FINAL_EXECUTION_AUDIT.md) / [`docs/FINAL_EXECUTION_AUDIT.md`](docs/FINAL_EXECUTION_AUDIT.md) |
+| **UI/UX Functionality Audit** | Phase 12 UI/UX audit, screen observations, backend route mapping & fixes | [`docs/UI_FUNCTIONALITY_AUDIT.md`](docs/UI_FUNCTIONALITY_AUDIT.md) |
+| **API Mapping Matrix** | Frontend-to-backend endpoint mapping across all 6 core functional areas | [`docs/FRONTEND_BACKEND_API_MAPPING.md`](docs/FRONTEND_BACKEND_API_MAPPING.md) |
+| **Known Issues & Resolutions**| Root cause analysis, issue tracking, and verification log for P0-P2 fixes | [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) |
 | **README.md** | Complete architecture, setup instructions, Docker guide, and test suite execution | [`README.md`](README.md) |
 | **Product Note** | User problem statement, workflows, differentiators, and roadmap | [`docs/PRODUCT_NOTE.md`](docs/PRODUCT_NOTE.md) |
 | **Technical Architecture** | End-to-end system design, 3-tier containerization, internal DNS, and pipelines | [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) |

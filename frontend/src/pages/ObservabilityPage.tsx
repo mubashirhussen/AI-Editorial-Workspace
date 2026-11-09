@@ -99,6 +99,28 @@ export const ObservabilityPage: React.FC = () => {
   const [errorCategory, setErrorCategory] = useState<'Collection' | 'Analysis' | 'Generalization' | 'None'>('Generalization');
   const [annotationSavedNotice, setAnnotationSavedNotice] = useState(false);
 
+  const [useBaselineDemoData, setUseBaselineDemoData] = useState(false);
+
+  const hasLiveOperations = (metrics?.total_operations ?? 0) > 0;
+  const isShowingDemo = !hasLiveOperations && useBaselineDemoData;
+
+  const displayTotalRequests = hasLiveOperations ? metrics!.total_operations : (isShowingDemo ? 153 : 0);
+  const displayAvgLatency = hasLiveOperations 
+    ? `${Math.round(metrics?.latency_ms?.average ?? 0)}ms` 
+    : (isShowingDemo ? '1623ms' : '0ms');
+  const displaySuccessRate = hasLiveOperations 
+    ? `${metrics!.success_rate_pct}%` 
+    : (isShowingDemo ? '88.9%' : '100%');
+  const displayTotalCost = hasLiveOperations 
+    ? `$${(metrics?.estimated_cost_usd ?? 0).toFixed(2)}` 
+    : (isShowingDemo ? '$1.75' : '$0.00');
+  const displayTotalTokens = hasLiveOperations 
+    ? (metrics!.tokens.total_tokens >= 1000 ? `${(metrics!.tokens.total_tokens / 1000).toFixed(1)}K` : `${metrics!.tokens.total_tokens}`) 
+    : (isShowingDemo ? '248.3K' : '0');
+  const displayErrorRate = hasLiveOperations 
+    ? `${(100 - metrics!.success_rate_pct).toFixed(1)}%` 
+    : (isShowingDemo ? '11.1%' : '0%');
+
   // Sentences list for HITL Studio
   const hitlSentences = [
     { id: 1, title: 'Title', text: 'The Efficacy, Safety, and Implementation of Long-Acting Cabotegravir for HIV Pre-Exposure Prophylaxis: A Comprehensive Review of Clinical Trial and Real-World Data', isHeader: true },
@@ -371,11 +393,61 @@ export const ObservabilityPage: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'tracelens' && (
         <div className="space-y-6">
+          {/* Data Source & Mode Indicator */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              {hasLiveOperations ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Live System Telemetry (Active DB)
+                </span>
+              ) : isShowingDemo ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Demonstration Baseline Data (Pre-Run Reference)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Live Session: 0 AI Operations Logged
+                </span>
+              )}
+              <span className="text-xs text-slate-500 hidden sm:inline">
+                {hasLiveOperations
+                  ? `${metrics?.total_operations} operations logged in database.`
+                  : isShowingDemo
+                  ? 'Showing reference evaluation dataset figures.'
+                  : 'Run the benchmark below to generate real operations in the database.'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!hasLiveOperations && (
+                <button
+                  type="button"
+                  onClick={() => setUseBaselineDemoData(!useBaselineDemoData)}
+                  className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 underline"
+                >
+                  {useBaselineDemoData ? 'View Live Clean Telemetry (0 ops)' : 'View Reference Baseline (153 ops)'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleRunBenchmark}
+                disabled={isRunningBenchmark}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <Play className="w-3.5 h-3.5" />
+                <span>{isRunningBenchmark ? 'Running 34-Case Benchmark...' : 'Run Live 34-Case Benchmark'}</span>
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Total LLM Requests</span>
               <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white">
-                {metrics?.total_operations ?? 153}
+                {displayTotalRequests}
               </div>
               <span className="text-[10px] text-emerald-600 font-medium">↗ +8.5% Last 24h</span>
             </div>
@@ -383,23 +455,23 @@ export const ObservabilityPage: React.FC = () => {
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Average Latency</span>
               <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white">
-                {metrics?.latency_ms?.average ? `${Math.round(metrics.latency_ms.average)}ms` : '1623ms'}
+                {displayAvgLatency}
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">P95: {metrics?.latency_ms?.p95 ? `${Math.round(metrics.latency_ms.p95)}ms` : '6547ms'}</span>
+              <span className="text-[10px] text-slate-400 font-mono">P95: {hasLiveOperations ? `${Math.round(metrics?.latency_ms?.p95 ?? 0)}ms` : (isShowingDemo ? '6547ms' : '0ms')}</span>
             </div>
 
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Success Rate</span>
               <div className="mt-1 text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                {metrics?.success_rate_pct ? `${metrics.success_rate_pct}%` : '88.9%'}
+                {displaySuccessRate}
               </div>
-              <span className="text-[10px] text-slate-400">0.1 req / min</span>
+              <span className="text-[10px] text-slate-400">{hasLiveOperations ? `${(metrics!.total_operations / 60).toFixed(2)} req/min` : '0.1 req / min'}</span>
             </div>
 
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Total Cost</span>
               <div className="mt-1 text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400">
-                ${(metrics?.estimated_cost_usd ?? 1.75).toFixed(2)}
+                {displayTotalCost}
               </div>
               <span className="text-[10px] text-emerald-600">$0.000007 / token</span>
             </div>
@@ -407,15 +479,17 @@ export const ObservabilityPage: React.FC = () => {
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Total Tokens</span>
               <div className="mt-1 text-2xl font-bold font-mono text-slate-900 dark:text-white">
-                {metrics?.tokens?.total_tokens ? `${(metrics.tokens.total_tokens / 1000).toFixed(1)}K` : '248.3K'}
+                {displayTotalTokens}
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">In: 167K / Out: 81K</span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {hasLiveOperations ? `In: ${metrics!.tokens.prompt_tokens} / Out: ${metrics!.tokens.completion_tokens}` : (isShowingDemo ? 'In: 167K / Out: 81K' : 'In: 0 / Out: 0')}
+              </span>
             </div>
 
             <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
               <span className="text-[10px] font-mono uppercase text-slate-400">Error Rate</span>
               <div className="mt-1 text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">
-                {metrics?.success_rate_pct ? `${(100 - metrics.success_rate_pct).toFixed(1)}%` : '11.1%'}
+                {displayErrorRate}
               </div>
               <span className="text-[10px] text-slate-400">System reliability OK</span>
             </div>

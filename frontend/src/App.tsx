@@ -32,6 +32,7 @@ const AuthPage = lazy(() =>
   import('./pages/AuthPage').then((m) => ({ default: m.AuthPage }))
 );
 import { AuthProvider } from './context/AuthContext';
+import { HealthProvider } from './context/HealthContext';
 
 const ViewSuspenseFallback: React.FC = () => (
   <div className="flex h-[60vh] w-full items-center justify-center p-8">
@@ -42,8 +43,9 @@ const ViewSuspenseFallback: React.FC = () => (
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <HealthProvider>
+        <AuthProvider>
+          <Routes>
           <Route
             path="/login"
             element={
@@ -164,7 +166,8 @@ export const App: React.FC = () => {
           </Route>
         </Routes>
       </AuthProvider>
-    </BrowserRouter>
+    </HealthProvider>
+  </BrowserRouter>
   );
 };
 

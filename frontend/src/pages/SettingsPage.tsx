@@ -34,16 +34,42 @@ import { observabilityService, AIMetricsResponse, EvaluationBenchmarkResult } fr
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'appearance' | 'observability' | 'ai' | 'security' | 'database'>('appearance');
-  const [themePreference, setThemePreference] = useState<'system' | 'light' | 'dark'>('system');
-  const [transparentSidebar, setTransparentSidebar] = useState(false);
-  const [sidebarFeature, setSidebarFeature] = useState('Recent changes');
-  const [tableView, setTableView] = useState<'default' | 'compact'>('default');
+  const [themePreference, setThemePreference] = useState<'system' | 'light' | 'dark'>(() => {
+    return (localStorage.getItem('editorial_theme') as 'system' | 'light' | 'dark') || 'system';
+  });
+  const [transparentSidebar, setTransparentSidebar] = useState(() => {
+    return localStorage.getItem('editorial_transparent_sidebar') === 'true';
+  });
+  const [sidebarFeature, setSidebarFeature] = useState(() => {
+    return localStorage.getItem('editorial_sidebar_feature') || 'Recent changes';
+  });
+  const [tableView, setTableView] = useState<'default' | 'compact'>(() => {
+    return (localStorage.getItem('editorial_table_view') as 'default' | 'compact') || 'default';
+  });
   
   const [healthData, setHealthData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [aiMetrics, setAiMetrics] = useState<AIMetricsResponse | null>(null);
   const [benchmarkResult, setBenchmarkResult] = useState<EvaluationBenchmarkResult | null>(null);
   const [isRunningBenchmark, setIsRunningBenchmark] = useState(false);
+
+  // Apply persisted theme on mount and changes
+  useEffect(() => {
+    const applyTheme = (theme: 'system' | 'light' | 'dark') => {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+    applyTheme(themePreference);
+  }, [themePreference]);
 
   // AI Multi-Provider State
   const [aiConnections, setAiConnections] = useState<any[]>([]);
@@ -174,6 +200,7 @@ export const SettingsPage: React.FC = () => {
 
   const handleThemeChange = (theme: 'system' | 'light' | 'dark') => {
     setThemePreference(theme);
+    localStorage.setItem('editorial_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else if (theme === 'light') {
@@ -185,6 +212,22 @@ export const SettingsPage: React.FC = () => {
         document.documentElement.classList.remove('dark');
       }
     }
+  };
+
+  const handleToggleTransparentSidebar = () => {
+    const nextVal = !transparentSidebar;
+    setTransparentSidebar(nextVal);
+    localStorage.setItem('editorial_transparent_sidebar', String(nextVal));
+  };
+
+  const handleTableViewChange = (view: 'default' | 'compact') => {
+    setTableView(view);
+    localStorage.setItem('editorial_table_view', view);
+  };
+
+  const handleSidebarFeatureChange = (feature: string) => {
+    setSidebarFeature(feature);
+    localStorage.setItem('editorial_sidebar_feature', feature);
   };
 
   const subNavItems = [
@@ -363,7 +406,7 @@ export const SettingsPage: React.FC = () => {
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">Make the desktop navigation bar slightly transparent.</p>
                 </div>
                 <button
-                  onClick={() => setTransparentSidebar(!transparentSidebar)}
+                  onClick={handleToggleTransparentSidebar}
                   className={`w-9 h-5 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
                     transparentSidebar ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
                   }`}
@@ -382,7 +425,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <select
                   value={sidebarFeature}
-                  onChange={(e) => setSidebarFeature(e.target.value)}
+                  onChange={(e) => handleSidebarFeatureChange(e.target.value)}
                   className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
                   <option value="Recent changes">• Recent changes</option>
@@ -399,7 +442,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div
-                    onClick={() => setTableView('default')}
+                    onClick={() => handleTableViewChange('default')}
                     className={`cursor-pointer rounded-xl border p-3 transition-all ${
                       tableView === 'default'
                         ? 'border-blue-600 ring-2 ring-blue-500/20'
@@ -431,7 +474,7 @@ export const SettingsPage: React.FC = () => {
                   </div>
 
                   <div
-                    onClick={() => setTableView('compact')}
+                    onClick={() => handleTableViewChange('compact')}
                     className={`cursor-pointer rounded-xl border p-3 transition-all ${
                       tableView === 'compact'
                         ? 'border-blue-600 ring-2 ring-blue-500/20'

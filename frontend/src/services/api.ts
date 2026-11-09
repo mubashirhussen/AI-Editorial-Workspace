@@ -7,6 +7,7 @@ export interface ApiError extends Error {
   statusCode?: number;
   errorCategory?: string;
   details?: any;
+  isNetworkError?: boolean;
 }
 
 // In-flight GET request deduplication cache to prevent duplicate redundant calls
@@ -113,6 +114,7 @@ apiClient.interceptors.response.use(
     apiError.statusCode = error.response?.status;
     apiError.errorCategory = errorCategory;
     apiError.details = details;
+    apiError.isNetworkError = !error.response;
 
     return Promise.reject(apiError);
   }

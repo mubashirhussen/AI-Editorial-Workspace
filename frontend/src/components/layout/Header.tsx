@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Moon, Sun, Menu, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { checkHealth, HealthStatus } from '../../services/healthService';
+import { Search, Moon, Sun, Menu, AlertCircle, AlertTriangle, CheckCircle2, RefreshCw, Lock } from 'lucide-react';
+import { useHealth } from '../../context/HealthContext';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { UserProfileMenu } from './UserProfileMenu';
 
@@ -13,34 +13,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMobileNav }) => {
   const [isDark, setIsDark] = useState(false);
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
+  const { status, health, recheckHealth, isBackendHealthy } = useHealth();
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchHealth = async () => {
-      try {
-        const data = await checkHealth();
-        if (isMounted) {
-          setHealth(data);
-          setIsBackendHealthy(data.status === 'healthy' && data.database === 'connected');
-        }
-      } catch (err) {
-        if (isMounted) {
-          setIsBackendHealthy(false);
-        }
-      }
-    };
-
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 15000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -96,18 +71,34 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
         <div 
           className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border cursor-pointer transition-colors ml-2"
           onClick={() => navigate('/settings')}
-          title={isBackendHealthy ? `Backend connected (DB: ${health?.database || 'connected'})` : 'Backend unavailable - Click to inspect Settings'}
+          title={isBackendHealthy ? `Backend connected (DB: ${health?.database || 'connected'})` : 'Backend status - Click to inspect Settings'}
         >
-          {isBackendHealthy === null ? (
+          {status === 'CONNECTING' ? (
             <>
-              <div className="w-2 h-2 rounded-full bg-slate-300 animate-ping" />
-              <span className="text-slate-500">Checking backend...</span>
+              <RefreshCw className="w-3 h-3 text-amber-500 animate-spin" />
+              <span className="text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1 py-0.5 rounded">
+                Connecting...
+              </span>
             </>
-          ) : isBackendHealthy ? (
+          ) : status === 'CONNECTED' ? (
             <>
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50" />
-              <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1 py-0.5 rounded">
+              <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1 py-0.5 rounded font-mono">
                 Backend connected
+              </span>
+            </>
+          ) : status === 'AUTH_REQUIRED' ? (
+            <>
+              <Lock className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-1 py-0.5 rounded">
+                Sign in required
+              </span>
+            </>
+          ) : status === 'DEGRADED' ? (
+            <>
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1 py-0.5 rounded">
+                Backend degraded
               </span>
             </>
           ) : (
@@ -116,6 +107,17 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
               <span className="text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1 py-0.5 rounded">
                 Backend unavailable
               </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  recheckHealth();
+                }}
+                className="ml-1 text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold"
+                title="Retry connection"
+              >
+                Retry
+              </button>
             </>
           )}
         </div>

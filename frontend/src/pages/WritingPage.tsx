@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { 
   PenTool, 
@@ -11,6 +11,7 @@ import {
   Save, 
   Loader2, 
   AlertTriangle,
+  AlertCircle,
   Info,
   BookOpen,
   ArrowRight,
@@ -33,7 +34,8 @@ import {
   Send,
   Copy,
   SlidersHorizontal,
-  RefreshCw
+  RefreshCw,
+  CloudOff
 } from 'lucide-react';
 import { writingService } from '../services/writingService';
 import { projectService } from '../services/projectService';
@@ -49,6 +51,9 @@ import { VersionHistoryPanel } from '../components/version_control/VersionHistor
 import { AfforaiCiteModal } from '../components/writing/AfforaiCiteModal';
 import { ArticleImprovementsPanel } from '../components/writing/ArticleImprovementsPanel';
 import { InlineReadabilityLinter } from '../components/writing/InlineReadabilityLinter';
+import { analyzeText } from '../utils/textAnalysis';
+
+export type DraftSaveState = 'UNSAVED' | 'SAVING' | 'SAVED' | 'SAVE_FAILED' | 'OFFLINE';
 
 export const WritingPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,10 +69,29 @@ export const WritingPage: React.FC = () => {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(draftIdParam || null);
   const [originalDraft, setOriginalDraft] = useState<string>('');
   const [savedContent, setSavedContent] = useState<string>(text);
+  const [saveState, setSaveState] = useState<DraftSaveState>('SAVED');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   
   const [savedDrafts, setSavedDrafts] = useState<WritingDraft[]>([]);
   const [issues, setIssues] = useState<WritingIssue[]>([]);
   const [metrics, setMetrics] = useState<WritingMetrics | null>(null);
+
+  // Deterministic real-time client-side text metrics
+  const liveMetrics = useMemo<WritingMetrics>(() => {
+    const analyzed = analyzeText(text);
+    return {
+      word_count: analyzed.word_count,
+      character_count: analyzed.character_count,
+      sentence_count: analyzed.sentence_count,
+      paragraph_count: analyzed.paragraph_count,
+      average_sentence_length: analyzed.avg_sentence_length,
+      reading_time_minutes: analyzed.reading_time_minutes,
+      readability_score: metrics?.readability_score ?? analyzed.quality_score,
+      readability_grade: metrics?.readability_grade ?? (analyzed.flesch_reading_ease >= 60 ? 'Standard / Conversational' : 'Academic / Complex'),
+      readability_note: metrics?.readability_note ?? `Flesch Reading Ease: ${analyzed.flesch_reading_ease}/100`
+    };
+  }, [text, metrics]);
+
   const [overallFeedback, setOverallFeedback] = useState<string>('');
   const [comparisonData, setComparisonData] = useState<DraftComparisonResponse | null>(null);
   
@@ -677,23 +701,54 @@ export const WritingPage: React.FC = () => {
   };
 
   const handleSaveDraft = async () => {
-    if (!activeDraftId) {
-      await handleAnalyze(text);
-      return;
-    }
     try {
       setIsSaving(true);
-      await writingService.updateDraft(activeDraftId, {
-        title: draftTitle,
-        revised_content: text,
-        final_content: text,
-        status: 'in_review',
-      });
+      setSaveState('SAVING');
+      let targetDraftId = activeDraftId;
+
+      if (!targetDraftId) {
+        const created = await writingService.createDraft({
+          title: draftTitle || 'Untitled Draft',
+          original_content: text,
+        });
+        targetDraftId = created.id;
+        setActiveDraftId(created.id);
+      } else {
+        await writingService.updateDraft(targetDraftId, {
+          title: draftTitle,
+          revised_content: text,
+          final_content: text,
+          status: 'in_review',
+        });
+      }
+
       setSavedContent(text);
+      setSaveState('SAVED');
+      setLastSavedAt(new Date());
       success('Draft saved successfully to workspace database!');
       loadDraftsList();
     } catch (err: any) {
-      error(err.message || 'Failed to save draft');
+      // Preserve locally so editorial work is never lost
+      try {
+        localStorage.setItem(
+          `editorial_offline_draft_${activeDraftId || 'temp'}`,
+          JSON.stringify({
+            title: draftTitle,
+            content: text,
+            timestamp: new Date().toISOString()
+          })
+        );
+      } catch (e) {
+        console.error('LocalStorage write failed:', e);
+      }
+
+      if (err.isNetworkError || !navigator.onLine) {
+        setSaveState('OFFLINE');
+        info('Offline: Draft changes preserved locally on device.');
+      } else {
+        setSaveState('SAVE_FAILED');
+        error(err.message || 'Failed to save draft to database');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -951,7 +1006,7 @@ export const WritingPage: React.FC = () => {
                 placeholder="Draft Title..."
               />
               <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
-                {metrics?.word_count ?? 0} words • {metrics?.sentence_count ?? 0} sentences
+                {liveMetrics.word_count} words • {liveMetrics.sentence_count} sentences
               </span>
             </div>
 
@@ -1156,14 +1211,28 @@ export const WritingPage: React.FC = () => {
                       <span>Fix Grammar</span>
                     </button>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                    {isDirty ? (
-                      <span className="text-amber-500 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Unsaved changes
+                  <div className="flex items-center gap-2 text-[11px] font-medium">
+                    {saveState === 'SAVING' ? (
+                      <span className="text-blue-500 flex items-center gap-1 font-mono">
+                        <RefreshCw className="w-3 h-3 animate-spin text-blue-500" /> Saving to cloud...
+                      </span>
+                    ) : saveState === 'SAVED' ? (
+                      <span className="text-emerald-500 flex items-center gap-1 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Saved {lastSavedAt ? `at ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                      </span>
+                    ) : saveState === 'OFFLINE' ? (
+                      <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <CloudOff className="w-3 h-3 text-slate-400" /> Offline (saved locally)
+                      </span>
+                    ) : saveState === 'SAVE_FAILED' ? (
+                      <span className="text-rose-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> Save failed
+                        <button type="button" onClick={handleSaveDraft} className="underline ml-1 font-semibold">Retry</button>
                       </span>
                     ) : (
-                      <span className="text-emerald-500 font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Saved
+                      <span className="text-amber-500 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Unsaved changes
                       </span>
                     )}
                   </div>
@@ -1243,7 +1312,13 @@ export const WritingPage: React.FC = () => {
                   <textarea
                     rows={16}
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setText(val);
+                      if (val !== savedContent && saveState !== 'SAVING') {
+                        setSaveState('UNSAVED');
+                      }
+                    }}
                     onSelect={handleTextSelect}
                     placeholder="Paste or write your newsletter draft here..."
                     className="w-full text-slate-800 dark:text-slate-100 font-serif text-[14px] leading-relaxed p-4 bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-y"
@@ -1309,7 +1384,7 @@ export const WritingPage: React.FC = () => {
           {/* TAB 1: Article Improvements & Scoring (Images 4 & 5 Style) */}
           {sidebarTab === 'improvements' && (
             <ArticleImprovementsPanel
-              metrics={metrics}
+              metrics={liveMetrics}
               issues={issues}
               onAcceptIssue={handleAcceptSuggestion}
               onRejectIssue={handleRejectSuggestion}

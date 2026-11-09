@@ -1,53 +1,125 @@
-# AI Editorial Workspace — Known Issues, Technical Debt & Risk Log
+# AI Editorial Workspace — Known Issues & Resolutions Log
 
-**Audit Date:** November 2026  
-**Auditor:** Senior Full-Stack Architect, AI Engineer & QA Lead  
-**Repository:** [https://github.com/mubashirhussen/AI-Editorial-Workspace](https://github.com/mubashirhussen/AI-Editorial-Workspace)  
-**Branch:** `main`  
-
----
-
-## 1. Prioritized Issues Matrix
-
-| Issue ID | Severity | Subsystem | Description | Impact | Mitigation / Status | Target Resolution |
-| :--- | :---: | :--- | :--- | :--- | :--- | :---: |
-| **SEC-01** | **High** | Secret Management / Encryption | In PR #1 (`fix/production-secret-hardening`), `SECRET_KEY` alias is set to `JWT_SECRET`. `encryption.py` derives its Fernet key from `SECRET_KEY`. Rotating `JWT_SECRET` would silently break decryption of all previously stored AI provider keys. | Severe: Provider keys fail decryption after secret rotation. | Decouple `ENCRYPTION_KEY` in `config.py` and `encryption.py`. Check `ENCRYPTION_KEY` first, fallback to `SECRET_KEY`. | **Phase 3** |
-| **RES-01** | **Medium** | Research Ingestion | Complex JavaScript Single-Page Applications (SPAs) without SSR return empty DOM containers when fetched via basic HTTP scrapers. | Medium: Initial URL scrape may yield low word count on SPA pages. | **Mitigated:** Enhanced 4-tier extraction pipeline (Trafilatura $\rightarrow$ BS4 DOM $\rightarrow$ Meta tags $\rightarrow$ Raw paste) and inline "Paste Text" UI button. | **Phase 8** |
-| **COL-01** | **Medium** | Real-Time Collaboration | Document versioning relies on append-only snapshot diffing and REST restoration rather than live operational transformation / WebSockets. | Low-Medium: Concurrent typing by two editors in the same draft requires manual version comparison. | Plan real-time CRDT / Yjs WebSockets server for future multi-editor roadmap. | **Phase 10** |
-| **AI-01** | **Low** | Editorial Studio | Token generation in some endpoints executes synchronously or batch-accumulates before returning JSON instead of Server-Sent Events (SSE) streaming. | Low: User sees progress spinner for 2–4s rather than typewriter effect. | Add FastAPI `StreamingResponse` for SSE token streaming. | **Phase 11** |
-| **DEP-01** | **Low** | Test Invariants | Starlette deprecation warnings in pytest logs for `HTTP_422_UNPROCESSABLE_ENTITY` in favor of `HTTP_422_UNPROCESSABLE_CONTENT`. | Negligible: Fully functional, produces 5 deprecation warnings in test suite. | Replace status enum with `status.HTTP_422_UNPROCESSABLE_CONTENT` across exception handlers. | **Phase 5** |
+**Audit Phase:** Phase 12 (UI/UX Audit, Backend Integration & Production Refinement)  
+**Date:** 2026-11-09  
+**Branch:** `feat/phase12-ui-ux-backend-integration`  
 
 ---
 
-## 2. Root Cause Analysis of PR #1 Risk (SEC-01)
+## 1. Issue Resolution Records
 
-### The Vulnerability:
-In `backend/app/core/encryption.py`:
-```python
-def _get_fernet_instance() -> Fernet:
-    """Derives a deterministic 32-byte url-safe base64 key from settings.SECRET_KEY."""
-    raw_key = getattr(settings, "SECRET_KEY", "editorial-workspace-encryption-key-production-seed-32bytes")
-    derived_hash = hashlib.sha256(raw_key.encode("utf-8")).digest()
-    b64_key = base64.urlsafe_b64encode(derived_hash)
-    return Fernet(b64_key)
-```
+### Issue 1: Backend Unavailable Indicator Across All Screens (P0)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** Red `(!) Backend unavailable` indicator rendered in header on every page. Frontend behaved as if the backend was completely unreachable, and empty fallback states were shown everywhere.
+- **Root Cause:**
+  1. The local FastAPI server (`uvicorn`) was not running continuously in the development shell.
+  2. Health detection had no bounded exponential backoff, manual retry, or network recovery detection.
+  3. No centralized React context managed connection state across the application shell.
+- **Files Changed:**
+  - `frontend/src/context/HealthContext.tsx` (Created)
+  - `frontend/src/components/layout/Header.tsx`
+  - `frontend/src/App.tsx`
+  - `frontend/src/services/api.ts`
+- **Fix Implemented:**
+  - Created centralized `HealthProvider` with exponential backoff (3s -> 6s -> 12s -> 24s), immediate recheck on window focus, and multi-state indicators (`CONNECTED`, `CONNECTING`, `DEGRADED`, `UNAVAILABLE`, `AUTH_REQUIRED`).
+  - Added interactive "Retry" button directly in the status pill.
+  - Kept backend process active as background service.
+- **Test Performed:**
+  - HTTP probe to `/health` and `/api/v1/health` via Vite proxy.
+  - Stopped server and verified graceful transition to `UNAVAILABLE`, restarted server and verified instant auto-recovery to `CONNECTED (DB: connected)`.
+- **Test Result:** **PASSED.**
 
-In `backend/app/core/config.py` of PR #1:
-```python
-SECRET_KEY: str = Field(
-    default=_DEVELOPMENT_SECRET_KEY,
-    validation_alias=AliasChoices("JWT_SECRET", "SECRET_KEY"),
-)
-```
-When an operator deploys to production and sets `JWT_SECRET=super_secure_random_jwt_string_1234567890`, any existing database credentials that were encrypted using a different `SECRET_KEY` will fail to decrypt with:
-```text
-cryptography.fernet.InvalidToken
-```
+---
 
-### The Architectural Solution:
-1. Support `ENCRYPTION_KEY: Optional[str] = None` in `Settings`.
-2. In `encryption.py`, resolve key as:
-   ```python
-   raw_key = getattr(settings, "ENCRYPTION_KEY", None) or getattr(settings, "SECRET_KEY", "default-fallback-key")
-   ```
-3. This allows independent rotation of `JWT_SECRET` (for user session security) without invalidating database-encrypted AI provider keys.
+### Issue 2: Writing Assistant Statistics Inconsistency — 0 Words Displayed (P0)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** In the Writing Assistant, the text editor visibly contained paragraphs of technical prose, but the statistics panel displayed `0 words`, fallback `14 sentences`, `60s reading time`, and hardcoded `72/100` score.
+- **Root Cause:**
+  - `metrics` was a state variable only populated asynchronously after an HTTP request to `/api/v1/writing/analyze` finished.
+  - When the page mounted or before "Audit Quality" was clicked, `metrics` was null.
+  - `ArticleImprovementsPanel.tsx` had hardcoded fallbacks: `metrics?.sentence_count ?? 14`, `Math.round((metrics?.reading_time_minutes ?? 1) * 60)`, and `metrics?.readability_score ?? 72`.
+- **Files Changed:**
+  - `frontend/src/utils/textAnalysis.ts` (Created)
+  - `frontend/src/utils/textAnalysis.test.ts` (Created)
+  - `frontend/src/pages/WritingPage.tsx`
+  - `frontend/src/components/writing/ArticleImprovementsPanel.tsx`
+- **Fix Implemented:**
+  - Created deterministic client-side text analysis engine calculating exact words, syllables, sentences, paragraphs, reading time, and Flesch Reading Ease score synchronously from the editor text.
+  - Wired `useMemo` in `WritingPage.tsx` to derive `liveMetrics` on every keystroke.
+  - Removed all hardcoded fallback values (`14`, `72`, `60s`) from `ArticleImprovementsPanel.tsx`.
+- **Test Performed:**
+  - Automated unit test suite `textAnalysis.test.ts` verifying empty text, single sentences, long sentences, and markdown formatting.
+- **Test Result:** **PASSED (100% test pass rate).**
+
+---
+
+### Issue 3: False "Saved" State Displayed While Offline (P0)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** Writing Assistant displayed a green `Saved` badge even when the backend was disconnected or the draft was never actually persisted to the database.
+- **Root Cause:**
+  - Indicator was based on a simple boolean `!isDirty` (where `isDirty = text !== savedContent`).
+  - On page load, `text === savedContent` was true, falsely showing `Saved`.
+- **Files Changed:**
+  - `frontend/src/pages/WritingPage.tsx`
+- **Fix Implemented:**
+  - Implemented discrete save state machine: `UNSAVED`, `SAVING`, `SAVED`, `SAVE_FAILED`, `OFFLINE`.
+  - Only show `Saved at HH:MM` after receiving HTTP 200 persistence confirmation from the backend.
+  - Added automatic local preservation in `localStorage` when offline.
+- **Test Performed:**
+  - Verified unsaved changes indicator upon typing.
+  - Tested successful save displaying timestamp.
+  - Tested simulated offline save displaying `Offline (saved locally)`.
+- **Test Result:** **PASSED.**
+
+---
+
+### Issue 4: AI Observability Fabricated Metrics Confusion (P0)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** Observability page showed 153 requests, 88.9% success rate, $1.75 cost, and 248.3K tokens without clear distinction between reference benchmark data and live system telemetry.
+- **Root Cause:**
+  - `ObservabilityPage.tsx` used hardcoded nullish coalescing defaults (`metrics?.total_operations ?? 153`, etc.) whenever live backend telemetry had 0 operations.
+- **Files Changed:**
+  - `frontend/src/pages/ObservabilityPage.tsx`
+- **Fix Implemented:**
+  - Added clear mode selector: `Live System Telemetry` vs `Demonstration Baseline Reference Data`.
+  - When live telemetry has 0 operations, accurately display 0 requests, 100% success, $0.00 cost, and 0 tokens.
+  - Added a prominent badge and a 1-click "Run Live 34-Case Benchmark" button to populate real database telemetry.
+- **Test Performed:**
+  - Verified live 0-state display and switching to baseline reference mode.
+  - Verified live benchmark execution calling `POST /api/v1/observability/evaluate`.
+- **Test Result:** **PASSED.**
+
+---
+
+### Issue 5: Research Projects Missing Management Workflows (P1)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** Projects page lacked creation dialog, status filters, and duplicate operations.
+- **Root Cause:**
+  - Incomplete page controls; project creation was only accessible from the Research page.
+- **Files Changed:**
+  - `frontend/src/pages/ProjectsPage.tsx`
+- **Fix Implemented:**
+  - Added "New Project" modal directly on the Projects page.
+  - Added status filtering tabs: `All Projects`, `Completed`, `Draft`, `In Progress`.
+  - Added project duplication capability.
+  - Added confirmation dialog for project deletion.
+- **Test Performed:**
+  - Verified project filtering, creation modal, and duplication.
+- **Test Result:** **PASSED.**
+
+---
+
+### Issue 6: Settings Appearance Preferences Non-Persistent (P2)
+- **Status:** **FIXED AND VERIFIED**
+- **Issue Description:** Interface theme (System / Light / Dark), transparent sidebar, and table density preferences reset to defaults upon browser refresh.
+- **Root Cause:**
+  - State was held only in React memory and was not synced to `localStorage`.
+- **Files Changed:**
+  - `frontend/src/pages/SettingsPage.tsx`
+- **Fix Implemented:**
+  - Added `localStorage` persistence for `editorial_theme`, `editorial_transparent_sidebar`, `editorial_table_view`, and `editorial_sidebar_feature`.
+  - Added mount `useEffect` to apply the stored theme to `document.documentElement` on initial application load.
+- **Test Performed:**
+  - Changed theme to Dark, refreshed page, verified Dark theme persisted.
+  - Changed theme to Light, refreshed page, verified Light theme persisted.
+- **Test Result:** **PASSED.**

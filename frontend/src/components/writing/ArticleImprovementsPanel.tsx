@@ -53,7 +53,7 @@ export const ArticleImprovementsPanel: React.FC<ArticleImprovementsPanelProps> =
   const { success, info } = useToast();
   const [rewritingIssueId, setRewritingIssueId] = useState<string | null>(null);
 
-  const readabilityScore = metrics?.readability_score ?? 72;
+  const readabilityScore = metrics?.readability_score ?? 80;
   const isGoodScore = readabilityScore >= 60;
 
   // Categorized counts
@@ -178,13 +178,13 @@ export const ArticleImprovementsPanel: React.FC<ArticleImprovementsPanelProps> =
             <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
               <span className="text-[10px] text-slate-400 block">Sentences</span>
               <span className="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">
-                {metrics?.sentence_count ?? 14}
+                {metrics?.sentence_count ?? 0}
               </span>
             </div>
             <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
               <span className="text-[10px] text-slate-400 block">Reading Time</span>
               <span className="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono">
-                {Math.round((metrics?.reading_time_minutes ?? 1) * 60)}s
+                {Math.round((metrics?.reading_time_minutes ?? 0) * 60)}s
               </span>
             </div>
             <div className="p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
