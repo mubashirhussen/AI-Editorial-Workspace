@@ -1,8 +1,8 @@
 # AI Evaluation & Benchmark Quality Report
 
 **Execution Mode:** `offline`  
-**Timestamp (UTC):** `2026-11-09T07:24:29.923502+00:00`  
-**Total Duration:** `0.02s`  
+**Timestamp (UTC):** `2026-11-09T07:39:33.170172+00:00`  
+**Total Duration:** `0.01s`  
 **Overall Result:** **34 / 34 Passed (100.0%)**
 
 ---
@@ -70,5 +70,5 @@
 | :--- | :--- | :---: | :---: | :--- |
 | `hal-num-01` | Unsupported Financial Numbers | ✅ PASS | 100.0% | `unsupported_number` |
 | `hal-quote-02` | Fabricated Executive Quotation | ✅ PASS | 100.0% | `fabricated_quote` |
-| `hal-ref-03` | Invented Source ID Reference | ✅ PASS | 100.0% | `unsupported_number, invented_source_reference` |
+| `hal-ref-03` | Invented Source ID Reference | ✅ PASS | 100.0% | `invented_source_reference, unsupported_number` |
 | `hal-attrib-04` | Misattributed Technical Benchmark | ✅ PASS | 100.0% | `misattribution` |
