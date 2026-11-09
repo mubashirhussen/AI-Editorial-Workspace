@@ -57,3 +57,4 @@ pie title Defects Discovered and Resolved by Severity
 
 ### Quality Engineer Sign-Off:
 **STATUS: ALL DEFECTS RESOLVED — CLEARED FOR ASSESSMENT SUBMISSION**
+

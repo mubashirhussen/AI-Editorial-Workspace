@@ -3,11 +3,11 @@
 **Target Audience:** Technical Hiring Manager & Lead Editorial Engineers  
 **Role:** Forward Deployed Engineer (FDE) Intern Assessment Handover  
 **System:** AI Editorial Workspace  
-**Presenter:** Mubashir Hussain  
 **Format:** Live Technical Walkthrough & Architecture Defense  
-**Total Target Time:** 5 to 7 Minutes  
-**Branch:** `feat/phase15-uat-fde-validation`  
-**Test Suite Coverage:** 212/212 Passed (100%) | 34/34 Benchmarks Passed (100%)
+**Total Target Time:** 7 to 10 Minutes  
+**Branch:** `feat/phase16-final-product-polish`  
+**Comprehensive Playbook:** See [`docs/PHASE16_FDE_DEMO_SCRIPT.md`](docs/PHASE16_FDE_DEMO_SCRIPT.md) for the complete 14-step presentation playbook.  
+**Demonstration Seeder:** Run `python backend/scripts/seed_demo_environment.py --reset` for a clean demo baseline.
 
 ---
 

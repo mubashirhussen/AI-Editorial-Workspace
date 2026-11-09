@@ -7,17 +7,21 @@ Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluatio
 [![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-212%2F212%20Passed%20(100%25)-emerald)](docs/TEST_REPORT.md)
 [![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-34%2F34%20Passed-blue)](docs/TEST_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 15 UAT](https://img.shields.io/badge/UAT%20Validation-100%25%20Verified-purple)](docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md)
-[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase15--uat--fde--validation-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
+[![Phase 16 Status](https://img.shields.io/badge/Status-Ready%20for%20Demonstration-purple)](docs/PHASE16_FINAL_REVIEW.md)
+[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase16--final--product--polish-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
 ## 0. FDE Internship Assessment Submission Deliverables
 
-This repository is prepared for final technical assessment and grading. All core requirements, operational evidence matrices, and independent quality evaluations are indexed below:
+This repository is prepared for final technical assessment, live demonstration, and grading. All core requirements, operational evidence matrices, and independent quality evaluations are indexed below:
 
 | Deliverable | Description | Location |
 | :--- | :--- | :--- |
+| **Final Product Review** | Phase 16 Codebase health audit, debt elimination & UI polish | [`docs/PHASE16_FINAL_REVIEW.md`](docs/PHASE16_FINAL_REVIEW.md) |
+| **FDE Live Demo Playbook** | 7–10 minute live technical demonstration script across 14 segments | [`docs/PHASE16_FDE_DEMO_SCRIPT.md`](docs/PHASE16_FDE_DEMO_SCRIPT.md) |
+| **Final Test Report** | 212/212 Pytest tests, 34 AI benchmarks, and Vite build results | [`docs/PHASE16_FINAL_TEST_REPORT.md`](docs/PHASE16_FINAL_TEST_REPORT.md) |
+| **Demonstration Seeder** | Pristine demo environment seed script (`--reset` supported) | [`backend/scripts/seed_demo_environment.py`](backend/scripts/seed_demo_environment.py) |
 | **Requirements Traceability Matrix** | Phase 15 End-to-end requirement mapping: UI $\rightarrow$ API $\rightarrow$ Service $\rightarrow$ Model $\rightarrow$ Test | [`docs/PHASE15_REQUIREMENTS_TRACEABILITY.md`](docs/PHASE15_REQUIREMENTS_TRACEABILITY.md) |
 | **User Acceptance Test Report** | Phase 15 Scenarios A, B, C & independent audits of Modules A through H | [`docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md`](docs/PHASE15_USER_ACCEPTANCE_TEST_REPORT.md) |
 | **Data Validation Report** | Empirical validation of frontend metrics vs backend endpoints and DB records | [`docs/PHASE15_DATA_VALIDATION_REPORT.md`](docs/PHASE15_DATA_VALIDATION_REPORT.md) |
@@ -29,7 +33,7 @@ This repository is prepared for final technical assessment and grading. All core
 | **Engineering Decisions** | Architectural Decision Records (ADRs) for framework and database selections | [`ENGINEERING_DECISIONS.md`](ENGINEERING_DECISIONS.md) / [`docs/ENGINEERING_DECISIONS.md`](docs/ENGINEERING_DECISIONS.md) |
 | **Test Report** | Real test evidence: 212/212 backend tests, 34 benchmarks, Vite production build | [`TEST_REPORT.md`](TEST_REPORT.md) / [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md) |
 | **Sample Editorial** | Real-world publication output with verified citations and before/after audit | [`SAMPLE_EDITORIAL.md`](SAMPLE_EDITORIAL.md) / [`docs/SAMPLE_EDITORIAL.md`](docs/SAMPLE_EDITORIAL.md) |
-| **Live Demo Playbook** | 5–7 minute live technical walkthrough playbook with talking points and fallbacks | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) / [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
+| **Live Demo Playbook (Summary)** | 5–7 minute quick walkthrough playbook | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) / [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
 | **Production Readiness Report** | Phase 14 Final Release Candidate Sign-Off & Verification Verdict | [`docs/PRODUCTION_READINESS_REPORT.md`](docs/PRODUCTION_READINESS_REPORT.md) |
 | **Production Readiness Audit** | Phase 14 Comprehensive production readiness audit across 6 domains | [`docs/PHASE14_PRODUCTION_READINESS_AUDIT.md`](docs/PHASE14_PRODUCTION_READINESS_AUDIT.md) |
 | **Environment Configuration** | Enterprise environment variable catalog & cryptographic key decoupling | [`docs/PRODUCTION_ENVIRONMENT_CONFIGURATION.md`](docs/PRODUCTION_ENVIRONMENT_CONFIGURATION.md) |

@@ -77,3 +77,4 @@ Data validation was empirically asserted in automated test suite execution:
   - 180 words created $\rightarrow$ exact `word_count == 180` verified.
   - Estimated reading time $\rightarrow$ exact `reading_time == 1` minute verified.
   - Project creation $\rightarrow$ database `count(*)` and dashboard API `total_projects` incremented in unison with zero divergence.
+

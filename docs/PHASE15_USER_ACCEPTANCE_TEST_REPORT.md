@@ -164,3 +164,4 @@ sequenceDiagram
 | **Export Markdown** | Editorial Studio | Download `.md` file | Triggers browser file download | **FUNCTIONAL** |
 | **Run Benchmarks Button**| Observability Page | Run 34 evaluations | Triggers evaluation suite & updates charts | **FUNCTIONAL** |
 | **Theme Switcher** | App Header | Toggle Dark/Light mode | Toggles `dark` class on root HTML element | **FUNCTIONAL** |
+

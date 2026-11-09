@@ -69,3 +69,4 @@ flowchart LR
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: | :--- |
 | **Tenant Isolation** | Strict organization boundary enforcement on all entity queries | `frontend/src/components/layout/OrganizationSwitcher.tsx` | All `/api/v1/*` routes | `Organization`<br>`OrganizationMembership` | `test_uat_scenario_c_security_and_tenant_isolation`<br>`test_scenario_5_organization_security_and_tenant_isolation` | **VERIFIED** | Unauthorized cross-tenant queries return 403 Forbidden or 404 Not Found. |
 | **AI Reliability Observability** | Real-time monitoring of latency, tokens, cost, and evaluation runs | `frontend/src/pages/ObservabilityPage.tsx` | `GET /api/v1/observability/metrics`<br>`POST /api/v1/observability/evaluate` | `ProviderUsageRecord`<br>`AiProviderConfig` | `test_scenario_6_ai_observability_and_real_telemetry`<br>`test_uat_data_validation_and_calculated_metrics` | **VERIFIED** | Synchronous record persistence with zero loss. |
+

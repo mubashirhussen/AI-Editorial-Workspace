@@ -108,3 +108,4 @@ The workspace includes a built-in automated offline evaluation suite executing 3
   2. `epistemic_tagging_accuracy`: 8 test cases verifying hedge detection and empirical fact filtering.
   3. `hemingway_linting_precision`: 10 test cases verifying Flesch calculation, passive voice regex, and filler word detection.
   4. `citation_traceability`: 8 test cases verifying bracket reference linking and source ID binding.
+
