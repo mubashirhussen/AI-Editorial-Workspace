@@ -81,3 +81,4 @@ This document details all known limitations, operational thresholds, and the tec
 | **Native OCR Pipeline** | v1.1.0 | Tesseract/DocTR integration for scanned PDFs |
 | **Vector Database Embeddings** | v1.1.0 | pgvector / Qdrant semantic retrieval for research libraries |
 | **OAuth2 / SAML SSO** | v1.2.0 | Enterprise Okta, Google Workspace, and Azure AD integration |
+

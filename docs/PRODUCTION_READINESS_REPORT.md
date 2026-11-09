@@ -112,3 +112,4 @@ The codebase on branch `release/v1.0.0` is verified, stable, and ready for deplo
 2. Apply Git release tag `v1.0.0`.
 3. Trigger GitHub Actions production build workflow.
 4. Deploy container stack via `docker compose -f docker-compose.prod.yml up -d`.
+

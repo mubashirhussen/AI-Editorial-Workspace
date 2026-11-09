@@ -94,3 +94,4 @@ URL scraping in `backend/app/services/research/extraction_service.py` executes s
 | **Security Headers** | `backend/app/main.py:SecurityHeadersMiddleware`, `nginx.conf` | **VERIFIED** |
 | **Tenant Scoping** | `backend/app/models/base.py:TenantScopedBase` | **VERIFIED** |
 | **Sensitive Logging** | Masked tokens and passwords in observability loggers | **VERIFIED** |
+

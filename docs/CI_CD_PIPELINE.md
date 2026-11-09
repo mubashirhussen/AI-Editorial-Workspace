@@ -90,3 +90,4 @@ The repository features automated GitHub Actions workflows enforcing continuous 
 1. **Zero Fake Passes:** Tests must genuinely pass with returncode 0. Converting failures into warnings (`|| true`) is strictly prohibited on test assertions.
 2. **Real PostgreSQL Service:** Backend tests in CI run against live containerized PostgreSQL 15, validating real relational behavior, foreign key cascades, and connection pool behavior.
 3. **Secret Security:** All production deployment secrets are managed exclusively through GitHub Actions Secrets (`PROD_DATABASE_URL`, `PROD_JWT_SECRET`, `PROD_ENCRYPTION_KEY`). Secrets are never printed in job logs.
+

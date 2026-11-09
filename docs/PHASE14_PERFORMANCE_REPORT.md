@@ -56,3 +56,4 @@ Memory Footprint (Idle)       Combined Docker stack < 1GB       ~320MB total RAM
 1. **Rate Limiting:** In-memory sliding window allows up to **180 requests/minute** per IP, preventing denial-of-service from scraping loops.
 2. **PostgreSQL Pooling:** Configured with `pool_size=10`, `max_overflow=20`, and `pool_timeout=30`, ensuring up to 30 concurrent database transactions per worker without dropping connections.
 3. **Frontend Bundle Budgeting:** Vite manual chunk splitting separates `vendor-react` (60kB gz), `vendor-charts` (107kB gz), and `vendor-icons` (7.8kB gz), keeping entry point bundle under 34kB gzipped.
+
