@@ -103,3 +103,4 @@ All routes verified via `backend/tests/test_phase22_research_assistant.py`:
 - `test_phase22_brief_synthesis_and_evidence_traceability`: Passed (100%)
 - `test_phase22_brief_update_versioning_and_export`: Passed (100%)
 - `test_phase22_cross_tenant_isolation`: Passed (100%)
+

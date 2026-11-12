@@ -378,7 +378,7 @@ test.describe('Phase 22 - Research Assistant End-to-End Workflow & Evidence Trac
     // Verify Version Lineage modal rendered
     await expect(page.locator('text=Research Brief Version Lineage')).toBeVisible();
     await expect(page.locator('text=Version 1')).toBeVisible();
-    
+
     // Close Version History modal using close icon
     const closeVersionModalBtn = page.locator('div.fixed button:has(svg.lucide-x)').first();
     await closeVersionModalBtn.click();
@@ -455,7 +455,7 @@ test.describe('Phase 22 - Research Assistant End-to-End Workflow & Evidence Trac
 
     // Verify modal inputs
     await expect(page.locator('text=Create Research Project')).toBeVisible();
-    
+
     // Fill out form
     await page.fill('input[placeholder*="Autonomous AI Verification"]', 'Generative Code Synthesis 2026');
     await page.fill('input[placeholder*="Test-Time Compute"]', 'Agentic Refactoring Systems');

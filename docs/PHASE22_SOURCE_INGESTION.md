@@ -115,3 +115,4 @@ All ingestion capabilities are covered in the automated test suite:
   - Validates rejection of `http://127.0.0.1:8000`, `http://localhost/admin`, `http://169.254.169.254/latest/meta-data`, and private RFC 1918 IPs.
 - `backend/tests/test_phase22_research_assistant.py::test_phase22_document_extractor_and_signature_checks`
   - Validates valid PDF, corrupted PDF header rejection, valid DOCX, invalid binary signature rejection, and oversized upload rejection.
+

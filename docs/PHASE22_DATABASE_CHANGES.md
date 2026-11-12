@@ -99,3 +99,4 @@ def downgrade():
 - Applied locally via `alembic upgrade head`.
 - Validated via `backend/tests/test_phase3_database_integrity.py::TestDatabaseIntegrity::test_alembic_head_revision_matches_latest` confirming head revision matches `'9c4d5e6f7a8b'`.
 - Validated via `backend/tests/test_phase22_research_assistant.py::test_phase22_project_crud_and_lifecycle`.
+

@@ -46,3 +46,4 @@ def downgrade():
         batch_op.drop_column('target_audience')
         batch_op.drop_column('research_objective')
         batch_op.drop_column('topic')
+

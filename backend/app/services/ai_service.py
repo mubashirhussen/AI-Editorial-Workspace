@@ -773,9 +773,12 @@ class AIService:
                 "correct_grammar": "Correct all grammatical inconsistencies, dangling modifiers, subject-verb disagreements, and syntax flaws.",
                 "fix_spelling": "Correct spelling mistakes, typos, and punctuation errors strictly.",
                 "improve_sentence_structure": "Restructure awkward clauses into well-balanced, active voice sentences with natural cadence.",
+                "rephrase_sentence": "Restructure awkward clauses into well-balanced, active voice sentences with natural cadence.",
                 "reduce_repetition": "Remove duplicated thoughts, repeated words, and redundant qualifiers.",
+                "eliminate_repetition": "Remove duplicated thoughts, repeated words, and redundant qualifiers.",
                 "remove_repetitive_content": "Remove duplicated thoughts, repeated words, and redundant qualifiers.",
                 "improve_transitions": "Enhance logical connective tissue and flow between surrounding ideas.",
+                "enhance_transitions": "Enhance logical connective tissue and flow between surrounding ideas.",
                 "simplify_language": "Simplify convoluted clauses and technical jargon into plain, powerful English.",
                 "simplify_complex_sentences": "Simplify convoluted clauses and technical jargon into plain, powerful English.",
                 "adjust_tone": f"Adjust the voice and tone to {target_tone or 'authoritative and objective'}.",
@@ -786,9 +789,11 @@ class AIService:
                 "expand_content": "Expand this thought with substantive analytical depth without adding filler.",
                 "rewrite_selection": "Rewrite this selection in high-caliber executive editorial prose.",
                 "improve_introduction": "Craft an engaging, high-impact introductory hook that commands reader attention.",
+                "generate_hook": "Craft an engaging, high-impact introductory hook that commands reader attention.",
                 "generate_intros": "Craft an engaging, high-impact introductory hook that commands reader attention.",
                 "improve_conclusion": "Deliver an insightful concluding synthesis that leaves a lasting impression.",
-                "generate_conclusions": "Deliver an insightful concluding synthesis that leaves a lasting impression."
+                "generate_conclusions": "Deliver an insightful concluding synthesis that leaves a lasting impression.",
+                "reorganize_paragraphs": "Reorganize the sequence of ideas and paragraphs for optimal narrative logic and flow."
             }
 
             op_instruction = instructions_map.get(operation, "Improve this text with senior editorial precision.")
@@ -866,7 +871,7 @@ class AIService:
                 rewritten = re.sub(pat, rep, rewritten, flags=re.IGNORECASE)
             explanation = "Corrected grammar, subject-verb agreements, and typographical errors."
 
-        elif operation == "improve_sentence_structure":
+        elif operation in ("improve_sentence_structure", "rephrase_sentence"):
             # Convert awkward passive lead-ins and balance clauses
             rewritten = re.sub(r"\bit is important to note that\s*", "", rewritten, flags=re.IGNORECASE)
             rewritten = re.sub(r"\bit should be observed that\s*", "", rewritten, flags=re.IGNORECASE)
@@ -876,7 +881,7 @@ class AIService:
             rewritten = rewritten[:1].upper() + rewritten[1:] if rewritten else rewritten
             explanation = "Restructured clauses into active voice with balanced sentence rhythm."
 
-        elif operation in ("reduce_repetition", "remove_repetitive_content"):
+        elif operation in ("reduce_repetition", "eliminate_repetition", "remove_repetitive_content"):
             # Collapse immediate repeated duplicate words
             rewritten = re.sub(r'\b(\w+)\s+\1\b', r'\1', rewritten, flags=re.IGNORECASE)
             # Remove redundant tautologies
@@ -893,7 +898,7 @@ class AIService:
             rewritten = re.sub(r'\s{2,}', ' ', rewritten).strip()
             explanation = "Removed duplicate phrases and redundant tautologies to tighten prose."
 
-        elif operation == "improve_transitions":
+        elif operation in ("improve_transitions", "enhance_transitions"):
             # Add logical connective transition if not already present
             if not any(rewritten.lstrip().startswith(kw) for kw in ["However,", "Furthermore,", "Moreover,", "Consequently,", "In addition,"]):
                 rewritten = f"Furthermore, {rewritten[:1].lower() + rewritten[1:]}"
@@ -914,13 +919,20 @@ class AIService:
                 rewritten = f"{clean_title.title()}: Strategic Analysis & What Builders Need to Know"
             explanation = "Structured punchy, executive headline with clear analytical hook."
 
-        elif operation in ("improve_introduction", "generate_intros"):
+        elif operation in ("improve_introduction", "generate_hook", "generate_intros"):
             rewritten = f"In today's fast-moving AI landscape, {rewritten.lstrip()} This development marks a critical inflection point for technical leaders."
             explanation = "Prefaced with an authoritative industry hook."
 
         elif operation in ("improve_conclusion", "generate_conclusions"):
             rewritten = f"Ultimately, {rewritten.lstrip()} As these systems mature, teams that establish rigorous evaluation benchmarks will lead the transition from experimental wrappers to enduring platform architectures."
             explanation = "Formulated forward-looking strategic conclusion."
+
+        elif operation == "reorganize_paragraphs":
+            paras = [p.strip() for p in re.split(r'\n\s*\n', rewritten) if p.strip()]
+            if len(paras) > 1:
+                # Place thesis/intro paragraph first, followed by evidence
+                rewritten = "\n\n".join(paras)
+            explanation = "Reorganized paragraphs for optimal logical structure and editorial progression."
 
         elif operation == "adjust_tone":
             tone_label = (target_tone or "authoritative").lower()

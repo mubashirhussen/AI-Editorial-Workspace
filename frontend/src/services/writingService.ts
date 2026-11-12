@@ -18,8 +18,16 @@ export const writingService = {
     return res.data;
   },
 
-  async getDrafts(skip: number = 0, limit: number = 50): Promise<WritingDraft[]> {
-    const res = await apiClient.get('/writing/drafts', { params: { skip, limit } });
+  async getDrafts(params?: {
+    skip?: number;
+    limit?: number;
+    status?: string;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+    project_id?: string;
+  }): Promise<WritingDraft[]> {
+    const res = await apiClient.get('/writing/drafts', { params: { skip: 0, limit: 100, ...params } });
     return res.data;
   },
 
@@ -35,6 +43,21 @@ export const writingService = {
 
   async deleteDraft(id: string): Promise<{ success: boolean; message: string }> {
     const res = await apiClient.delete(`/writing/drafts/${id}`);
+    return res.data;
+  },
+
+  async archiveDraft(id: string): Promise<WritingDraft> {
+    const res = await apiClient.post(`/writing/drafts/${id}/archive`);
+    return res.data;
+  },
+
+  async reopenDraft(id: string): Promise<WritingDraft> {
+    const res = await apiClient.post(`/writing/drafts/${id}/reopen`);
+    return res.data;
+  },
+
+  async duplicateDraft(id: string): Promise<WritingDraft> {
+    const res = await apiClient.post(`/writing/drafts/${id}/duplicate`);
     return res.data;
   },
 

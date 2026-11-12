@@ -59,12 +59,14 @@ class DraftCreate(BaseModel):
     style_profile_id: Optional[str] = None
 
     def model_post_init(self, __context: Any) -> None:
-        if not self.original_content and self.content:
+        if self.original_content is None and self.content is not None:
             self.original_content = self.content
-        elif not self.content and self.original_content:
+        elif self.content is None and self.original_content is not None:
             self.content = self.original_content
-        if not self.original_content:
-            raise ValueError("Draft must contain content.")
+        if self.original_content is None:
+            self.original_content = ""
+        if self.content is None:
+            self.content = ""
 
 class DraftUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
@@ -194,13 +196,16 @@ class DraftGenerateResponse(BaseModel):
     estimated_cost_usd: float = 0.0
 
 SelectionRewriteOperation = Literal[
-    # Canonical Phase 7 operations
+    # Canonical Phase 7 & Phase 23 operations
     "improve_clarity",
     "improve_readability",
     "fix_grammar",
     "improve_sentence_structure",
+    "rephrase_sentence",
     "reduce_repetition",
+    "eliminate_repetition",
     "improve_transitions",
+    "enhance_transitions",
     "simplify_language",
     "adjust_tone",
     "generate_headlines",
@@ -209,6 +214,8 @@ SelectionRewriteOperation = Literal[
     "rewrite_selection",
     "improve_introduction",
     "improve_conclusion",
+    "generate_hook",
+    "reorganize_paragraphs",
     # Backwards compatibility aliases
     "correct_grammar",
     "fix_spelling",

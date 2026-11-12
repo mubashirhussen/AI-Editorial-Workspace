@@ -39,28 +39,50 @@ export interface WritingAnalysisResponse {
 export interface WritingDraft {
   id: string;
   project_id?: string;
+  brief_id?: string;
   title: string;
   original_content: string;
   revised_content: string;
   final_content?: string;
+  content_type?: string;
+  target_audience?: string;
+  tone?: string;
+  desired_length?: number;
+  word_count?: number;
+  readability_score?: number;
+  research_grounding_score?: number;
+  unsupported_claims_count?: number;
+  style_profile_id?: string;
   status: string;
   created_at: string;
   updated_at: string;
   suggestions?: WritingIssue[];
-  readability_score?: number;
 }
 
 export interface DraftCreate {
   title?: string;
-  original_content: string;
+  original_content?: string;
+  content?: string;
   project_id?: string;
+  brief_id?: string;
+  content_type?: string;
+  target_audience?: string;
+  tone?: string;
+  desired_length?: number;
+  style_profile_id?: string;
 }
 
 export interface DraftUpdate {
   title?: string;
+  content?: string;
   revised_content?: string;
   final_content?: string;
   status?: string;
+  content_type?: string;
+  target_audience?: string;
+  tone?: string;
+  desired_length?: number;
+  style_profile_id?: string;
 }
 
 export interface SuggestionActionResponse {

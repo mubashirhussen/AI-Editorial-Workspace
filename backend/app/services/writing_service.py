@@ -97,6 +97,8 @@ class WritingService:
         project_id: Optional[str] = None,
         status: Optional[str] = None,
         search: Optional[str] = None,
+        sort_by: str = "updated_at",
+        sort_order: str = "desc",
         skip: int = 0,
         limit: int = 100
     ) -> List[WritingDraft]:
@@ -113,19 +115,72 @@ class WritingService:
         if project_id:
             query = query.filter(WritingDraft.project_id == project_id)
 
-        if status:
-            query = query.filter(WritingDraft.status == status)
+        if status and status.lower() != "all":
+            query = query.filter(WritingDraft.status.ilike(status))
 
         if search and search.strip():
             term = f"%{search.strip()}%"
             query = query.filter(
                 or_(
                     WritingDraft.title.ilike(term),
-                    WritingDraft.revised_content.ilike(term)
+                    WritingDraft.revised_content.ilike(term),
+                    WritingDraft.original_content.ilike(term)
                 )
             )
 
-        return query.order_by(WritingDraft.updated_at.desc(), WritingDraft.created_at.desc()).offset(skip).limit(limit).all()
+        # Dynamic sorting
+        sort_col = getattr(WritingDraft, sort_by, None)
+        if sort_col is None:
+            sort_col = WritingDraft.updated_at
+
+        if sort_order.lower() == "asc":
+            query = query.order_by(sort_col.asc())
+        else:
+            query = query.order_by(sort_col.desc())
+
+        return query.offset(skip).limit(limit).all()
+
+    def archive_draft(self, db: Session, draft_id: str, user_id: Optional[str] = None) -> WritingDraft:
+        draft = self.get_draft(db, draft_id)
+        draft.status = "archived"
+        db.commit()
+        db.refresh(draft)
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="WRITING_DRAFT",
+                document_id=draft.id,
+                content=draft.revised_content or draft.original_content or "",
+                title=draft.title,
+                change_type="MANUAL_EDIT",
+                change_summary="Draft archived",
+                user_id=user_id,
+                org_id=draft.organization_id
+            )
+        except Exception:
+            pass
+        return draft
+
+    def reopen_draft(self, db: Session, draft_id: str, user_id: Optional[str] = None) -> WritingDraft:
+        draft = self.get_draft(db, draft_id)
+        draft.status = "draft"
+        db.commit()
+        db.refresh(draft)
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="WRITING_DRAFT",
+                document_id=draft.id,
+                content=draft.revised_content or draft.original_content or "",
+                title=draft.title,
+                change_type="MANUAL_EDIT",
+                change_summary="Draft reopened",
+                user_id=user_id,
+                org_id=draft.organization_id
+            )
+        except Exception:
+            pass
+        return draft
 
     def get_draft(self, db: Session, draft_id: str, organization_id: Optional[str] = None) -> WritingDraft:
         draft = db.query(WritingDraft).filter(WritingDraft.id == draft_id).first()
@@ -515,10 +570,11 @@ class WritingService:
         )
 
     def export_draft(self, db: Session, draft_id: str, export_format: str) -> Tuple[bytes, str, str]:
+        import html
         draft = self.get_draft(db, draft_id)
         fmt = (export_format or "markdown").lower()
         title_slug = re.sub(r'[^a-zA-Z0-9_-]', '_', draft.title.lower()).strip('_') or "editorial_article"
-        content = draft.revised_content or draft.original_content
+        content = draft.revised_content or draft.original_content or ""
 
         if fmt in ("md", "markdown"):
             filename = f"{title_slug}.md"
@@ -583,9 +639,11 @@ class WritingService:
 
         elif fmt in ("html", "htm"):
             filename = f"{title_slug}.html"
+            safe_title = html.escape(draft.title or "Untitled Draft")
+            safe_body = html.escape(content).replace("\n", "<br>\n")
             html_content = (
                 f"<!DOCTYPE html>\n<html>\n<head>\n"
-                f"<meta charset='utf-8'>\n<title>{draft.title}</title>\n"
+                f"<meta charset='utf-8'>\n<title>{safe_title}</title>\n"
                 f"<style>\n"
                 f"body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; "
                 f"max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1e293b; }}\n"
@@ -594,9 +652,9 @@ class WritingService:
                 f"p {{ margin: 16px 0; }}\n"
                 f".meta {{ color: #64748b; font-size: 13px; margin-bottom: 24px; }}\n"
                 f"</style>\n</head>\n<body>\n"
-                f"<h1>{draft.title}</h1>\n"
+                f"<h1>{safe_title}</h1>\n"
                 f"<div class='meta'>Word count: {draft.word_count} | Grounding: {draft.research_grounding_score or 100}%</div>\n"
-                f"<div>{content.replace(chr(10), '<br>')}</div>\n"
+                f"<div>{safe_body}</div>\n"
                 f"</body>\n</html>"
             )
             return html_content.encode("utf-8"), filename, "text/html; charset=utf-8"

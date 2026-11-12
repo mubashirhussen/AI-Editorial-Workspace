@@ -111,3 +111,4 @@ The frontend exposes the Evidence Architecture directly to the human researcher 
   - Validates source claim generation, verbatim quote alignment, and status classification.
 - Tested via Playwright E2E `frontend/e2e/research-workflow.spec.ts`
   - Validates evidence tab navigation, filter pill rendering, and claim verification display.
+

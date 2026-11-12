@@ -107,6 +107,8 @@ def duplicate_draft(
     current_user: Optional[User] = Depends(get_current_user)
 ):
     """Clones an existing writing draft non-destructively."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
     user_id = current_user.id if current_user else None
     return writing_service.duplicate_draft(db, draft_id, user_id=user_id)
 
@@ -171,10 +173,12 @@ def list_drafts(
     project_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    sort_by: str = Query("updated_at", description="Field to sort by: updated_at, created_at, title"),
+    sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     db: Session = Depends(get_db),
     org: Optional[Organization] = Depends(get_active_organization)
 ):
-    """Retrieves paginated writing drafts scoped to user organization."""
+    """Retrieves paginated writing drafts scoped to user organization with sorting and filters."""
     org_id = org.id if org else None
     return writing_service.get_drafts(
         db,
@@ -182,6 +186,8 @@ def list_drafts(
         project_id=project_id,
         status=status,
         search=search,
+        sort_by=sort_by,
+        sort_order=sort_order,
         skip=skip,
         limit=limit
     )
@@ -238,6 +244,30 @@ def patch_draft(
     except Exception:
         pass
     return updated
+
+@router.post("/drafts/{draft_id}/archive", response_model=DraftResponse, summary="Archive draft")
+def archive_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Archives a writing draft non-destructively."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
+    user_id = current_user.id if current_user else None
+    return writing_service.archive_draft(db, draft_id, user_id=user_id)
+
+@router.post("/drafts/{draft_id}/reopen", response_model=DraftResponse, summary="Reopen draft")
+def reopen_draft(
+    draft_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Reopens an archived writing draft."""
+    draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.EDIT_DRAFTS)
+    user_id = current_user.id if current_user else None
+    return writing_service.reopen_draft(db, draft_id, user_id=user_id)
 
 @router.delete("/drafts/{draft_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete draft")
 def delete_draft(
@@ -399,41 +429,65 @@ def style_check_draft(
     draft_id: str,
     payload: Optional[StyleCheckRequest] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    active_org: Organization = Depends(get_active_organization)
+    current_user: Optional[User] = Depends(get_current_user),
+    active_org: Optional[Organization] = Depends(get_active_organization)
 ):
     """Executes an automated style-compliance audit on a writing draft against a selected Editorial Style Profile."""
     draft = writing_service.get_draft(db, draft_id)
+    check_draft_tenant_access(db, draft, current_user, OrgPermission.VIEW_CONTENT)
 
-    if draft.project_id:
-        proj = db.query(ResearchProject).filter(ResearchProject.id == draft.project_id).first()
-        if proj and proj.organization_id and proj.organization_id != active_org.id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Writing draft not found")
+    org_id = active_org.id if active_org else draft.organization_id
 
     profile = None
     profile_id = payload.style_profile_id if payload else None
-    if profile_id:
-        profile = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.id == profile_id).first()
-    elif draft.style_profile_id:
-        profile = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.id == draft.style_profile_id).first()
 
-    if not profile:
+    # 1. Direct explicit profile requested
+    if profile_id:
+        p = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.id == profile_id).first()
+        if p:
+            if p.organization_id is None or (org_id and p.organization_id == org_id):
+                profile = p
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Style profile not found in active organization.")
+
+    # 2. Draft's attached profile
+    if not profile and draft.style_profile_id:
+        p = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.id == draft.style_profile_id).first()
+        if p and (p.organization_id is None or (org_id and p.organization_id == org_id)):
+            profile = p
+
+    # 3. Active organization default profile
+    if not profile and org_id:
         profile = db.query(EditorialStyleProfile).filter(
-            (EditorialStyleProfile.organization_id == active_org.id) & (EditorialStyleProfile.is_default == True)
+            EditorialStyleProfile.organization_id == org_id,
+            EditorialStyleProfile.is_default == True
         ).first()
 
+    # 4. Global system default profile
     if not profile:
-        profile = db.query(EditorialStyleProfile).filter(EditorialStyleProfile.is_default == True).first()
+        profile = db.query(EditorialStyleProfile).filter(
+            EditorialStyleProfile.organization_id.is_(None),
+            EditorialStyleProfile.is_default == True
+        ).first()
 
-    if not profile:
-        profile = db.query(EditorialStyleProfile).first()
+    # 5. Any profile in this organization
+    if not profile and org_id:
+        profile = db.query(EditorialStyleProfile).filter(
+            EditorialStyleProfile.organization_id == org_id
+        ).first()
 
+    # 6. Any system global template
     if not profile:
-        # Safe built-in default fallback profile
+        profile = db.query(EditorialStyleProfile).filter(
+            EditorialStyleProfile.organization_id.is_(None)
+        ).first()
+
+    # 7. Safe fallback profile created in org scope if none exists
+    if not profile:
         import uuid
         profile = EditorialStyleProfile(
             id=str(uuid.uuid4()),
-            organization_id=active_org.id if active_org else None,
+            organization_id=org_id,
             name="Standard Editorial",
             publication_name="AI Editorial Workspace",
             tone="Authoritative, analytical, objective",
