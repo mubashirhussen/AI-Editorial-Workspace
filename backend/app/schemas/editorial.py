@@ -32,6 +32,7 @@ class HeadlineGenerateResponse(BaseModel):
 class EditorialGenerateRequest(BaseModel):
     project_id: str
     research_brief_id: Optional[str] = None
+    headline: Optional[str] = Field(None, max_length=500)
     selected_headline: Optional[str] = Field(None, max_length=500)
     angle_headline: Optional[str] = Field(None, max_length=500) # Backward compatibility
     audience: Optional[str] = Field("founders, builders, and operators", max_length=255)
@@ -78,6 +79,7 @@ class EditorialExportResponse(BaseModel):
     markdown_content: str
     plain_text_content: str
     html_content: Optional[str] = None
+    json_content: Optional[str] = None
     format: str = "markdown"
     word_count: int
     exported_at: datetime

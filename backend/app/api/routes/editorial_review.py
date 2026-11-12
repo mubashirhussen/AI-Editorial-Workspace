@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.models.base import EditorialOutput, EditorialReview, EditorialComment, User
+from backend.app.models.base import EditorialOutput, EditorialReview, EditorialComment, User, utc_now
 from backend.app.schemas.auth import OrgPermission
 from backend.app.api.deps import get_current_user
 from backend.app.api.v1.endpoints.projects import check_project_tenant_access
@@ -34,35 +34,55 @@ router = APIRouter(prefix="/editorial", tags=["Editorial Workflow & Review"])
 # 1. DASHBOARD STATS
 # =====================================================================
 @router.get("/dashboard/stats", response_model=EditorialDashboardStats)
-def get_editorial_dashboard_stats(db: Session = Depends(get_db)):
-    """Fetches real database-backed editorial workflow statistics."""
-    return review_workflow_service.get_dashboard_stats(db)
+def get_editorial_dashboard_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Fetches real database-backed editorial workflow statistics scoped to current tenant."""
+    return review_workflow_service.get_dashboard_stats(db, user=current_user)
 
 # =====================================================================
 # 2. AI PRE-REVIEW & WORKFLOW SUBMISSION
 # =====================================================================
 @router.post("/{editorial_id}/ai-review")
-def run_ai_review(editorial_id: str, db: Session = Depends(get_db)):
+def run_ai_review(
+    editorial_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Executes automated quality checks (word count, writing quality, missing sections,
     sources, uncertainties) before human review.
     Does NOT approve or finalize content.
     """
+    editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
+    if not editorial:
+        raise HTTPException(status_code=404, detail="Editorial not found.")
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.REVIEW_EDITORIALS_LIMITED)
+
     return review_workflow_service.run_ai_pre_review(db, editorial_id)
 
 @router.post("/{editorial_id}/submit-review")
-def submit_editorial_for_review(editorial_id: str, db: Session = Depends(get_db)):
+def submit_editorial_for_review(
+    editorial_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Submits an editorial for human review, moving status to HUMAN_REVIEW_PENDING."""
     editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
     if not editorial:
         raise HTTPException(status_code=404, detail="Editorial not found.")
-    
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.EDIT_DRAFTS)
+
+    submitter_name = current_user.full_name or current_user.email or "Editorial Submitter"
     updated = review_workflow_service.transition_editorial_status(
         db=db,
         editorial=editorial,
         new_status=WorkflowStatus.HUMAN_REVIEW_PENDING,
-        reviewer_name="Workflow Submitter",
-        notes="Submitted for human editorial review."
+        reviewer_name=submitter_name,
+        notes=f"Submitted for human editorial review by {submitter_name}."
     )
     return {"message": "Editorial submitted for human review.", "status": updated.status}
 
@@ -70,8 +90,18 @@ def submit_editorial_for_review(editorial_id: str, db: Session = Depends(get_db)
 # 3. REVIEWS & COMMENTS
 # =====================================================================
 @router.get("/{editorial_id}/reviews", response_model=List[EditorialReviewResponse])
-def get_editorial_reviews(editorial_id: str, db: Session = Depends(get_db)):
+def get_editorial_reviews(
+    editorial_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Fetches complete review audit history and comments for an editorial."""
+    editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
+    if not editorial:
+        raise HTTPException(status_code=404, detail="Editorial not found.")
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.VIEW_CONTENT)
+
     reviews = (
         db.query(EditorialReview)
         .filter(EditorialReview.editorial_id == editorial_id)
@@ -84,19 +114,25 @@ def get_editorial_reviews(editorial_id: str, db: Session = Depends(get_db)):
 def create_editorial_review(
     editorial_id: str,
     req: EditorialReviewCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Creates a new human review record and applies any attached comments."""
     editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
     if not editorial:
         raise HTTPException(status_code=404, detail="Editorial not found.")
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.REVIEW_EDITORIALS)
+
+    # Server-enforced reviewer name from authenticated session
+    authenticated_reviewer = current_user.full_name or current_user.email or req.reviewer_name
 
     review = EditorialReview(
         editorial_id=editorial_id,
-        reviewer_name=req.reviewer_name,
+        reviewer_name=authenticated_reviewer,
         review_status=req.review_status,
         overall_feedback=req.overall_feedback,
-        reviewed_at=review_workflow_service.transition_editorial_status.__globals__['utc_now']()
+        reviewed_at=utc_now()
     )
     db.add(review)
     db.commit()
@@ -121,43 +157,61 @@ def create_editorial_review(
 def add_editorial_direct_comment(
     editorial_id: str,
     req: EditorialCommentCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Adds a comment directly to an editorial by automatically attaching to or creating its active review."""
+    """Adds a comment directly to an editorial by attaching to or creating its active review."""
     editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
     if not editorial:
         raise HTTPException(status_code=404, detail="Editorial not found.")
-    
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.VIEW_CONTENT)
+
+    authenticated_reviewer = current_user.full_name or current_user.email or "Human Editor"
     review = db.query(EditorialReview).filter(EditorialReview.editorial_id == editorial_id).order_by(EditorialReview.reviewed_at.desc()).first()
     if not review:
         review = EditorialReview(
             editorial_id=editorial_id,
-            reviewer_name="Human Editor",
+            reviewer_name=authenticated_reviewer,
             review_status="HUMAN_REVIEW_PENDING",
-            reviewed_at=review_workflow_service.transition_editorial_status.__globals__['utc_now']()
+            reviewed_at=utc_now()
         )
         db.add(review)
         db.commit()
         db.refresh(review)
-        
+
     return review_workflow_service.add_comment(db, review.id, req)
 
 @router.post("/reviews/{review_id}/comments", response_model=EditorialCommentResponse)
 def add_review_comment(
     review_id: str,
     req: EditorialCommentCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Adds a targeted comment or suggested revision to an existing review."""
+    review = db.query(EditorialReview).filter(EditorialReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found.")
+    if review.editorial and review.editorial.project:
+        check_project_tenant_access(db, review.editorial.project, current_user, OrgPermission.VIEW_CONTENT)
+
     return review_workflow_service.add_comment(db, review_id, req)
 
 @router.patch("/comments/{comment_id}", response_model=EditorialCommentResponse)
 def update_comment_resolution(
     comment_id: str,
     req: EditorialCommentUpdate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Updates a comment's resolution status (open -> resolved / rejected) or text."""
+    comment = db.query(EditorialComment).filter(EditorialComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    if comment.review and comment.review.editorial and comment.review.editorial.project:
+        check_project_tenant_access(db, comment.review.editorial.project, current_user, OrgPermission.EDIT_DRAFTS)
+
     return review_workflow_service.update_comment(db, comment_id, req)
 
 # =====================================================================
@@ -167,14 +221,24 @@ def update_comment_resolution(
 def request_editorial_changes(
     editorial_id: str,
     req: EditorialChangeRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Requests revisions on an editorial. Requires meaningful, constructive feedback."""
+    editorial = db.query(EditorialOutput).filter(EditorialOutput.id == editorial_id).first()
+    if not editorial:
+        raise HTTPException(status_code=404, detail="Editorial not found.")
+    if editorial.project:
+        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.REVIEW_EDITORIALS)
+
+    authenticated_reviewer = current_user.full_name or current_user.email or req.reviewer_name
+    req.reviewer_name = authenticated_reviewer
+
     updated = review_workflow_service.request_changes(db, editorial_id, req)
     return {
         "message": "Changes requested successfully.",
         "status": updated.status,
-        "reviewer": req.reviewer_name
+        "reviewer": authenticated_reviewer
     }
 
 @router.post("/{editorial_id}/approve")
@@ -189,13 +253,30 @@ def approve_editorial(
     if not editorial:
         raise HTTPException(status_code=404, detail="Editorial not found.")
     if editorial.project:
-        check_project_tenant_access(db, editorial.project, current_user, OrgPermission.APPROVE_EDITORIALS)
+        membership = check_project_tenant_access(db, editorial.project, current_user, OrgPermission.APPROVE_EDITORIALS)
+        
+        # Self-approval guard: If the user drafted this edition and holds an EDITOR role without OWNER/ADMIN status,
+        # require independent peer review approval
+        if (
+            editorial.draft 
+            and hasattr(editorial.draft, "author_id") 
+            and editorial.draft.author_id == current_user.id
+            and membership 
+            and membership.role == "EDITOR"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Authors cannot approve their own editorial drafts without independent peer review."
+            )
+
+    authenticated_reviewer = current_user.full_name or current_user.email or req.reviewer_name
+    req.reviewer_name = authenticated_reviewer
 
     updated = review_workflow_service.approve_editorial(db, editorial_id, req)
     return {
         "message": "Editorial approved successfully.",
         "status": updated.status,
-        "reviewer": req.reviewer_name
+        "reviewer": authenticated_reviewer
     }
 
 @router.post("/{editorial_id}/finalize")
@@ -215,11 +296,14 @@ def finalize_editorial(
     if editorial.project:
         check_project_tenant_access(db, editorial.project, current_user, OrgPermission.APPROVE_EDITORIALS)
 
+    authenticated_finalizer = current_user.full_name or current_user.email or req.finalized_by
+    req.finalized_by = authenticated_finalizer
+
     updated = review_workflow_service.finalize_editorial(db, editorial_id, req)
     return {
         "message": "Editorial finalized and locked.",
         "status": updated.status,
-        "finalized_by": req.finalized_by
+        "finalized_by": authenticated_finalizer
     }
 
 # =====================================================================
@@ -251,4 +335,3 @@ def update_editorial_revision(
         "status": updated.status,
         "diff_summary": diff_summary
     }
-

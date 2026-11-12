@@ -73,7 +73,7 @@ class EditorialService:
             })
 
         # Match selected angle or headline
-        selected_headline = req.selected_headline or req.angle_headline
+        selected_headline = req.selected_headline or getattr(req, "headline", None) or req.angle_headline
         selected_angle = None
         if selected_headline and brief.newsletter_angles:
             for a in brief.newsletter_angles:
@@ -426,6 +426,11 @@ class EditorialService:
 
     def update_editorial(self, db: Session, editorial_id: str, data: EditorialUpdateRequest) -> EditorialOutput:
         editorial = self.get_editorial(db, editorial_id)
+        if editorial.status == "FINALIZED":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Finalized editorial is locked and immutable. No modifications are permitted on finalized editions."
+            )
         old_content = editorial.content
         if data.headline is not None:
             editorial.headline = data.headline.strip()
@@ -455,6 +460,11 @@ class EditorialService:
 
     def delete_editorial(self, db: Session, editorial_id: str) -> None:
         editorial = self.get_editorial(db, editorial_id)
+        if editorial.status == "FINALIZED":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Finalized editorial records are locked and cannot be deleted."
+            )
         db.delete(editorial)
         db.commit()
 

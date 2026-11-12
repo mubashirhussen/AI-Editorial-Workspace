@@ -18,7 +18,7 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
   exportData,
   isLoading = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<'markdown' | 'txt' | 'html'>('markdown');
+  const [activeTab, setActiveTab] = useState<'markdown' | 'txt' | 'html' | 'json'>('markdown');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
@@ -27,6 +27,7 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
     if (!exportData) return '';
     if (activeTab === 'markdown') return exportData.markdown_content;
     if (activeTab === 'txt') return exportData.plain_text_content;
+    if (activeTab === 'json') return exportData.json_content || JSON.stringify(exportData, null, 2);
     return exportData.html_content || exportData.markdown_content;
   };
 
@@ -43,8 +44,8 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
     const text = getActiveContent();
     if (!text) return;
 
-    const extension = activeTab === 'markdown' ? 'md' : activeTab === 'html' ? 'html' : 'txt';
-    const mimeType = activeTab === 'html' ? 'text/html' : 'text/plain';
+    const extension = activeTab === 'markdown' ? 'md' : activeTab === 'html' ? 'html' : activeTab === 'json' ? 'json' : 'txt';
+    const mimeType = activeTab === 'html' ? 'text/html' : activeTab === 'json' ? 'application/json' : 'text/plain';
     const blob = new Blob([text], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -60,6 +61,7 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({
     { id: 'markdown', label: 'Markdown (.md)', icon: <FileCode className="w-3.5 h-3.5" /> },
     { id: 'txt', label: 'Plain Text (.txt)', icon: <FileText className="w-3.5 h-3.5" /> },
     { id: 'html', label: 'HTML5 (.html)', icon: <Code className="w-3.5 h-3.5" /> },
+    { id: 'json', label: 'JSON (.json)', icon: <FileCode className="w-3.5 h-3.5" /> },
   ];
 
   return (

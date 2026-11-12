@@ -340,23 +340,50 @@ class EditorialReviewWorkflowService:
     # =====================================================================
     # 6. DASHBOARD STATISTICS
     # =====================================================================
-    def get_dashboard_stats(self, db: Session) -> EditorialDashboardStats:
+    def get_dashboard_stats(self, db: Session, user: Optional[Any] = None) -> EditorialDashboardStats:
         """
-        Computes real database-backed workflow counts.
+        Computes real database-backed workflow counts with tenant isolation.
         """
-        total = db.query(EditorialOutput).count()
-        pending = db.query(EditorialOutput).filter(EditorialOutput.status.in_([WorkflowStatus.HUMAN_REVIEW_PENDING, WorkflowStatus.AI_REVIEW_COMPLETED])).count()
-        approved = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.APPROVED).count()
-        changes = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.CHANGES_REQUESTED).count()
-        finalized = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.FINALIZED).count()
+        from backend.app.models.base import OrganizationMembership
 
-        # Fetch recent review activity
-        recent_reviews = (
-            db.query(EditorialReview)
-            .order_by(desc(EditorialReview.created_at))
-            .limit(10)
-            .all()
-        )
+        user_org_ids = []
+        if user and hasattr(user, "id"):
+            user_memberships = db.query(OrganizationMembership).filter(
+                OrganizationMembership.user_id == user.id
+            ).all()
+            user_org_ids = [m.organization_id for m in user_memberships if m.organization_id]
+
+        if user_org_ids:
+            base_q = db.query(EditorialOutput).join(ResearchProject, EditorialOutput.project_id == ResearchProject.id).filter(ResearchProject.organization_id.in_(user_org_ids))
+            total = base_q.count()
+            pending = base_q.filter(EditorialOutput.status.in_([WorkflowStatus.HUMAN_REVIEW_PENDING, WorkflowStatus.AI_REVIEW_COMPLETED])).count()
+            approved = base_q.filter(EditorialOutput.status == WorkflowStatus.APPROVED).count()
+            changes = base_q.filter(EditorialOutput.status == WorkflowStatus.CHANGES_REQUESTED).count()
+            finalized = base_q.filter(EditorialOutput.status == WorkflowStatus.FINALIZED).count()
+
+            recent_reviews = (
+                db.query(EditorialReview)
+                .join(EditorialOutput, EditorialReview.editorial_id == EditorialOutput.id)
+                .join(ResearchProject, EditorialOutput.project_id == ResearchProject.id)
+                .filter(ResearchProject.organization_id.in_(user_org_ids))
+                .order_by(desc(EditorialReview.created_at))
+                .limit(10)
+                .all()
+            )
+        else:
+            total = db.query(EditorialOutput).count()
+            pending = db.query(EditorialOutput).filter(EditorialOutput.status.in_([WorkflowStatus.HUMAN_REVIEW_PENDING, WorkflowStatus.AI_REVIEW_COMPLETED])).count()
+            approved = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.APPROVED).count()
+            changes = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.CHANGES_REQUESTED).count()
+            finalized = db.query(EditorialOutput).filter(EditorialOutput.status == WorkflowStatus.FINALIZED).count()
+
+            # Fetch recent review activity
+            recent_reviews = (
+                db.query(EditorialReview)
+                .order_by(desc(EditorialReview.created_at))
+                .limit(10)
+                .all()
+            )
 
         activity_list = [
             {

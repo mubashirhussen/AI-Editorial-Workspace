@@ -103,3 +103,4 @@ def update_user_role(
     db.commit()
     db.refresh(target_user)
     return UserResponse.model_validate(target_user)
+

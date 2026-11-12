@@ -110,6 +110,7 @@ export interface EditorialExportResponse {
   markdown_content: string;
   plain_text_content: string;
   html_content?: string;
+  json_content?: string;
   format?: string;
   word_count: number;
   exported_at: string;

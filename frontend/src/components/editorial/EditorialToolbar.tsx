@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit3, Download, Save, RefreshCw, PenTool, CheckCircle2, History } from 'lucide-react';
+import { Eye, Edit3, Download, Save, RefreshCw, PenTool, CheckCircle2, History, Lock, Check } from 'lucide-react';
 import { Button } from '../common/Button';
 
 export interface EditorialToolbarProps {
@@ -11,6 +11,8 @@ export interface EditorialToolbarProps {
   onOpenHistory?: () => void;
   isSaving?: boolean;
   hasContent?: boolean;
+  isFinalized?: boolean;
+  isDirty?: boolean;
 }
 
 export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
@@ -22,6 +24,8 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
   onOpenHistory,
   isSaving = false,
   hasContent = false,
+  isFinalized = false,
+  isDirty = false,
 }) => {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
@@ -62,8 +66,25 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
         </button>
       </div>
 
-      {/* Right Actions */}
+      {/* Right Actions & Status Badges */}
       <div className="flex items-center gap-2">
+        {isFinalized ? (
+          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Finalized & Locked</span>
+          </span>
+        ) : isDirty ? (
+          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 px-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>Unsaved Changes (Ctrl+S)</span>
+          </span>
+        ) : hasContent ? (
+          <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-1">
+            <Check className="w-3.5 h-3.5" />
+            <span>Saved to DB</span>
+          </span>
+        ) : null}
+
         {onOpenHistory && (
           <Button
             onClick={onOpenHistory}
@@ -98,13 +119,13 @@ export const EditorialToolbar: React.FC<EditorialToolbarProps> = ({
 
         <Button
           onClick={onSave}
-          disabled={!hasContent}
-          isLoading={isSaving}
+          disabled={!hasContent || isSaving || isFinalized}
           variant="primary"
           size="sm"
+          isLoading={isSaving}
           leftIcon={<Save className="w-3.5 h-3.5" />}
         >
-          Save
+          {isFinalized ? 'Edition Finalized' : 'Save Draft'}
         </Button>
       </div>
     </div>

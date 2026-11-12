@@ -90,6 +90,33 @@ export const EditorialPage: React.FC = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const isDirty = content !== savedContent;
+  const isFinalized = activeEditorial?.status === 'FINALIZED';
+
+  // Prevent accidental loss of unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Keyboard shortcut Ctrl+S / Cmd+S to quickly save draft
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        if (content.trim() && !isFinalized && !isSaving) {
+          handleSaveArticle();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [content, headline, activeEditorial, activeProject, isFinalized, isSaving]);
 
   useEffect(() => {
     loadProjects();
@@ -244,6 +271,11 @@ export const EditorialPage: React.FC = () => {
   };
 
   const handleSaveArticle = async () => {
+    if (isFinalized) {
+      error('This editorial edition is finalized and locked against direct edits.');
+      return;
+    }
+
     if (!activeEditorial) {
       // Create fresh editorial if not existing
       if (!activeProject) return;
@@ -345,6 +377,21 @@ export const EditorialPage: React.FC = () => {
 
         {/* Project Selector & Actions */}
         <div className="flex flex-wrap items-center gap-3">
+          {activeProject && (
+            <div className="hidden sm:flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                {sourcesList.length} Sources Ingested
+              </span>
+              <span className={`px-2 py-0.5 rounded-md border ${
+                brief
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+              }`}>
+                {brief ? '✓ Brief Synthesized' : '⚠ Brief Missing'}
+              </span>
+            </div>
+          )}
+
           <select
             value={activeProject?.id || ''}
             onChange={(e) => selectProject(e.target.value)}
@@ -358,6 +405,18 @@ export const EditorialPage: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {isFinalized && (
+        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs font-medium text-emerald-800 dark:text-emerald-300">
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span>This newsletter edition has been approved and finalized. Content is locked and immutable for publication distribution.</span>
+          </span>
+          <span className="font-mono text-[10px] bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+            STATUS: FINALIZED
+          </span>
+        </div>
+      )}
 
       {!activeProject ? (
         <EmptyState
@@ -397,6 +456,8 @@ export const EditorialPage: React.FC = () => {
             onOpenHistory={activeEditorial ? () => setIsHistoryOpen(true) : undefined}
             isSaving={isSaving}
             hasContent={Boolean(content.trim())}
+            isFinalized={isFinalized}
+            isDirty={isDirty}
           />
 
           {/* 2-Column Studio Layout */}

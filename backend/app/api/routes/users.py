@@ -104,3 +104,4 @@ def revoke_user_session(
     session_rec.is_revoked = True
     db.commit()
     return {"success": True, "message": "Session revoked successfully."}
+

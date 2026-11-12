@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { EditorialOutput, EditorialReview, EditorialComment } from '../../types';
 import { editorialService } from '../../services/editorialService';
+import { useAuth } from '../../context/AuthContext';
 import { Button } from '../common/Button';
 
 interface EditorialReviewPanelProps {
@@ -29,10 +30,17 @@ export const EditorialReviewPanel: React.FC<EditorialReviewPanelProps> = ({
   onEditorialUpdated,
   onClose
 }) => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<EditorialReview[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'review' | 'diff' | 'ai_audit'>('review');
-  const [reviewerName, setReviewerName] = useState('Senior Editor');
+  const [reviewerName, setReviewerName] = useState(user?.full_name || 'Senior Editor');
+
+  useEffect(() => {
+    if (user?.full_name) {
+      setReviewerName(user.full_name);
+    }
+  }, [user?.full_name]);
   
   // Action states
   const [changeFeedback, setChangeFeedback] = useState('');

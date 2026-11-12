@@ -1,3 +1,4 @@
+import json
 import re
 import html
 from datetime import datetime, timezone
@@ -7,7 +8,7 @@ from backend.app.schemas.editorial import EditorialExportResponse
 
 class ExportService:
     """
-    Exports saved editorial outputs into Markdown, Plain Text, and semantic HTML5 formats.
+    Exports saved editorial outputs into Markdown, Plain Text, semantic HTML5, and structured JSON formats.
     """
 
     def export(self, editorial: EditorialOutput, format_type: str = "markdown") -> EditorialExportResponse:
@@ -23,16 +24,37 @@ class ExportService:
         # Build HTML5
         html_content = self.build_html(editorial)
 
+        # Build JSON
+        json_content = self.build_json(editorial, exported_at=now)
+
         return EditorialExportResponse(
             editorial_id=editorial.id,
             headline=editorial.headline,
             markdown_content=md_content,
             plain_text_content=plain_text,
             html_content=html_content,
+            json_content=json_content,
             format=fmt,
             word_count=editorial.word_count,
             exported_at=now
         )
+
+    def build_json(self, editorial: EditorialOutput, exported_at: datetime) -> str:
+        data = {
+            "id": editorial.id,
+            "project_id": editorial.project_id,
+            "headline": editorial.headline,
+            "content": editorial.content,
+            "word_count": editorial.word_count,
+            "status": editorial.status,
+            "source_references": editorial.source_references or [],
+            "ai_review_results": editorial.ai_review_results or {},
+            "version": getattr(editorial, "version", 1),
+            "created_at": editorial.created_at.isoformat() if editorial.created_at else None,
+            "updated_at": editorial.updated_at.isoformat() if editorial.updated_at else None,
+            "exported_at": exported_at.isoformat()
+        }
+        return json.dumps(data, indent=2)
 
     def build_markdown(self, editorial: EditorialOutput) -> str:
         lines = [

@@ -78,3 +78,4 @@ def downgrade():
         batch_op.drop_column('last_login_at')
         batch_op.drop_column('profile_image')
         batch_op.drop_column('role')
+
