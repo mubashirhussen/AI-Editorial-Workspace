@@ -31,7 +31,12 @@ import {
   Layers,
   FileSpreadsheet,
   Check,
-  FileCode
+  FileCode,
+  History,
+  Edit2,
+  Save,
+  Archive,
+  ArrowUpRight
 } from 'lucide-react';
 import { researchApi } from '../services/researchApi';
 import { Project, Source, ResearchBrief, NewsletterAngle, VerifiedEvidenceItem } from '../types';
@@ -65,8 +70,34 @@ export const ResearchPage: React.FC = () => {
   const [isLocalLibraryOpen, setIsLocalLibraryOpen] = useState(false);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState('');
+  const [newProjectTopic, setNewProjectTopic] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newProjectObjective, setNewProjectObjective] = useState('');
+  const [newProjectAudience, setNewProjectAudience] = useState('');
+  const [newProjectScope, setNewProjectScope] = useState('');
+  const [newProjectKeywords, setNewProjectKeywords] = useState('');
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+
+  // Brief In-Place Editing State
+  const [isEditingBrief, setIsEditingBrief] = useState(false);
+  const [editBriefTitle, setEditBriefTitle] = useState('');
+  const [editBriefSummary, setEditBriefSummary] = useState('');
+  const [editBriefWhatHappened, setEditBriefWhatHappened] = useState('');
+  const [editBriefWhyMatters, setEditBriefWhyMatters] = useState('');
+  const [editBriefNotes, setEditBriefNotes] = useState('');
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
+
+  // Version History Modal State
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [briefVersions, setBriefVersions] = useState<ResearchBrief[]>([]);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+
+  // Export Modal State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportData, setExportData] = useState<any>(null);
+  const [exportFormat, setExportFormat] = useState<'markdown' | 'text' | 'json'>('markdown');
+  const [isExporting, setIsExporting] = useState(false);
+  const [copiedExport, setCopiedExport] = useState(false);
 
   // Ingestion Form State
   const [inputType, setInputType] = useState<'url' | 'text' | 'file'>('url');
@@ -154,18 +185,111 @@ export const ResearchPage: React.FC = () => {
       setIsCreatingProject(true);
       const created = await researchApi.createProject({
         title: newProjectTitle.trim(),
+        topic: newProjectTopic.trim() || undefined,
         description: newProjectDesc.trim() || undefined,
+        research_objective: newProjectObjective.trim() || undefined,
+        target_audience: newProjectAudience.trim() || undefined,
+        research_scope: newProjectScope.trim() || undefined,
+        keywords: newProjectKeywords.split(',').map((k) => k.trim()).filter(Boolean),
+        preferred_source_types: ['URL', 'DOCUMENT', 'TEXT'],
       });
       success(`Project "${created.title}" created.`);
       setIsNewProjectModalOpen(false);
       setNewProjectTitle('');
+      setNewProjectTopic('');
       setNewProjectDesc('');
+      setNewProjectObjective('');
+      setNewProjectAudience('');
+      setNewProjectScope('');
+      setNewProjectKeywords('');
       await loadProjects();
       navigate(`/research/${created.id}`);
     } catch (err: any) {
       error(err.message || 'Failed to create project');
     } finally {
       setIsCreatingProject(false);
+    }
+  };
+
+  const handleArchiveProject = async () => {
+    if (!activeProject) return;
+    try {
+      const updated = await researchApi.archiveProject(activeProject.id);
+      success(`Project "${updated.title}" archived.`);
+      await loadProjects();
+    } catch (err: any) {
+      error(err.message || 'Failed to archive project');
+    }
+  };
+
+  const handleReopenProject = async () => {
+    if (!activeProject) return;
+    try {
+      const updated = await researchApi.reopenProject(activeProject.id);
+      success(`Project "${updated.title}" reopened.`);
+      await loadProjects();
+    } catch (err: any) {
+      error(err.message || 'Failed to reopen project');
+    }
+  };
+
+  const handleStartEditBrief = () => {
+    if (!brief) return;
+    setEditBriefTitle(brief.title || activeProject?.title || 'Research Brief');
+    setEditBriefSummary(brief.executive_summary || '');
+    setEditBriefWhatHappened(brief.brief_content?.what_happened || '');
+    setEditBriefWhyMatters(brief.brief_content?.why_it_matters || '');
+    setEditBriefNotes(brief.user_notes || '');
+    setIsEditingBrief(true);
+  };
+
+  const handleSaveBrief = async () => {
+    if (!activeProject || !brief) return;
+    try {
+      setIsSavingBrief(true);
+      const updated = await researchApi.updateBrief(activeProject.id, {
+        title: editBriefTitle.trim(),
+        executive_summary: editBriefSummary.trim(),
+        what_happened: editBriefWhatHappened.trim(),
+        why_it_matters: editBriefWhyMatters.trim(),
+        user_notes: editBriefNotes.trim(),
+      });
+      setBrief(updated);
+      setIsEditingBrief(false);
+      success(`Research brief updated and saved (Version ${updated.version || 2})!`);
+    } catch (err: any) {
+      error(err.message || 'Failed to update research brief');
+    } finally {
+      setIsSavingBrief(false);
+    }
+  };
+
+  const handleOpenVersionHistory = async () => {
+    if (!activeProject) return;
+    try {
+      setIsLoadingVersions(true);
+      setIsVersionHistoryOpen(true);
+      const history = await researchApi.getBriefHistory(activeProject.id);
+      setBriefVersions(history || []);
+    } catch (err: any) {
+      error(err.message || 'Failed to load brief history');
+    } finally {
+      setIsLoadingVersions(false);
+    }
+  };
+
+  const handleOpenExport = async (fmt: 'markdown' | 'text' | 'json' = 'markdown') => {
+    if (!activeProject) return;
+    try {
+      setIsExporting(true);
+      setExportFormat(fmt);
+      setIsExportModalOpen(true);
+      const res = await researchApi.exportBrief(activeProject.id, fmt);
+      setExportData(res);
+    } catch (err: any) {
+      error(err.message || 'Failed to export research brief');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -332,7 +456,7 @@ export const ResearchPage: React.FC = () => {
 
   const handleProceedToEditorial = (angleHeadline: string) => {
     if (!activeProject) return;
-    navigate(`/writing?projectId=${activeProject.id}&angle=${encodeURIComponent(angleHeadline)}`);
+    navigate(`/editorial?projectId=${activeProject.id}&angle=${encodeURIComponent(angleHeadline)}`);
   };
 
   const handleCopyBriefMarkdown = () => {
@@ -387,12 +511,30 @@ export const ResearchPage: React.FC = () => {
               Scholarly Workspace
             </span>
             {activeProject && (
-              <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
-                activeProject.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
-                activeProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {activeProject.status || 'draft'}
-              </span>
+              <>
+                <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                  activeProject.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                  activeProject.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
+                  activeProject.status === 'archived' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                }`}>
+                  {activeProject.status || 'draft'}
+                </span>
+                {activeProject.status === 'archived' ? (
+                  <button
+                    onClick={handleReopenProject}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 underline font-medium"
+                  >
+                    Reopen Project
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleArchiveProject}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 underline font-medium"
+                  >
+                    Archive
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center gap-3">
@@ -433,6 +575,17 @@ export const ResearchPage: React.FC = () => {
               {sources.length >= 3 ? 'Ready for cross-source synthesis' : `Requires ${3 - sources.length} more sources`}
             </div>
           </div>
+          {activeProject && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/editorial?projectId=${activeProject.id}`)}
+              className="flex items-center gap-1.5 border-purple-200 text-purple-700 bg-purple-50/50 hover:bg-purple-100"
+              leftIcon={<Sparkles className="w-3.5 h-3.5 text-purple-600" />}
+            >
+              Editorial Studio
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -782,14 +935,44 @@ export const ResearchPage: React.FC = () => {
             </div>
 
             {brief && activeTab === 'brief' && (
-              <button
-                onClick={handleCopyBriefMarkdown}
-                className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1"
-                title="Copy full brief markdown"
-              >
-                {copiedBrief ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedBrief ? 'Copied' : 'Copy'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={isEditingBrief ? () => setIsEditingBrief(false) : handleStartEditBrief}
+                  className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors font-medium ${
+                    isEditingBrief 
+                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' 
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                  title="Edit research brief sections"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>{isEditingBrief ? 'Cancel' : 'Edit Brief'}</span>
+                </button>
+                <button
+                  onClick={handleOpenVersionHistory}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 font-medium transition-colors"
+                  title="View brief version lineage"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>v{brief.version || 1}</span>
+                </button>
+                <button
+                  onClick={() => handleOpenExport('markdown')}
+                  className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-1.5 font-medium transition-colors"
+                  title="Export structured research brief"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export</span>
+                </button>
+                <button
+                  onClick={handleCopyBriefMarkdown}
+                  className="text-xs px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900 flex items-center gap-1"
+                  title="Copy full brief markdown"
+                >
+                  {copiedBrief ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedBrief ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -965,17 +1148,123 @@ export const ResearchPage: React.FC = () => {
                 </Button>
               )}
             </div>
+          ) : isEditingBrief ? (
+            /* TAB 1: RESEARCH BRIEF - EDIT MODE */
+            <div className="bg-white rounded-2xl border border-blue-200/80 p-6 space-y-5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-blue-600" />
+                  <span>Edit Research Brief (Version {(brief.version || 1) + 1})</span>
+                </h3>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Modifications will be saved with an immutable version snapshot
+                </span>
+              </div>
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Brief Title</label>
+                  <input
+                    type="text"
+                    value={editBriefTitle}
+                    onChange={(e) => setEditBriefTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Executive Summary</label>
+                  <textarea
+                    rows={4}
+                    value={editBriefSummary}
+                    onChange={(e) => setEditBriefSummary(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed font-serif text-[13px]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Section B: What Happened?</label>
+                    <textarea
+                      rows={4}
+                      value={editBriefWhatHappened}
+                      onChange={(e) => setEditBriefWhatHappened(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Section C: Why Does It Matter?</label>
+                    <textarea
+                      rows={4}
+                      value={editBriefWhyMatters}
+                      onChange={(e) => setEditBriefWhyMatters(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">User Notes & Editorial Directives</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Add custom investigative context, notes, or instructions for the editorial desk..."
+                    value={editBriefNotes}
+                    onChange={(e) => setEditBriefNotes(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 leading-relaxed bg-amber-50/30"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setIsEditingBrief(false)}
+                  disabled={isSavingBrief}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleSaveBrief}
+                  isLoading={isSavingBrief}
+                  leftIcon={<Save className="w-3.5 h-3.5" />}
+                >
+                  Save Brief Changes
+                </Button>
+              </div>
+            </div>
           ) : (
-            /* TAB 1: RESEARCH BRIEF */
+            /* TAB 1: RESEARCH BRIEF - VIEW MODE */
             <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-6 shadow-xs">
               {/* Executive Summary */}
               <div className="space-y-2 border-b border-slate-100 pb-4">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-blue-600 font-bold">
-                  Section A • Executive Summary
-                </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-blue-600 font-bold">
+                    Section A • Executive Summary
+                  </span>
+                  {brief.is_user_edited ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                      ✓ User-Edited (Version {brief.version || 2})
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                      AI-Synthesized (Version {brief.version || 1})
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-800 leading-relaxed font-serif text-[13.5px]">
                   {brief.executive_summary}
                 </p>
+                {brief.user_notes && (
+                  <div className="mt-2 p-3 bg-amber-50/60 border border-amber-200 rounded-xl text-xs space-y-1">
+                    <span className="font-semibold text-amber-900 block text-[11px] uppercase tracking-wider">
+                      User Notes & Editorial Directives
+                    </span>
+                    <p className="text-amber-800 italic">{brief.user_notes}</p>
+                  </div>
+                )}
               </div>
 
               {/* What Happened & Why It Matters */}
@@ -1104,31 +1393,102 @@ export const ResearchPage: React.FC = () => {
       {/* NEW PROJECT MODAL */}
       {isNewProjectModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-slate-200">
-            <h3 className="text-base font-bold text-slate-900">Create Research Project</h3>
-            <form onSubmit={handleCreateProject} className="space-y-3">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Create Research Project</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configure investigation scope, epistemic objectives, and target audience for structured research synthesis.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateProject} className="space-y-3.5 text-xs">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Project Title</label>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Project Title <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Frontier Reasoning Models 2026"
+                  placeholder="e.g. Autonomous AI Verification & Grounding"
                   value={newProjectTitle}
                   onChange={(e) => setNewProjectTitle(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-blue-500"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Research Topic</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Test-Time Compute & Verification"
+                    value={newProjectTopic}
+                    onChange={(e) => setNewProjectTopic(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Target Audience</label>
+                  <select
+                    value={newProjectAudience}
+                    onChange={(e) => setNewProjectAudience(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                  >
+                    <option value="">Select Audience...</option>
+                    <option value="founders, builders, and operators">Founders, Builders & Operators</option>
+                    <option value="CTOs and senior software architects">CTOs & Senior Software Architects</option>
+                    <option value="AI researchers and machine learning engineers">AI Researchers & ML Engineers</option>
+                    <option value="venture investors and corporate strategists">Venture Investors & Strategists</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Description (Optional)</label>
+                <label className="font-semibold text-slate-700 block mb-1">Research Objective</label>
                 <textarea
-                  rows={3}
-                  placeholder="Scope and research objectives..."
+                  rows={2}
+                  placeholder="What core operational question or hypothesis are we investigating?"
+                  value={newProjectObjective}
+                  onChange={(e) => setNewProjectObjective(e.target.value)}
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  placeholder="General background or contextual notes..."
                   value={newProjectDesc}
                   onChange={(e) => setNewProjectDesc(e.target.value)}
-                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-blue-500"
+                  className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Research Scope</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Q4 2025 – 2026 releases"
+                    value={newProjectScope}
+                    onChange={(e) => setNewProjectScope(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Keywords (Comma-separated)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. reasoning, citation, mcp, latency"
+                    value={newProjectKeywords}
+                    onChange={(e) => setNewProjectKeywords(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="secondary"
@@ -1148,6 +1508,180 @@ export const ResearchPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* VERSION HISTORY MODAL */}
+      {isVersionHistoryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-slate-200 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-900">Research Brief Version Lineage</h3>
+              </div>
+              <button
+                onClick={() => setIsVersionHistoryOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {isLoadingVersions ? (
+              <div className="py-12 text-center text-xs text-slate-400">Loading version lineage...</div>
+            ) : briefVersions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                No previous version snapshots recorded.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {briefVersions.map((v, i) => (
+                  <div
+                    key={v.id || i}
+                    className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900">
+                        Version {v.version || briefVersions.length - i} {i === 0 && '(Current Latest)'}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {new Date(v.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 font-serif leading-relaxed line-clamp-3">
+                      {v.executive_summary}
+                    </p>
+                    {v.is_user_edited && (
+                      <span className="inline-block text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                        User Modified
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MULTI-FORMAT EXPORT MODAL */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-slate-200 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-900">Export Structured Research Brief</h3>
+              </div>
+              <button
+                onClick={() => setIsExportModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Format Selector Tabs */}
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <button
+                onClick={() => handleOpenExport('markdown')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  exportFormat === 'markdown' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Markdown (.md)
+              </button>
+              <button
+                onClick={() => handleOpenExport('text')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  exportFormat === 'text' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Plain Text (.txt)
+              </button>
+              <button
+                onClick={() => handleOpenExport('json')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  exportFormat === 'json' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                JSON Schema (.json)
+              </button>
+            </div>
+
+            {/* Content Preview */}
+            <div className="flex-1 overflow-y-auto max-h-[380px] bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-xs leading-relaxed">
+              {isExporting ? (
+                <div className="text-center py-12 text-slate-400">Compiling structured export...</div>
+              ) : exportData ? (
+                <pre className="whitespace-pre-wrap">
+                  {exportFormat === 'json'
+                    ? exportData.json_content
+                    : exportFormat === 'text'
+                    ? exportData.plain_text_content
+                    : exportData.markdown_content}
+                </pre>
+              ) : (
+                <div className="text-center py-12 text-slate-400">No export data available.</div>
+              )}
+            </div>
+
+            {/* Export Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+              <span className="text-slate-400">
+                {exportData?.exported_at ? `Exported ${new Date(exportData.exported_at).toLocaleTimeString()}` : ''}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    if (!exportData) return;
+                    const content = exportFormat === 'json'
+                      ? exportData.json_content
+                      : exportFormat === 'text'
+                      ? exportData.plain_text_content
+                      : exportData.markdown_content;
+                    navigator.clipboard.writeText(content);
+                    setCopiedExport(true);
+                    setTimeout(() => setCopiedExport(false), 2000);
+                    success('Copied to clipboard!');
+                  }}
+                  leftIcon={copiedExport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                >
+                  {copiedExport ? 'Copied' : 'Copy Content'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    if (!exportData) return;
+                    const content = exportFormat === 'json'
+                      ? exportData.json_content
+                      : exportFormat === 'text'
+                      ? exportData.plain_text_content
+                      : exportData.markdown_content;
+                    const ext = exportFormat === 'json' ? 'json' : exportFormat === 'text' ? 'txt' : 'md';
+                    const mime = exportFormat === 'json' ? 'application/json' : 'text/plain';
+                    const blob = new Blob([content], { type: mime });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `research-brief-${activeProject?.title?.toLowerCase().replace(/\s+/g, '-') || 'brief'}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    success(`Downloaded .${ext} file!`);
+                  }}
+                  leftIcon={<Download className="w-3.5 h-3.5" />}
+                >
+                  Download File
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}

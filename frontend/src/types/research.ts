@@ -114,9 +114,32 @@ export interface ResearchBriefContent {
   follow_up_questions: string[];
 }
 
+export interface ResearchBriefUpdate {
+  title?: string;
+  executive_summary?: string;
+  what_happened?: string;
+  why_it_matters?: string;
+  key_developments?: string[];
+  limitations?: string[];
+  unanswered_questions?: string[];
+  user_notes?: string;
+}
+
+export interface ResearchBriefExportResponse {
+  project_id: string;
+  brief_id: string;
+  title: string;
+  markdown_content: string;
+  plain_text_content: string;
+  json_content: string;
+  format: string;
+  exported_at: string;
+}
+
 export interface ResearchBrief {
   id: string;
   project_id: string;
+  title?: string;
   executive_summary: string;
   brief_content: ResearchBriefContent;
   evidence: VerifiedEvidenceItem[];
@@ -126,6 +149,9 @@ export interface ResearchBrief {
     angle_pitch: string;
     reason: string;
   };
+  is_user_edited?: boolean;
+  user_notes?: string;
+  version?: number;
   created_at: string;
   updated_at: string;
 }

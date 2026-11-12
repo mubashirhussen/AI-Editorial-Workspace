@@ -11,7 +11,9 @@ from backend.app.schemas.research import (
     ProjectUpdate,
     ProjectResponse,
     ProjectListResponse,
-    ResearchBriefResponse
+    ResearchBriefResponse,
+    ResearchBriefUpdate,
+    ResearchBriefExportResponse
 )
 from backend.app.schemas.source import SourceResponse
 from backend.app.services.research_service import research_service
@@ -162,6 +164,63 @@ def get_brief(
     project = research_service.get_project(db, project_id)
     check_project_tenant_access(db, project, current_user)
     return research_service.get_brief(db, project_id)
+
+@router.put("/projects/{project_id}/brief", response_model=ResearchBriefResponse)
+def update_brief(
+    project_id: str,
+    data: ResearchBriefUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Updates user-editable sections of the research brief, marking it is_user_edited."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.update_brief(db, project_id, data)
+
+@router.get("/projects/{project_id}/brief/history", response_model=List[ResearchBriefResponse])
+def get_brief_history(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Returns previous versions and snapshots of the project's research briefs."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.get_brief_history(db, project_id)
+
+@router.get("/projects/{project_id}/brief/export", response_model=ResearchBriefExportResponse)
+def export_brief(
+    project_id: str,
+    format: str = Query("markdown", description="Export format: markdown, text, or json"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Exports structured research brief into Markdown (.md), Plain Text (.txt), or JSON (.json)."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.export_brief(db, project_id, format=format)
+
+@router.post("/projects/{project_id}/archive", response_model=ProjectResponse)
+def archive_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Archives an active research project."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.archive_project(db, project_id)
+
+@router.post("/projects/{project_id}/reopen", response_model=ProjectResponse)
+def reopen_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reopens an archived research project to in_progress status."""
+    project = research_service.get_project(db, project_id)
+    check_project_tenant_access(db, project, current_user)
+    return research_service.reopen_project(db, project_id)
 
 
 @router.patch("/projects/{project_id}", response_model=ProjectResponse)

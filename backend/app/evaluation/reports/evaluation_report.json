@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-12T09:47:39.123757+00:00",
+  "timestamp": "2026-11-12T10:33:13.564084+00:00",
   "mode": "offline",
   "total_duration_seconds": 0.01,
   "total_tests": 34,
@@ -971,8 +971,8 @@
             "expected_hallucinations_count": 1,
             "detection_recall": 1.0,
             "detected_categories": [
-              "invented_source_reference",
-              "unsupported_number"
+              "unsupported_number",
+              "invented_source_reference"
             ]
           },
           "flagged_unsupported_claims": [

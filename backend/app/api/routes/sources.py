@@ -197,6 +197,7 @@ def delete_source(
     return {"success": True, "message": "Source removed successfully."}
 
 @router.post("/sources/{source_id}/extract", response_model=SourceResponse, summary="Trigger source extraction")
+@router.post("/sources/{source_id}/retry", response_model=SourceResponse, summary="Retry source extraction alias")
 async def extract_source_content(
     source_id: str,
     current_user: User = Depends(get_current_user),

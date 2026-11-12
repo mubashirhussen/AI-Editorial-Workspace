@@ -59,3 +59,4 @@ backend/tests/test_phase21_editorial_hardening.py::test_phase21_dashboard_stats_
 ## 4. Security Sign-Off
 
 The Editorial Studio and its associated review workflows meet enterprise requirements for multi-tenant isolation, role-based access control, cryptographic authentication, and audit-trail integrity.
+

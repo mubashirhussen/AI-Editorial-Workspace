@@ -75,3 +75,4 @@ For production deployment on Vercel and container orchestration:
 | **Mobile (< 768px)** | Modern Smartphone | Single-column flow, touch-optimized button hit areas, horizontal scrolling navigation tabs. |
 
 The application is fully prepared for technical assessment demonstration and production deployment.
+

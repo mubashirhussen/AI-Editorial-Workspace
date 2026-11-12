@@ -2,6 +2,7 @@ import logging
 import hashlib
 import os
 import sys
+from datetime import datetime
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -14,7 +15,7 @@ from backend.app.models.base import (
     ResearchClaim,
     ResearchEvidence
 )
-from backend.app.schemas.research import ProjectCreate, ProjectUpdate
+from backend.app.schemas.research import ProjectCreate, ProjectUpdate, ResearchBriefUpdate
 from backend.app.schemas.source import SourceCreate
 from backend.app.services.research.extraction_service import extraction_service, canonicalize_url
 from backend.app.services.research.synthesis_service import synthesis_service
@@ -35,7 +36,13 @@ class ResearchService:
         project = ResearchProject(
             title=title.strip(),
             name=title.strip(),
+            topic=data.topic.strip() if getattr(data, "topic", None) else None,
             description=data.description.strip() if data.description else None,
+            research_objective=data.research_objective.strip() if getattr(data, "research_objective", None) else None,
+            target_audience=data.target_audience.strip() if getattr(data, "target_audience", None) else None,
+            research_scope=data.research_scope.strip() if getattr(data, "research_scope", None) else None,
+            keywords=getattr(data, "keywords", []) or [],
+            preferred_source_types=getattr(data, "preferred_source_types", []) or [],
             status="draft",
             organization_id=organization_id or getattr(data, "organization_id", None)
         )
@@ -101,10 +108,36 @@ class ResearchService:
         if data.title is not None:
             project.title = data.title.strip()
             project.name = data.title.strip()
+        if getattr(data, "topic", None) is not None:
+            project.topic = data.topic.strip() if data.topic else None
         if data.description is not None:
             project.description = data.description.strip()
+        if getattr(data, "research_objective", None) is not None:
+            project.research_objective = data.research_objective.strip() if data.research_objective else None
+        if getattr(data, "target_audience", None) is not None:
+            project.target_audience = data.target_audience.strip() if data.target_audience else None
+        if getattr(data, "research_scope", None) is not None:
+            project.research_scope = data.research_scope.strip() if data.research_scope else None
+        if getattr(data, "keywords", None) is not None:
+            project.keywords = data.keywords
+        if getattr(data, "preferred_source_types", None) is not None:
+            project.preferred_source_types = data.preferred_source_types
         if data.status is not None:
             project.status = data.status.lower()
+        db.commit()
+        db.refresh(project)
+        return project
+
+    def archive_project(self, db: Session, project_id: str) -> ResearchProject:
+        project = self.get_project(db, project_id)
+        project.status = "archived"
+        db.commit()
+        db.refresh(project)
+        return project
+
+    def reopen_project(self, db: Session, project_id: str) -> ResearchProject:
+        project = self.get_project(db, project_id)
+        project.status = "in_progress"
         db.commit()
         db.refresh(project)
         return project
@@ -492,6 +525,225 @@ class ResearchService:
             .order_by(ResearchBrief.created_at.desc())
             .all()
         )
+
+    def update_brief(self, db: Session, project_id: str, data: ResearchBriefUpdate) -> ResearchBrief:
+        brief = self.get_latest_brief(db, project_id)
+        if data.title is not None:
+            brief.title = data.title.strip()
+        if data.executive_summary is not None:
+            brief.executive_summary = data.executive_summary.strip()
+        if data.user_notes is not None:
+            brief.user_notes = data.user_notes.strip()
+
+        # Update nested brief_content fields if provided
+        bc = dict(brief.brief_content or {})
+        if data.what_happened is not None:
+            bc["what_happened"] = data.what_happened.strip()
+        if data.why_it_matters is not None:
+            bc["why_it_matters"] = data.why_it_matters.strip()
+        if data.key_developments is not None:
+            brief.key_developments = data.key_developments
+            bc["key_developments"] = data.key_developments
+        if data.limitations is not None:
+            bc["limitations"] = data.limitations
+        if data.unanswered_questions is not None:
+            bc["unanswered_questions"] = data.unanswered_questions
+
+        brief.brief_content = bc
+        brief.is_user_edited = True
+        brief.version = (brief.version or 1) + 1
+
+        db.commit()
+        db.refresh(brief)
+
+        # Record version snapshot
+        try:
+            version_service.create_snapshot(
+                db=db,
+                document_type="RESEARCH_BRIEF",
+                document_id=brief.id,
+                content=brief.executive_summary or "",
+                title=brief.title,
+                change_type="REVISION",
+                change_summary=f"User updated brief (v{brief.version})"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to record brief revision snapshot: {e}")
+
+        return brief
+
+    def export_brief(self, db: Session, project_id: str, format: str = "markdown") -> Dict[str, Any]:
+        project = self.get_project(db, project_id)
+        brief = self.get_latest_brief(db, project_id)
+        sources = self.get_project_sources(db, project_id)
+
+        bc = brief.brief_content or {}
+        evidence = brief.evidence or []
+
+        # 1. Build Markdown
+        md_lines = [
+            f"# {brief.title or project.title}",
+            "",
+            f"**Research Project:** {project.title}  ",
+            f"**Status:** {'User-Edited' if brief.is_user_edited else 'AI-Synthesized'} (Version {brief.version or 1})  ",
+            f"**Synthesized At:** {brief.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}  ",
+            f"**Sources Ingested:** {len(sources)}  ",
+            "",
+            "---",
+            "",
+            "## Executive Summary",
+            "",
+            brief.executive_summary or "No executive summary available.",
+            "",
+        ]
+
+        if bc.get("what_happened"):
+            md_lines.extend([
+                "## What Happened?",
+                "",
+                bc["what_happened"],
+                "",
+            ])
+
+        if bc.get("why_it_matters"):
+            md_lines.extend([
+                "## Why It Matters",
+                "",
+                bc["why_it_matters"],
+                "",
+            ])
+
+        if brief.key_developments:
+            md_lines.extend([
+                "## Key Developments & Findings",
+                "",
+            ])
+            for i, kd in enumerate(brief.key_developments, start=1):
+                md_lines.append(f"{i}. {kd}")
+            md_lines.append("")
+
+        if evidence:
+            md_lines.extend([
+                "## Evidence Alignment & Traceability",
+                "",
+                "| Status | Claim | Source | Excerpt |",
+                "| :--- | :--- | :--- | :--- |",
+            ])
+            for ev in evidence:
+                st = ev.get("status", "SUPPORTED")
+                cl = str(ev.get("claim", "")).replace("|", "\\|")
+                stitle = str(ev.get("source_title", "")).replace("|", "\\|")
+                exc = str(ev.get("supporting_excerpt", "")).replace("|", "\\|").replace("\n", " ")
+                if len(exc) > 120:
+                    exc = exc[:117] + "..."
+                md_lines.append(f"| **{st}** | {cl} | {stitle} | *\"{exc}\"* |")
+            md_lines.append("")
+
+        if brief.newsletter_angles:
+            md_lines.extend([
+                "## Newsletter Angles",
+                "",
+            ])
+            for i, a in enumerate(brief.newsletter_angles, start=1):
+                headline = a.get("headline", f"Angle {i}")
+                pitch = a.get("angle_pitch", a.get("central_argument", ""))
+                aud = a.get("target_audience", "")
+                md_lines.append(f"### {i}. {headline}")
+                if aud:
+                    md_lines.append(f"**Target Audience:** {aud}")
+                if pitch:
+                    md_lines.append(f"**Pitch:** {pitch}")
+                md_lines.append("")
+
+        if sources:
+            md_lines.extend([
+                "## Verified Sources",
+                "",
+            ])
+            for i, s in enumerate(sources, start=1):
+                url_str = f" - [{s.url}]({s.url})" if s.url else ""
+                md_lines.append(f"{i}. **{s.title}** ({s.source_type}){url_str}")
+            md_lines.append("")
+
+        markdown_str = "\n".join(md_lines)
+
+        # 2. Build Plain Text
+        txt_lines = [
+            f"RESEARCH BRIEF: {brief.title or project.title}".upper(),
+            "=" * 60,
+            f"Project: {project.title}",
+            f"Synthesized: {brief.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"Sources: {len(sources)}",
+            "",
+            "EXECUTIVE SUMMARY:",
+            "-" * 40,
+            brief.executive_summary or "",
+            "",
+        ]
+        if bc.get("what_happened"):
+            txt_lines.extend([
+                "WHAT HAPPENED:",
+                "-" * 40,
+                bc["what_happened"],
+                "",
+            ])
+        if bc.get("why_it_matters"):
+            txt_lines.extend([
+                "WHY IT MATTERS:",
+                "-" * 40,
+                bc["why_it_matters"],
+                "",
+            ])
+        if brief.key_developments:
+            txt_lines.extend([
+                "KEY DEVELOPMENTS:",
+                "-" * 40,
+            ])
+            for i, kd in enumerate(brief.key_developments, start=1):
+                txt_lines.append(f"[{i}] {kd}")
+            txt_lines.append("")
+
+        plain_text_str = "\n".join(txt_lines)
+
+        # 3. Build JSON
+        import json
+        json_obj = {
+            "project_id": project.id,
+            "project_title": project.title,
+            "brief_id": brief.id,
+            "brief_title": brief.title,
+            "executive_summary": brief.executive_summary,
+            "key_developments": brief.key_developments,
+            "brief_content": brief.brief_content,
+            "evidence": brief.evidence,
+            "newsletter_angles": brief.newsletter_angles,
+            "is_user_edited": brief.is_user_edited,
+            "version": brief.version or 1,
+            "sources": [
+                {
+                    "id": s.id,
+                    "title": s.title,
+                    "url": s.url or s.original_url,
+                    "source_type": s.source_type,
+                    "status": s.extraction_status
+                }
+                for s in sources
+            ],
+            "created_at": brief.created_at.isoformat(),
+            "updated_at": brief.updated_at.isoformat()
+        }
+        json_str = json.dumps(json_obj, indent=2)
+
+        return {
+            "project_id": project.id,
+            "brief_id": brief.id,
+            "title": brief.title,
+            "markdown_content": markdown_str,
+            "plain_text_content": plain_text_str,
+            "json_content": json_str,
+            "format": format.lower(),
+            "exported_at": datetime.utcnow().isoformat()
+        }
 
     def get_project_evidence(self, db: Session, project_id: str) -> List[Dict[str, Any]]:
         """Returns verified evidence items for project from latest brief or database records."""

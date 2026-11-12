@@ -30,6 +30,16 @@ export const projectService = {
     return res.data;
   },
 
+  async archiveProject(id: string): Promise<Project> {
+    const res = await apiClient.post(`/research/projects/${id}/archive`);
+    return res.data;
+  },
+
+  async reopenProject(id: string): Promise<Project> {
+    const res = await apiClient.post(`/research/projects/${id}/reopen`);
+    return res.data;
+  },
+
   async getStats(): Promise<DashboardStats> {
     const res = await apiClient.get('/research/dashboard/stats');
     return res.data;

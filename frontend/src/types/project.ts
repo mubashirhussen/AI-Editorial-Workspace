@@ -1,7 +1,13 @@
 export interface Project {
   id: string;
   title: string;
+  topic?: string;
   description?: string;
+  research_objective?: string;
+  target_audience?: string;
+  research_scope?: string;
+  keywords?: string[];
+  preferred_source_types?: string[];
   status: string;
   created_at: string;
   updated_at: string;
@@ -11,12 +17,24 @@ export interface Project {
 
 export interface ProjectCreate {
   title: string;
+  topic?: string;
   description?: string;
+  research_objective?: string;
+  target_audience?: string;
+  research_scope?: string;
+  keywords?: string[];
+  preferred_source_types?: string[];
 }
 
 export interface ProjectUpdate {
   title?: string;
+  topic?: string;
   description?: string;
+  research_objective?: string;
+  target_audience?: string;
+  research_scope?: string;
+  keywords?: string[];
+  preferred_source_types?: string[];
   status?: string;
 }
 
@@ -42,4 +60,3 @@ export interface DashboardStats {
     created_at: string;
   }>;
 }
-

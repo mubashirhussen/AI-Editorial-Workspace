@@ -115,3 +115,4 @@ Database integrity was verified via automated integration tests in `backend/test
    - Metrics (e.g., `total_editorials`, `pending_human_reviews`) strictly tallied items matching the authenticated user's organization memberships.
 
 All database operations demonstrated zero data leakage, correct foreign key cascade behavior, and strict enforcement of state immutability.
+

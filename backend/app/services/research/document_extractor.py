@@ -58,6 +58,11 @@ def extract_from_bytes(file_bytes: bytes, filename: str, content_type: Optional[
 
     # 3. PDF Documents
     if fn_lower.endswith(".pdf") or (content_type and "pdf" in content_type):
+        if not file_bytes[:1024].startswith(b"%PDF-") and b"%PDF-" not in file_bytes[:1024]:
+            return {
+                "success": False,
+                "error": "Corrupt or invalid file signature: Expected a valid PDF document (%PDF- magic header missing)."
+            }
         try:
             import pypdf
             reader = pypdf.PdfReader(io.BytesIO(file_bytes))
@@ -88,6 +93,11 @@ def extract_from_bytes(file_bytes: bytes, filename: str, content_type: Optional[
 
     # 4. Word Documents (.docx)
     if fn_lower.endswith(".docx") or (content_type and "wordprocessingml" in content_type):
+        if not file_bytes[:4].startswith(b"PK\x03\x04"):
+            return {
+                "success": False,
+                "error": "Corrupt or invalid file signature: Expected a valid DOCX document (PK zip magic header missing)."
+            }
         try:
             import docx
             doc = docx.Document(io.BytesIO(file_bytes))

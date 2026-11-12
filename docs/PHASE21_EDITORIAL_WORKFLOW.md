@@ -108,3 +108,4 @@ flowchart TD
    - **HTML5 (`.html`):** Inline-styled, responsive HTML designed for Substack, Beehiiv, or custom email templates.
    - **JSON (`.json`):** Structured payload containing headline, word count, status, source citations, and content for automated API pipelines.
 3. **Action:** One-click clipboard copy or direct disk download.
+

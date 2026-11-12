@@ -94,4 +94,21 @@ export const researchService = {
     const res = await apiClient.get(`/research/projects/${projectId}/evidence`);
     return res.data;
   },
+
+  async updateBrief(projectId: string, payload: any): Promise<ResearchBrief> {
+    const res = await apiClient.put(`/research/projects/${projectId}/brief`, payload);
+    return res.data;
+  },
+
+  async getBriefHistory(projectId: string): Promise<ResearchBrief[]> {
+    const res = await apiClient.get(`/research/projects/${projectId}/brief/history`);
+    return res.data;
+  },
+
+  async exportBrief(projectId: string, format: string = 'markdown'): Promise<any> {
+    const res = await apiClient.get(`/research/projects/${projectId}/brief/export`, {
+      params: { format }
+    });
+    return res.data;
+  },
 };
