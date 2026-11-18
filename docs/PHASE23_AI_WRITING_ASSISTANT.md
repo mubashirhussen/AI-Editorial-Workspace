@@ -64,3 +64,4 @@ Research-backed writing relies on immutable citation tags (`[1]`, `[2]`, `[3]`).
           rewritten += f" {cite}"
   ```
 - Ensures that factual citations are never stripped or hallucinated during automated rewrites.
+

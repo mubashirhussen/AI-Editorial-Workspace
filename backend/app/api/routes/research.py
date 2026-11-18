@@ -1,6 +1,7 @@
-from backend.app.api.deps import get_current_user, get_active_organization
+from backend.app.api.deps import get_current_user, get_active_organization, require_permission
 from backend.app.api.v1.endpoints.projects import check_project_tenant_access
 from backend.app.models.base import User, Organization
+from backend.app.schemas.auth import OrgPermission
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
@@ -22,15 +23,43 @@ from backend.app.services.analytics_service import analytics_service
 router = APIRouter(prefix="/research", tags=["Research"])
 
 @router.get("/dashboard/stats")
-def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Provides high-level dashboard metrics for the editorial workspace."""
-    total_projects = db.query(ResearchProject).count()
-    total_sources = db.query(Source).count()
-    total_drafts = db.query(WritingDraft).count()
-    total_editorial = db.query(EditorialOutput).count()
-    
-    recent_projects = db.query(ResearchProject).order_by(ResearchProject.updated_at.desc()).limit(5).all()
-    recent_sources = db.query(Source).order_by(Source.created_at.desc()).limit(5).all()
+def get_dashboard_stats(
+    org: Optional[Organization] = Depends(get_active_organization),
+    db: Session = Depends(get_db)
+):
+    """Provides high-level dashboard metrics for the editorial workspace scoped by organization."""
+    if org:
+        project_query = db.query(ResearchProject).filter(
+            ResearchProject.organization_id == org.id,
+            ResearchProject.deleted_at.is_(None)
+        )
+        project_ids = [p[0] for p in project_query.with_entities(ResearchProject.id).all()]
+        total_projects = project_query.count()
+        total_sources = db.query(Source).filter(
+            Source.project_id.in_(project_ids),
+            Source.deleted_at.is_(None)
+        ).count() if project_ids else 0
+        total_drafts = db.query(WritingDraft).filter(
+            WritingDraft.organization_id == org.id,
+            WritingDraft.deleted_at.is_(None)
+        ).count()
+        total_editorial = db.query(EditorialOutput).filter(
+            EditorialOutput.project_id.in_(project_ids)
+        ).count() if project_ids else 0
+
+        recent_projects = project_query.order_by(ResearchProject.updated_at.desc()).limit(5).all()
+        recent_sources = db.query(Source).filter(
+            Source.project_id.in_(project_ids),
+            Source.deleted_at.is_(None)
+        ).order_by(Source.created_at.desc()).limit(5).all() if project_ids else []
+    else:
+        total_projects = db.query(ResearchProject).filter(ResearchProject.deleted_at.is_(None)).count()
+        total_sources = db.query(Source).filter(Source.deleted_at.is_(None)).count()
+        total_drafts = db.query(WritingDraft).filter(WritingDraft.deleted_at.is_(None)).count()
+        total_editorial = db.query(EditorialOutput).count()
+
+        recent_projects = db.query(ResearchProject).filter(ResearchProject.deleted_at.is_(None)).order_by(ResearchProject.updated_at.desc()).limit(5).all()
+        recent_sources = db.query(Source).filter(Source.deleted_at.is_(None)).order_by(Source.created_at.desc()).limit(5).all()
 
     return {
         "total_projects": total_projects,
@@ -65,7 +94,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 def create_project(
     data: ProjectCreate,
     current_user: User = Depends(get_current_user),
-    org: Organization = Depends(get_active_organization),
+    org: Organization = Depends(require_permission(OrgPermission.CREATE_PROJECTS)),
     db: Session = Depends(get_db)
 ):
     target_org_id = getattr(data, "organization_id", None) or (org.id if org else None)
@@ -208,7 +237,7 @@ def archive_project(
 ):
     """Archives an active research project."""
     project = research_service.get_project(db, project_id)
-    check_project_tenant_access(db, project, current_user)
+    check_project_tenant_access(db, project, current_user, OrgPermission.CREATE_PROJECTS)
     return research_service.archive_project(db, project_id)
 
 @router.post("/projects/{project_id}/reopen", response_model=ProjectResponse)
@@ -219,7 +248,7 @@ def reopen_project(
 ):
     """Reopens an archived research project to in_progress status."""
     project = research_service.get_project(db, project_id)
-    check_project_tenant_access(db, project, current_user)
+    check_project_tenant_access(db, project, current_user, OrgPermission.CREATE_PROJECTS)
     return research_service.reopen_project(db, project_id)
 
 

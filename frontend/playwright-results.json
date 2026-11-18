@@ -7,7 +7,8 @@
       "--config",
       "frontend/playwright.config.ts",
       "frontend/e2e/writing-workflow.spec.ts",
-      "frontend/e2e/writing.spec.ts"
+      "frontend/e2e/editorial-workflow.spec.ts",
+      "frontend/e2e/full-platform-journey.spec.ts"
     ],
     "configFile": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\playwright.config.ts",
     "rootDir": "C:/Users/Mubashirhussensk/OneDrive/Desktop/FDE intern/frontend/e2e",
@@ -121,6 +122,346 @@
   },
   "suites": [
     {
+      "title": "editorial-workflow.spec.ts",
+      "file": "editorial-workflow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 21 - Editorial Studio End-User Workflow & Journey E2E",
+          "file": "editorial-workflow.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. Application Navigation & Editorial Studio Initial Load",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2298,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:40.182Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-34bc151662e04eba2d4b",
+              "file": "editorial-workflow.spec.ts",
+              "line": 200,
+              "column": 3
+            },
+            {
+              "title": "2. Project Context & Brief Loading",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1074,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:42.629Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-8c8c211a4b587e25d813",
+              "file": "editorial-workflow.spec.ts",
+              "line": 206,
+              "column": 3
+            },
+            {
+              "title": "3. Headline Selection & Parameter Controls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1292,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:43.732Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-584dd9f4e9bf276ffd10",
+              "file": "editorial-workflow.spec.ts",
+              "line": 213,
+              "column": 3
+            },
+            {
+              "title": "4. Editorial Generation & Content Display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 923,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:45.057Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-19ff9d5f8171068e2986",
+              "file": "editorial-workflow.spec.ts",
+              "line": 220,
+              "column": 3
+            },
+            {
+              "title": "5. View Mode Switching (Editor, Preview, Review)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1638,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:46.008Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-2ea86db1f8eff287d24e",
+              "file": "editorial-workflow.spec.ts",
+              "line": 229,
+              "column": 3
+            },
+            {
+              "title": "6. Export Menu & Multi-Format Options (MD, TXT, HTML, JSON)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1343,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:47.669Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dbd3bf28e25cd6c2a936-4a04ea4f00f4e62686a8",
+              "file": "editorial-workflow.spec.ts",
+              "line": 241,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "full-platform-journey.spec.ts",
+      "file": "full-platform-journey.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 24 - Full-Platform Cross-Module Integration E2E",
+          "file": "full-platform-journey.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. Cross-Module Navigation: Editorial Studio and Project Loading",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1717,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:49.070Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e7f9d08c7ab2fbd98347-4a19eee3605975a798cb",
+              "file": "full-platform-journey.spec.ts",
+              "line": 204,
+              "column": 3
+            },
+            {
+              "title": "2. Cross-Module Navigation: Writing Assistant & Deterministic Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1454,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:50.825Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e7f9d08c7ab2fbd98347-fda480afee17b5313005",
+              "file": "full-platform-journey.spec.ts",
+              "line": 211,
+              "column": 3
+            },
+            {
+              "title": "3. Cross-Module Navigation: Editorial Review and Quality Controls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1138,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:12:52.320Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e7f9d08c7ab2fbd98347-2defb678adb267e6946e",
+              "file": "full-platform-journey.spec.ts",
+              "line": 218,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
       "title": "writing-workflow.spec.ts",
       "file": "writing-workflow.spec.ts",
       "column": 0,
@@ -149,12 +490,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3038,
+                      "duration": 2920,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-12T11:00:40.999Z",
+                      "startTime": "2026-11-18T10:12:53.520Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -170,111 +511,15 @@
           ]
         }
       ]
-    },
-    {
-      "title": "writing.spec.ts",
-      "file": "writing.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Writing Assistant & Auditor E2E",
-          "file": "writing.spec.ts",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "should analyze text, display metrics, accept and reject suggestions, and compare diff",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 7276,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('\"In order to\"')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('\"In order to\"') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('\"In order to\"')\u001b[22m\n",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('\"In order to\"')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('\"In order to\"') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('\"In order to\"')\u001b[22m\n\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\writing.spec.ts:166:51",
-                        "location": {
-                          "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\writing.spec.ts",
-                          "column": 51,
-                          "line": 166
-                        },
-                        "snippet": "\u001b[0m \u001b[90m 164 |\u001b[39m     \u001b[90m// Check that feedback and metrics are rendered\u001b[39m\n \u001b[90m 165 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'text=Clear technical tone with minor filler phrases'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 166 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'\"In order to\"'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 167 |\u001b[39m     \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mgetByText(\u001b[32m'\"models were trained by engineers\"'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m 168 |\u001b[39m\n \u001b[90m 169 |\u001b[39m     \u001b[90m// Verify Accept & Apply button for the first issue\u001b[39m\u001b[0m"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\writing.spec.ts",
-                            "column": 51,
-                            "line": 166
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByText('\"In order to\"')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByText('\"In order to\"') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByText('\"In order to\"')\u001b[22m\n\n\n  164 |     // Check that feedback and metrics are rendered\n  165 |     await expect(page.locator('text=Clear technical tone with minor filler phrases')).toBeVisible();\n> 166 |     await expect(page.getByText('\"In order to\"')).toBeVisible();\n      |                                                   ^\n  167 |     await expect(page.getByText('\"models were trained by engineers\"')).toBeVisible();\n  168 |\n  169 |     // Verify Accept & Apply button for the first issue\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\writing.spec.ts:166:51"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-12T11:00:44.296Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\writing-Writing-Assistant--89e44-uggestions-and-compare-diff-chromium\\test-failed-1.png"
-                        },
-                        {
-                          "name": "video",
-                          "contentType": "video/webm",
-                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\writing-Writing-Assistant--89e44-uggestions-and-compare-diff-chromium\\video.webm"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\writing-Writing-Assistant--89e44-uggestions-and-compare-diff-chromium\\error-context.md"
-                        },
-                        {
-                          "name": "trace",
-                          "contentType": "application/zip",
-                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\writing-Writing-Assistant--89e44-uggestions-and-compare-diff-chromium\\trace.zip"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\writing.spec.ts",
-                        "column": 51,
-                        "line": 166
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "64364233ac88cbb4898b-92028873d08609c602b6",
-              "file": "writing.spec.ts",
-              "line": 153,
-              "column": 3
-            }
-          ]
-        }
-      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-12T11:00:39.860Z",
-    "duration": 12483.921,
-    "expected": 1,
+    "startTime": "2026-11-18T10:12:37.496Z",
+    "duration": 19664.893,
+    "expected": 10,
     "skipped": 0,
-    "unexpected": 1,
+    "unexpected": 0,
     "flaky": 0
   }
 }

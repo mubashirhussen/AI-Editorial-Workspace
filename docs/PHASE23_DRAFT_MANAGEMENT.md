@@ -78,3 +78,4 @@ To prevent editorial data loss:
   - `OFFLINE`: Fallback storing document state to `localStorage` if connectivity drops.
   - `SAVE_FAILED`: Red indicator with inline one-click retry trigger.
 - **Tab Closure Protection (`beforeunload`)**: Intercepts accidental tab navigation or window close while `isDirty` is true.
+

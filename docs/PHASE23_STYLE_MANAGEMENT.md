@@ -65,3 +65,4 @@ Drafts and style profiles belonging to Organization A are invisible and inaccess
   - Cross-tenant duplicate: `404 Not Found`
   - Cross-tenant delete: `404 Not Found`
 - Returning `404 Not Found` instead of `403 Forbidden` prevents attackers from enumerating document UUIDs across organizations.
+

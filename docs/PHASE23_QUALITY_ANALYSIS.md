@@ -72,3 +72,4 @@ Clicking **Verify Grounding** evaluates the active draft against connected resea
 - **Inferred Claims**: General deductions consistent with the source corpus.
 - **Unsupported Claims**: Flagged statements lacking empirical backing, accompanied by editorial warnings.
 - **Contradictory Claims**: Statements directly refuting documented evidence.
+
