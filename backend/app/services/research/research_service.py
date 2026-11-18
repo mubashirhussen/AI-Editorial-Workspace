@@ -168,7 +168,8 @@ class ResearchService:
 
         if source_type in ("TEXT", "PASTED"):
             # Process pasted text
-            processed = extraction_service.process_pasted_text(data.text_content or "", data.title)
+            raw_text = data.text_content or getattr(data, "raw_content", None) or ""
+            processed = extraction_service.process_pasted_text(raw_text, data.title)
             if not processed["success"]:
                 raise HTTPException(status_code=400, detail=processed["error"])
             
@@ -198,6 +199,9 @@ class ResearchService:
             return source
 
         else:
+            if not url:
+                raise HTTPException(status_code=400, detail="URL cannot be empty for URL sources.")
+
             # URL source
             c_url = canonicalize_url(url) if url else None
             source = Source(
@@ -212,7 +216,7 @@ class ResearchService:
             db.commit()
             db.refresh(source)
 
-            # Trigger extraction immediately
+            # Trigger extraction immediately which validates SSRF and sets extraction_status="failed" on violation
             if url:
                 await self.extract_source(db, source.id)
 

@@ -6,9 +6,10 @@
       "test",
       "--config",
       "frontend/playwright.config.ts",
-      "frontend/e2e/writing-workflow.spec.ts",
       "frontend/e2e/editorial-workflow.spec.ts",
-      "frontend/e2e/full-platform-journey.spec.ts"
+      "frontend/e2e/full-platform-journey.spec.ts",
+      "frontend/e2e/phase25-responsive-and-security.spec.ts",
+      "frontend/e2e/writing-workflow.spec.ts"
     ],
     "configFile": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\playwright.config.ts",
     "rootDir": "C:/Users/Mubashirhussensk/OneDrive/Desktop/FDE intern/frontend/e2e",
@@ -150,12 +151,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2298,
+                      "duration": 9068,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:40.182Z",
+                      "startTime": "2026-11-18T10:40:57.900Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -184,12 +185,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1074,
+                      "duration": 1865,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:42.629Z",
+                      "startTime": "2026-11-18T10:41:07.230Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -218,12 +219,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1292,
+                      "duration": 1890,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:43.732Z",
+                      "startTime": "2026-11-18T10:41:09.233Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -252,12 +253,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 923,
+                      "duration": 1271,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:45.057Z",
+                      "startTime": "2026-11-18T10:41:11.195Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -286,12 +287,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1638,
+                      "duration": 2452,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:46.008Z",
+                      "startTime": "2026-11-18T10:41:12.529Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -320,12 +321,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1343,
+                      "duration": 2625,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:47.669Z",
+                      "startTime": "2026-11-18T10:41:15.054Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -371,12 +372,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1717,
+                      "duration": 2167,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:49.070Z",
+                      "startTime": "2026-11-18T10:41:17.816Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -405,12 +406,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1454,
+                      "duration": 2430,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:50.825Z",
+                      "startTime": "2026-11-18T10:41:20.050Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -439,12 +440,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1138,
+                      "duration": 1763,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:52.320Z",
+                      "startTime": "2026-11-18T10:41:22.523Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -455,6 +456,125 @@
               "id": "e7f9d08c7ab2fbd98347-2defb678adb267e6946e",
               "file": "full-platform-journey.spec.ts",
               "line": 218,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "phase25-responsive-and-security.spec.ts",
+      "file": "phase25-responsive-and-security.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 25 - Independent Responsive & Multi-Device Validation",
+          "file": "phase25-responsive-and-security.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Desktop Viewport (1280x800): Full layout rendering and navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1491,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:41:24.339Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a7e75eb5663acd82a603-2124216b54f47ae8403a",
+              "file": "phase25-responsive-and-security.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "Tablet Viewport (768x1024): Responsive layout and drawer navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1398,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:41:25.847Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a7e75eb5663acd82a603-435816c6179c7a7d8313",
+              "file": "phase25-responsive-and-security.spec.ts",
+              "line": 114,
+              "column": 3
+            },
+            {
+              "title": "Mobile Viewport (375x667): Compact UI, collapsible panels, and clean touch targets",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1347,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-11-18T10:41:27.264Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a7e75eb5663acd82a603-463d6fb1068260f80cf0",
+              "file": "phase25-responsive-and-security.spec.ts",
+              "line": 128,
               "column": 3
             }
           ]
@@ -490,12 +610,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2920,
+                      "duration": 3688,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:12:53.520Z",
+                      "startTime": "2026-11-18T10:41:28.665Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -515,9 +635,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-18T10:12:37.496Z",
-    "duration": 19664.893,
-    "expected": 10,
+    "startTime": "2026-11-18T10:40:51.648Z",
+    "duration": 41483.483,
+    "expected": 13,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0
