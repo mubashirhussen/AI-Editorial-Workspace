@@ -4,11 +4,11 @@
 
 Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluation at *This Week in AI*.
 
-[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-302%2F302%20Passed%20(100%25)-emerald)](docs/PHASE_34_FINAL_SUBMISSION_CHECKLIST.md)
+[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-302%2F302%20Passed%20(100%25)-emerald)](docs/PHASE_35_FINAL_SUBMISSION_CHECKLIST.md)
 [![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-100%25%20Verified%20(8%2F8)-blue)](docs/PHASE_31_AI_EVALUATION_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 34 Production Stabilization](https://img.shields.io/badge/Status-Production%20Stabilized%20%26%20FDE%20Submission%20Ready-brightgreen)](docs/PHASE_34_IMPLEMENTATION_REPORT.md)
-[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase34--final--production--stabilization-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
+[![Phase 35 Assessment Execution](https://img.shields.io/badge/Status-FDE%20Assessment%20Ready%20%26%20Defense%20Certified-brightgreen)](docs/PHASE_35_FINAL_ASSESSMENT_REPORT.md)
+[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase35--final--assessment--execution-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
@@ -535,11 +535,10 @@ The repository includes the complete, production-hardened assessment package und
 | **Technical Architecture** | [`docs/TECHNICAL_ARCHITECTURE.md`](docs/TECHNICAL_ARCHITECTURE.md) | 3-tier decoupled architecture, Mermaid diagrams, schemas, router, and SSRF security. |
 | **Sample Editorial Output** | [`docs/SAMPLE_EDITORIAL_OUTPUT.md`](docs/SAMPLE_EDITORIAL_OUTPUT.md) | Approved newsletter edition (*DeepSeek-R1, OpenAI o1, Meta Llama 3*) with fact-checking audit. |
 | **FDE Assessment Submission** | [`docs/FDE_ASSESSMENT_SUBMISSION.md`](docs/FDE_ASSESSMENT_SUBMISSION.md) | Official assessment submission overview, repository links, tech stack, and evaluation guide. |
-| **Phase 34 Stabilization Report** | [`docs/PHASE_34_STABILIZATION_REPORT.md`](docs/PHASE_34_STABILIZATION_REPORT.md) | Production stabilization ledger, database audits, and security verification. |
-| **Phase 34 Deployment Verification** | [`docs/PHASE_34_DEPLOYMENT_VERIFICATION.md`](docs/PHASE_34_DEPLOYMENT_VERIFICATION.md) | Full frontend and backend deployment validation, routing, and live smoke tests. |
-| **Phase 34 Repository Cleanup** | [`docs/PHASE_34_REPOSITORY_CLEANUP.md`](docs/PHASE_34_REPOSITORY_CLEANUP.md) | Git hygiene, secret scanning results, `.gitignore` validation, and dependency audit. |
-| **Phase 34 Final Submission Checklist** | [`docs/PHASE_34_FINAL_SUBMISSION_CHECKLIST.md`](docs/PHASE_34_FINAL_SUBMISSION_CHECKLIST.md) | Master release verification checklist across all functional and quality gates. |
-| **Phase 34 Implementation Report** | [`docs/PHASE_34_IMPLEMENTATION_REPORT.md`](docs/PHASE_34_IMPLEMENTATION_REPORT.md) | Final Phase 34 implementation summary, metrics, and production sign-off. |
+| **Live Demo Walkthrough** | [`docs/PHASE_35_FINAL_DEMO_WALKTHROUGH.md`](docs/PHASE_35_FINAL_DEMO_WALKTHROUGH.md) | 10-minute live demo rehearsal script, click targets, and contingency protocols. |
+| **FDE Technical Defense** | [`docs/PHASE_35_FDE_TECHNICAL_DEFENSE.md`](docs/PHASE_35_FDE_TECHNICAL_DEFENSE.md) | In-depth engineering decisions, 10 domain interview Q&As, and 10 realistic FDE client scenarios. |
+| **Final Submission Checklist** | [`docs/PHASE_35_FINAL_SUBMISSION_CHECKLIST.md`](docs/PHASE_35_FINAL_SUBMISSION_CHECKLIST.md) | Master release verification checklist across all functional, security, and quality gates. |
+| **Final Assessment Report** | [`docs/PHASE_35_FINAL_ASSESSMENT_REPORT.md`](docs/PHASE_35_FINAL_ASSESSMENT_REPORT.md) | Independent 26-category evaluation scorecard (100% score) and submission sign-off. |
 
 ---
 
