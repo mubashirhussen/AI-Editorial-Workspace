@@ -114,13 +114,89 @@ export const DashboardPage: React.FC = () => {
       {loading ? (
         <LoadingState message="Loading workspace metrics from SQLite..." />
       ) : !hasAnyData ? (
-        <EmptyState
-          icon={<FolderKanban className="w-6 h-6 text-blue-600" />}
-          title="Welcome to your AI Editorial Workspace"
-          description="You haven't initialized any research projects yet. Start by ingesting 3 or more industry articles to verify claims and synthesize evidence."
-          actionLabel="Initialize First Project"
-          onAction={() => navigate('/research')}
-        />
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50/40 dark:from-slate-900 dark:to-slate-900 p-6 md:p-8 rounded-3xl border border-blue-100 dark:border-slate-800 space-y-6 shadow-sm">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100/80 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" /> Getting Started Guide
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Welcome to your AI Editorial Workspace
+              </h2>
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                Transform heterogeneous technical research documents into verified, citation-anchored, publication-ready newsletters with zero hallucination. Follow the 3-step workflow below:
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Step 1 */}
+              <div className="bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">
+                    1
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Research Assistant</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                    Create an investigation project, add article URLs or PDFs, and extract empirical facts with 5-state claim verification.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate('/research')}
+                  variant="primary"
+                  size="sm"
+                  className="w-full justify-center"
+                  rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                >
+                  Start Research
+                </Button>
+              </div>
+
+              {/* Step 2 */}
+              <div className="bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-xs">
+                    2
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Writing Assistant</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                    Draft technical articles with a real-time linguistic auditor, Flesch Reading Ease scoring, and 13 copy-editing tools.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate('/writing')}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-center"
+                  rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                >
+                  Open Editor
+                </Button>
+              </div>
+
+              {/* Step 3 */}
+              <div className="bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-3 flex flex-col justify-between">
+                <div className="space-y-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                    3
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Editorial Studio</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                    Synthesize structured editions with inline citations [1], review factuality, approve drafts, and export clean HTML or Markdown.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => navigate('/editorial')}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-center"
+                  rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                >
+                  Explore Studio
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           {/* 4 Metric Cards Grid - Real Backend Data */}

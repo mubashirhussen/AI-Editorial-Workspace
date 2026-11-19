@@ -3,161 +3,92 @@
 **Target Role:** Forward Deployed Engineer (FDE) Intern — *This Week in AI*  
 **Product:** AI Editorial Workspace  
 **Status:** Validated Production System  
-**Version:** 1.0.0 (Phase 10 Assessment Handover)  
-**Branch:** `docs/phase10-final-assessment-handover`
+**Version:** 2.0.0 (Phase 32 Final Product Packaging)  
+**Branch:** `feat/phase32-product-completion`  
+**Repository:** https://github.com/mubashirhussen/AI-Editorial-Workspace  
+**Live Production URL:** https://ai-editorial-workspace-blue.vercel.app/  
 
 ---
 
-## 1. Executive Summary & Problem Being Solved
+## 1. Executive Summary & Problem Statement
 
-Technical media publications, research analysis teams, and developer advocacy organizations face an unprecedented challenge: **the velocity and complexity of frontier AI disclosures**. Every week, dozens of research preprints, technical architecture whitepapers, benchmarks, and commercial announcements are published.
+Technical journalism, developer media, and AI research analysis face an acute crisis: **the velocity and technical density of frontier artificial intelligence breakthroughs**. Every week, dozens of technical whitepapers, architectural disclosures, benchmark updates, and corporate claims are released across arXiv, GitHub, and corporate research blogs.
 
-Editorial teams are caught between two opposing failure modes:
-1. **The Velocity Trap:** Manually reading multiple 40-page papers, parsing benchmark methodologies, and cross-referencing corporate marketing claims takes between 8 and 15 hours per publication-grade technical article.
-2. **The Hallucination Trap:** Generic conversational LLMs (such as standard ChatGPT or Claude interfaces) hallucinate plausible-sounding statistics, invent fictitious benchmark comparisons, sever citation provenance, and flatten distinct editorial voices into bland, homogeneous corporate prose.
+Editorial teams are constrained by two failure modes:
+1. **The Velocity Bottleneck:** Manually reading multiple 40-page technical papers, parsing complex benchmark methodologies, and verifying corporate claims requires 10–15 hours per publication-grade technical newsletter edition.
+2. **The Hallucination & Citation Hazard:** Standard conversational AI models (ChatGPT, Claude web interfaces) frequently invent plausible-sounding benchmark numbers, misattribute source claims, hallucinate non-existent authors, flatten distinct editorial voices, and sever factual traceability.
 
-The **AI Editorial Workspace** is a verticalized, evidence-grounded software platform designed specifically for technical journalists, research analysts, and editorial teams. It bridges the gap between raw, heterogeneous technical source material and publication-ready, evidence-backed editorial briefs and articles—guaranteeing 100% citation traceability, deterministic style auditing, and enterprise-grade multi-tenant security.
+The **AI Editorial Workspace** is a verticalized, evidence-grounded software platform engineered specifically for technical journalists, analysts, and editorial directors. It bridges raw technical source documents and publication-ready, evidence-backed editorial editions—guaranteeing 100% citation traceability, deterministic style auditing, and enterprise-grade multi-tenant security.
 
 ---
 
 ## 2. Target Users & Personas
 
-| Persona | Role & Responsibilities | Core Pain Points |
-| :--- | :--- | :--- |
-| **Lead Technical Editor** | Oversees publication quality, brand tone, readability standards, and editorial integrity across weekly newsletters. | Spends hours pruning run-on sentences, removing passive voice, catching ungrounded PR claims, and preventing generic AI tone. |
-| **Research Analyst & Fact-Checker** | Collects research documents, ingests technical whitepapers, and triangulates claims across competing vendors. | Needs to know whether an assertion is an empirical measurement, analytical interpretation, or unverified speculation. |
-| **Staff Technical Writer** | Drafts articles under tight deadlines across diverse formats (explainers, news roundups, executive opinions). | Needs structured templates, rapid selection-targeted rewrites, and instant citation linking without breaking prose flow. |
-| **Forward Deployed Engineer (FDE)** | Customizes and integrates AI systems into enterprise editorial and corporate environments. | Requires multi-tenant isolation, offline deterministic fallbacks, observable token cost tracking, and reproducible Docker deployments. |
+| Persona | Role & Objectives | Core Pain Points | Workspace Solution |
+| :--- | :--- | :--- | :--- |
+| **Lead Technical Editor** | Oversees publication tone, journalistic integrity, readability standards, and final sign-off. | Cognitive bloat, passive phrasing, ungrounded PR claims, and generic AI tone. | Deterministic Hemingway auditor, peer review approval gates, and self-approval guards. |
+| **Fact-Checker & Research Analyst** | Ingests preprints, verifies benchmark figures, and cross-examines competing vendor disclosures. | Triangulating opposing empirical claims across papers is tedious and error-prone. | 5-state claim verification (`SUPPORTED` to `CONTRADICTED`) and cross-source contradiction detection. |
+| **Staff Technical Writer** | Drafts articles under tight deadlines across diverse formats (news roundups, deep-dives). | Citation formatting errors and losing context when switching between reference tools. | In-place selection rewrite menu (13 tools), non-destructive diff previews, and cursor citation insertion. |
+| **Forward Deployed Engineer (FDE)** | Customizes, deploys, and operates AI infrastructure within enterprise publisher stacks. | API provider downtime, token cost overruns, SSRF attack vectors, and data leaks. | Multi-provider routing, zero-downtime offline fallback, token telemetry, and network-level SSRF defense. |
 
 ---
 
-## 3. User Pain Points & Product Solutions
+## 3. Product Goals & Core Capabilities
 
-### Pain Point 1: Unverified PR Claims & Fictitious Citations
-- *Problem:* LLMs frequently invent citations or attribute claims to the wrong papers when summarizing literature.
-- *Solution:* The workspace enforces **Deterministic 5-Tier Claim Verification** (`SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNSUPPORTED`, `CONTRADICTED`, `NOT_VERIFIABLE`). Every factual assertion in an editorial brief is linked to an immutable `source_id`, author, publication date, and verbatim chunk passage.
-
-### Pain Point 2: Cognitive Bloat & Flat AI Tone
-- *Problem:* Drafts generated by commercial LLMs suffer from cognitive bloat (sentences exceeding 30 words), passive phrasing, and monotonous cadence.
-- *Solution:* The workspace integrates a **6-Check Deterministic Hemingway Auditor** and **Real-Time Readability Linter**. Problematic sentences are highlighted inline in the editor, and editors can trigger one-click sentence simplification without altering adjacent text.
-
-### Pain Point 3: Fragmented Citation Workflow
-- *Problem:* Authors toggle between reference managers (Zotero, Mendeley), web browsers, and word processors, introducing citation syntax errors.
-- *Solution:* The **Afforai Cite Extension & Reference Manager** allows writers to search indexed project references, select multiple citations via checkboxes, view selected citation pills, and insert formatted citations `[1]`, `[Smith & Brown 2020]` directly into the active editor cursor position.
+1. **Proof-First, Evidence-Always:** Factual assertions in research briefs and editorials are strictly anchored to ingested source chunks via bracketed citations `[1]`, `[2]`.
+2. **Deterministic Quality Enforcement:** Replaces subjective editing with mathematical linguistic scoring:
+   - Flesch Reading Ease Score ($\ge 60$)
+   - Flesch-Kincaid Grade Level (Grade 8–10)
+   - Hard-to-read sentence detection ($> 25$ words)
+   - Passive voice thresholding ($< 10\%$)
+3. **Multi-Tenancy & Enterprise Isolation:** Organization-scoped database persistence, role-based access control, and encrypted credential management.
+4. **Resilient AI Routing & Fallback:** Multi-provider adapter (Groq, OpenAI, Anthropic, Gemini) with automatic fallback to a deterministic offline heuristic engine during provider outages.
+5. **Auditable Peer Review & Finalization:** Immutable version history, side-by-side diffing, review comment threads, and strict approval workflows.
 
 ---
 
-## 4. End-to-End User Workflows
-
-### Workflow A: Research Assistant & Local Library
+## 4. End-to-End User Journey
 
 ```mermaid
-flowchart TD
-    A[Input: Article URLs, PDFs, DOCX, TXT] --> B[SSRF &amp; File Signature Validation]
-    B --> C[Trafilatura / PDF Parsing &amp; Text Normalization]
-    C --> D[SHA-256 Content Hashing &amp; Deduplication]
-    D --> E[Semantic Chunking: 150-word Chunks with Offsets]
-    E --> F[UNU Claim Extraction &amp; Epistemic Triangulation]
-    F --> G[Categorization: Facts vs. Analysis vs. Speculation]
-    G --> H[10-Section Structured Research Brief Generation]
-    H --> I[Local Library Index: Outline, Claims, Curation Tags]
-```
-
-1. **Investigation Setup:** The user initializes an investigation project (e.g., "Frontier LLM Reasoning Architectures").
-2. **Multi-Source Ingestion:** Ingests $\ge 3$ sources via web URLs or uploaded files (PDF, DOCX, TXT). The system validates destinations against SSRF rules (blocking private IPs, loopback, cloud metadata endpoints), verifies file MIME signatures, and normalizes text.
-3. **Local Library Inspection:** The user inspects the ingested source in the **Local Library View**:
-   - Reviews the collapsible document outline (`▶ Outline`).
-   - Examines extracted **Key Claims** bulleted with semantic confidence.
-   - Edits curation metadata (*Title*, *Why saved*, *Tags*) and records AI model provenance.
-   - Inspects granular **Retrieval Chunks** (tokens, character offsets, raw snippets).
-4. **Epistemic Triangulation & Brief Synthesis:** The synthesis engine categorizes extracted assertions into:
-   - **Verified Facts:** Empirical data backed by primary measurements.
-   - **Editorial Analysis:** Interpretive conclusions supported by methodology.
-   - **Speculative Claims:** Roadmap predictions or unverified vendor statements.
-5. Assembles a 10-section structured research brief complete with verified citations.
-
----
-
-### Workflow B: Writing Assistant & Editorial Studio
-
-```mermaid
-flowchart TD
-    A[Select Template: Business Proposal, Newsletter, Explainer] --> B[Editor Populated with Structured Editorial Framework]
-    B --> C[Connect Research Project &amp; Load References]
-    C --> D[Afforai Cite: Batch Select Citations &amp; Inject Anchors]
-    D --> E[Real-Time Hemingway Quality Audit: 6 Deterministic Checks]
-    E --> F[In-Editor Highlighting: Hard-to-read, Passive, Jargon]
-    F --> G[Interactive Tooltip: One-Click Simplify Action]
-    G --> H[Article Improvements Panel: Overall Score &amp; Rewrites]
-    H --> I[Immutable Version Snapshot Created &amp; Export to Markdown/Docx]
-```
-
-1. **Template Selection ("Let's Write"):** The writer opens the template drawer to select from 8 pre-configured editorial frameworks (Business proposal, Help article, Job description, Introductory email, Thank you note, Feedback request, Weekly AI newsletter, Technology explainer).
-2. **Reference Injection (Afforai Cite):** The writer opens the reference manager, searches project sources, checks relevant papers, and clicks `Insert Selected Citations`.
-3. **Quality & Readability Auditing:** As text is edited, the system computes:
-   - Flesch Reading Ease score & US school reading grade.
-   - Sentence count, reading time in seconds, and word count.
-   - Flags long sentences (>25 words), passive voice, filler clutter, technical jargon, and adjacent word echoes.
-4. **In-Editor Inline Highlighting & Popover:** Problematic sentences are highlighted in prose (purple for hard-to-read, blue for passive voice, amber for complex words). Clicking a highlighted phrase displays a floating tooltip with a one-click `[Simplify]` button.
-5. **Article Improvements Sidebar:** The writer views the overall score meter (*Good* vs. *Needs Polish*) and clicks `Rewrite` on individual flagged sentence cards.
-6. **Non-Destructive Replacement & Version History:** Accepting rewrites modifies only the target sentence boundaries, preserving adjacent text and citations. An immutable version snapshot is saved automatically, enabling instant visual diff comparison and one-click rollback.
-
----
-
-## 5. Core Product Features
-
-### 1. Local Library Hub (Screenshot 1 Reference)
-- Real-time telemetry metrics: Total Sources, Retrieval Chunks, Supported Formats, Indexed Status.
-- Search across courses, notes, PDFs, transcripts, and web captures.
-- Format filter pills (`All`, `Research Paper`, `Document`, `Web URL`) with separate `PINNED` and `RECENTLY ADDED` source sections.
-- Curation forms with custom tags, "Why saved" justifications, model provenance, and Quarto Markdown (`.qmd`) export.
-
-### 2. Afforai Cite Extension (Screenshot 2 Reference)
-- Dedicated citation management interface with multi-select checkboxes and removable citation pills (`Garcia (2002) ×`).
-- Side-by-side AI research assistant panel supporting prompt-driven rephrasing with citation grounding, copy buttons, and one-click replacement.
-
-### 3. Notalx Writing Studio (Screenshot 3 Reference)
-- 8 quick editorial templates for fast drafting.
-- Contextual selection menu with actions: *Improve Writing*, *Fix Spelling & Grammar*, *Make Shorter*, *Make Longer*, *Simplify*, *Adjust Tone*, and *Summarize*.
-- AI beta features: *Humanize*, *Summarize*, *Translate*, and *Check AI Content*.
-
-### 4. Article Improvements Panel (Screenshot 4 Reference)
-- Segmented visual quality meter bar reflecting Flesch Reading Ease.
-- Categorized tabs for `SEO`, `Readability`, and `Tone`.
-- Direct `Rewrite` actions next to each flagged sentence card.
-- Tool rail for Improvements, AI Chat, Images, and Competitor Data.
-
-### 5. Inline Readability Linter (Screenshot 5 Reference)
-- Highlight overlay rendering color-coded visual spans over problematic prose.
-- Floating tooltip popovers with single-click `[Simplify]` execution.
-- Categorized content issues drawer with structured one-click replacements.
-
----
-
-## 6. Product Differentiation
-
-```
-Feature                         Generic AI (ChatGPT / Claude)     AI Editorial Workspace
-Factual Grounding               Probabilistic guessing            5-Tier Claim Verification ([1], [2])
-Epistemic Triangulation         Mixes facts with PR marketing     Separates Verified Facts from Speculation
-Citation Provenance             Hallucinated / Missing URLs       Traceable to chunk character offsets
-Offline Reliability             500 Error if API key expires      100% Deterministic Offline Fallback
-Editorial Tone Auditing         Generic corporate flattening      6-Check Hemingway Engine & Active Voice
-Data Privacy & Isolation        Shared consumer namespace         Multi-Tenant RBAC & Org Sandboxing
-Infrastructure Governance       Opaque monthly API billing        Exact $USD Token Accounting & Telemetry
+flowchart LR
+    A["1. Dashboard<br/>Live Metrics & Queues"] --> B["2. Research Assistant<br/>Ingest URLs, PDFs, DOCX"]
+    B --> C["3. Claim Grounding<br/>5-State Verification"]
+    C --> D["4. Writing Assistant<br/>Linguistic Audit & Rewrite"]
+    D --> E["5. Editorial Studio<br/>Generation & Citation Linking"]
+    E --> F["6. Review & Sign-Off<br/>Peer Approval Guard"]
+    F --> G["7. Export<br/>HTML & Markdown Editions"]
 ```
 
 ---
 
-## 7. Current Limitations & Roadmap
+## 5. AI Reliability & Security Architecture
+
+### 5.1 Evidence Grounding & Claim Classification
+The verification engine audits draft prose against source corpora using a 5-state discrete classification:
+- **`SUPPORTED`:** High semantic token overlap ($> 0.45$) and exact empirical number matching.
+- **`PARTIALLY_SUPPORTED`:** General concept corroborated, but specific statistics or scope require clarification.
+- **`UNSUPPORTED`:** Empirical claim or statistics absent from ingested source documents.
+- **`CONTRADICTED`:** Direct semantic or numerical conflict with verified sources (e.g., *increased* vs *decreased*).
+- **`NOT_VERIFIABLE`:** Speculative projection or subjective editorial opinion requiring no empirical backing.
+
+### 5.2 Citation Integrity Engine
+Validates citation tags across five integrity states: `VALID`, `ORPHANED`, `FABRICATED`, `MISSING`, and `TAMPERED`.
+
+### 5.3 Prompt Injection Defense & Sandboxing
+All untrusted user or web-extracted texts are sanitized by `PromptInjectionGuard`:
+- Delimiter escape sequences (`</source_content>`, `<system>`) are neutralized.
+- Hidden markdown/HTML comments (`<!-- ... -->`) harboring covert prompts are redacted.
+- All reference texts are isolated within passive `<source_content>` XML boundaries.
+
+---
+
+## 6. Known Limitations & Future Roadmap
 
 ### Current Limitations
-1. **Dynamic Client-Rendered SPAs:** Web scraping relies on Trafilatura and BeautifulSoup4. Pages protected by heavy JavaScript obfuscation or Cloudflare Turnstile require headless browser rendering.
-2. **Audio/Video Ingestion:** Direct MP3/MP4 transcription is currently handled via text transcripts rather than integrated Whisper models.
-3. **Synchronous LLM Response:** Generative responses are delivered atomically upon schema validation rather than via token-by-token WebSocket streaming.
+1. **OCR on Scanned PDFs:** Extraction relies on embedded text streams; non-OCR raster scans require pre-processing.
+2. **Synchronous Single-Node Processing:** Production deployment operates with in-memory task queuing; high-concurrency enterprise deployments benefit from distributed Celery/Redis workers.
 
-### Future Improvements (v1.1 – v2.0)
-- **v1.1:** Headless Chromium rendering sidecar (Playwright) for anti-bot gated research sites.
-- **v1.2:** Token-by-token WebSocket streaming for real-time editorial drafting.
-- **v1.3:** Native Whisper audio/video podcast ingestion pipeline.
-- **v2.0:** Multi-agent collaborative editing mode with peer-review consensus voting.
+### Future Roadmap
+1. **Multi-Modal Source Extraction:** Native parsing of benchmark charts, tables, and architectural diagrams.
+2. **Direct CMS Syndication:** Direct one-click publishing integrations with Substack, Beehiiv, Ghost, and WordPress APIs.
+3. **Automated Source Fact Diffing:** Automated continuous monitoring of GitHub repositories and arXiv preprints for revisions.

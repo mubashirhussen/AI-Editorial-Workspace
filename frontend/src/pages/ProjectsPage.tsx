@@ -244,9 +244,22 @@ export const ProjectsPage: React.FC = () => {
                   <FileText className="w-3.5 h-3.5 text-blue-500" />
                   <span>{p.sources?.length || 0} Sources</span>
                 </div>
-                <div className="flex items-center gap-1 text-blue-600 font-semibold group-hover:translate-x-1 transition-transform">
-                  <span>Open Investigation</span>
-                  <ArrowRight className="w-3 h-3" />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/editorial?projectId=${p.id}`);
+                    }}
+                    className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-semibold hover:bg-amber-100 transition-colors"
+                    title="Open in Editorial Studio"
+                  >
+                    Editorial
+                  </button>
+                  <div className="flex items-center gap-1 text-blue-600 font-semibold group-hover:translate-x-1 transition-transform">
+                    <span>Investigate</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </div>
                 </div>
               </div>
             </div>
