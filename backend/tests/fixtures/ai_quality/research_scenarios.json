@@ -1,0 +1,42 @@
+[
+  {
+    "id": "res-001",
+    "name": "Supported Empirical Finding",
+    "claim": "Consensus checks across multi-agent pipelines reduce factual hallucination by 42%.",
+    "source_text": "Our empirical evaluations across 500 reasoning benchmarks demonstrate that multi-agent consensus checks reduce factual hallucination by 42% compared to single-agent baselines.",
+    "expected_status": "SUPPORTED",
+    "expected_confidence_min": 0.90
+  },
+  {
+    "id": "res-002",
+    "name": "Partially Supported Scope",
+    "claim": "Autonomous agent frameworks eliminate all software bugs during code generation.",
+    "source_text": "Autonomous agent frameworks caught 65% of common syntax and logic errors in automated unit tests, though subtle architectural bugs persisted.",
+    "expected_status": "PARTIALLY_SUPPORTED",
+    "expected_confidence_min": 0.70
+  },
+  {
+    "id": "res-003",
+    "name": "Unsupported Extrapolation",
+    "claim": "Global spending on generative AI surpassed 500 billion dollars in the first quarter of 2024.",
+    "source_text": "Enterprises allocated approximately 15 billion dollars to experimental generative AI tooling in early 2024.",
+    "expected_status": "UNSUPPORTED",
+    "expected_confidence_min": 0.85
+  },
+  {
+    "id": "res-004",
+    "name": "Direct Contradiction Across Sources",
+    "claim": "Quantum annealing models achieved quantum supremacy in linear programming tasks in 2023.",
+    "source_text": "Peer-reviewed analysis confirmed that classical supercomputers outperformed the tested quantum annealers by 3x on identical linear programming benchmarks in 2023.",
+    "expected_status": "CONTRADICTED",
+    "expected_confidence_min": 0.90
+  },
+  {
+    "id": "res-005",
+    "name": "Subjective / Opinion Statement",
+    "claim": "In our view, collaborative AI tools will fundamentally transform the nature of journalism in the coming decade.",
+    "source_text": "The report discusses adoption curves among newsrooms.",
+    "expected_status": "NOT_VERIFIABLE",
+    "expected_confidence_min": 0.60
+  }
+]

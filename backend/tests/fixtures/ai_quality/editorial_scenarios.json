@@ -1,0 +1,77 @@
+[
+  {
+    "id": "edit-001",
+    "name": "Valid Grounded Citation",
+    "draft_text": "Neural retrieval benchmarks improved precision@5 by 24% according to recent studies [1].",
+    "sources": [
+      {
+        "id": "src-1",
+        "title": "Retrieval Benchmarks 2024",
+        "extracted_content": "Our experimental results confirm neural retrieval benchmarks improved precision@5 by 24% over BM25."
+      }
+    ],
+    "expected_claim_status": "SUPPORTED",
+    "expected_citation_integrity": "VALID",
+    "min_grounding_score": 0.90
+  },
+  {
+    "id": "edit-002",
+    "name": "Fabricated Non-Existent Citation",
+    "draft_text": "The model achieved 99.4% zero-shot accuracy across all medical diagnostics [99].",
+    "sources": [
+      {
+        "id": "src-1",
+        "title": "Medical Evaluation Study",
+        "extracted_content": "The baseline model achieved 82.1% accuracy on clinical reasoning tests."
+      }
+    ],
+    "expected_claim_status": "UNSUPPORTED",
+    "expected_citation_integrity": "FABRICATED",
+    "min_grounding_score": 0.0
+  },
+  {
+    "id": "edit-003",
+    "name": "Tampered Number Under Citation",
+    "draft_text": "The framework reduced memory bandwidth by 85% during training [1].",
+    "sources": [
+      {
+        "id": "src-1",
+        "title": "Hardware Memory Optimization",
+        "extracted_content": "The framework reduced memory bandwidth by 35% during high-throughput training runs."
+      }
+    ],
+    "expected_claim_status": "UNSUPPORTED",
+    "expected_citation_integrity": "TAMPERED",
+    "min_grounding_score": 0.0
+  },
+  {
+    "id": "edit-004",
+    "name": "Missing Citation on Factual Statement",
+    "draft_text": "Cloud inference infrastructure costs grew by 140% across mid-market enterprise deployments in 2024.",
+    "sources": [
+      {
+        "id": "src-1",
+        "title": "Enterprise Cloud Survey",
+        "extracted_content": "Cloud inference infrastructure costs grew by 140% across mid-market enterprise deployments in 2024."
+      }
+    ],
+    "expected_claim_status": "SUPPORTED",
+    "expected_citation_integrity": "MISSING",
+    "min_grounding_score": 0.90
+  },
+  {
+    "id": "edit-005",
+    "name": "Orphaned Citation on Subjective Opinion",
+    "draft_text": "In our view, generative AI will revolutionize consumer media over the next decade [1].",
+    "sources": [
+      {
+        "id": "src-1",
+        "title": "Industry Trends",
+        "extracted_content": "Market research report detailing emerging media dynamics."
+      }
+    ],
+    "expected_claim_status": "NOT_VERIFIABLE",
+    "expected_citation_integrity": "ORPHANED",
+    "min_grounding_score": 1.0
+  }
+]

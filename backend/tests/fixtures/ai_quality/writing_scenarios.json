@@ -1,0 +1,37 @@
+[
+  {
+    "id": "write-001",
+    "name": "Meaning Preservation - Simplify",
+    "operation": "simplify",
+    "input_text": "The computational latency exhibited an anomalous surge to 450ms when batch size exceeded 64 concurrent streams [1].",
+    "expected_preserved_entities": ["450ms", "64"],
+    "expected_citation_tag": "[1]",
+    "requires_meaning_preservation": true
+  },
+  {
+    "id": "write-002",
+    "name": "Meaning Preservation - Executive Tone",
+    "operation": "executive_tone",
+    "input_text": "The company reported $12.4M ARR in Q3, up 38% year-over-year [2].",
+    "expected_preserved_entities": ["$12.4M", "Q3", "38%"],
+    "expected_citation_tag": "[2]",
+    "requires_meaning_preservation": true
+  },
+  {
+    "id": "write-003",
+    "name": "Hallucinated Claim Injection Rejection",
+    "operation": "expand",
+    "input_text": "Model latency decreased by 15% after quantization [1].",
+    "unsupported_addition": "Furthermore, the CEO confirmed a complete merger with Anthropic next month.",
+    "expected_detection": "UNSUPPORTED"
+  },
+  {
+    "id": "write-004",
+    "name": "Entity Preservation - Technical Terms",
+    "operation": "condense",
+    "input_text": "By replacing dense feed-forward networks with Mixture of Experts (MoE) routing, parameter activation was reduced by 60% without degrading perplexity [3].",
+    "expected_preserved_entities": ["Mixture of Experts", "MoE", "60%"],
+    "expected_citation_tag": "[3]",
+    "requires_meaning_preservation": true
+  }
+]

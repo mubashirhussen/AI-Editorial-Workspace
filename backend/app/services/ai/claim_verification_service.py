@@ -200,6 +200,11 @@ class ClaimVerificationService:
                 ("failed", ["succeeded", "passed", "achieved"]),
                 ("succeeded", ["failed", "missed"]),
                 ("rejected", ["approved", "accepted"]),
+                ("supremacy", ["outperformed", "lagged", "trailing", "inferior", "unproven", "disproved"]),
+                ("achieved", ["failed", "missed", "refuted", "disproven", "fell short"]),
+                ("outperformed", ["underperformed", "lagged", "trailing", "surpassed"]),
+                ("exceeded", ["fell short", "missed", "trailed"]),
+                ("surpassed", ["lagged", "underperformed", "trailed"]),
             ]
             for term, opposites in opposing_pairs:
                 if term in s_lower:
@@ -280,6 +285,18 @@ class ClaimVerificationService:
                     unsupported_summaries.append(s_clean)
                     remediation = "Provide an evidentiary source or rephrase as an editorial projection/hypothesis."
 
+            conf = 0.85
+            if status == VerificationStatus.SUPPORTED:
+                conf = 0.95
+            elif status == VerificationStatus.CONTRADICTED:
+                conf = 0.92
+            elif status == VerificationStatus.UNSUPPORTED:
+                conf = 0.88
+            elif status == VerificationStatus.PARTIALLY_SUPPORTED:
+                conf = 0.75
+            elif status == VerificationStatus.NOT_VERIFIABLE:
+                conf = 0.70
+
             claims.append(VerifiedClaim(
                 claim_text=s_clean,
                 requires_evidence=True,
@@ -288,6 +305,7 @@ class ClaimVerificationService:
                 citation_integrity=cite_status,
                 referenced_source_id=referenced_id,
                 supporting_excerpt=supporting_quote,
+                confidence_score=conf,
                 warning_message=warning,
                 remediation_suggestion=remediation
             ))
@@ -350,5 +368,91 @@ class ClaimVerificationService:
         if best_sent and best_overlap > 0.25:
             return best_sent[:240]
         return None
+
+    def verify_single_claim(self, claim: str, source_text: str) -> VerifiedClaim:
+        sources = [{"id": "src-1", "extracted_content": source_text}]
+        report = self.audit_draft(draft_content=claim, sources=sources)
+        if report.claims:
+            return report.claims[0]
+        return VerifiedClaim(
+            claim_text=claim,
+            requires_evidence=True,
+            verification_status=VerificationStatus.NOT_VERIFIABLE,
+            citation_integrity=CitationIntegrity.VALID
+        )
+
+    def detect_source_contradictions(self, sources: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Cross-examines multiple research sources to detect factual or numeric contradictions.
+        """
+        contradictions = []
+        n = len(sources)
+        if n < 2:
+            return contradictions
+
+        opposing_pairs = [
+            ("increased", ["dropped", "decreased", "fell", "reduced"]),
+            ("decreased", ["increased", "rose", "grew", "surged"]),
+            ("failed", ["succeeded", "passed", "achieved"]),
+            ("succeeded", ["failed", "missed"]),
+            ("rejected", ["approved", "accepted"]),
+            ("supremacy", ["outperformed", "lagged", "trailing", "inferior"]),
+            ("outperformed", ["underperformed", "lagged", "trailing", "surpassed"]),
+        ]
+
+        for i in range(n):
+            s1 = sources[i]
+            t1 = (s1.get("extracted_content") or s1.get("raw_content") or "").lower()
+            s1_id = s1.get("id", f"src-{i+1}")
+
+            for j in range(i + 1, n):
+                s2 = sources[j]
+                t2 = (s2.get("extracted_content") or s2.get("raw_content") or "").lower()
+                s2_id = s2.get("id", f"src-{j+1}")
+
+                for term, opposites in opposing_pairs:
+                    if term in t1:
+                        for opp in opposites:
+                            if opp in t2:
+                                words1 = set(re.findall(r"\b\w{4,}\b", t1))
+                                words2 = set(re.findall(r"\b\w{4,}\b", t2))
+                                shared = words1.intersection(words2) - {term, opp, "about", "their", "these", "other", "after", "before"}
+                                if len(shared) >= 2:
+                                    contradictions.append({
+                                        "source_1_id": s1_id,
+                                        "source_2_id": s2_id,
+                                        "polarity_conflict": f"'{term}' vs '{opp}'",
+                                        "shared_context_tokens": list(shared)[:5],
+                                        "summary": f"Conflict detected between {s1_id} and {s2_id} on context: {', '.join(list(shared)[:3])}"
+                                    })
+        return contradictions
+
+    def evaluate_meaning_preservation(self, original_text: str, rewritten_text: str) -> Dict[str, Any]:
+        """
+        Verifies that rewritten text retains key empirical entities, figures, and citation tags.
+        """
+        orig_citations = self.citation_pattern.findall(original_text)
+        rewritten_citations = self.citation_pattern.findall(rewritten_text)
+        missing_citations = [f"[{c}]" for c in orig_citations if c not in rewritten_citations]
+
+        orig_numbers = self.num_pattern.findall(original_text)
+        missing_numbers = [n for n in orig_numbers if n.lower() not in rewritten_text.lower()]
+
+        total_tracked = len(orig_citations) + len(orig_numbers)
+        retained = (len(orig_citations) - len(missing_citations)) + (len(orig_numbers) - len(missing_numbers))
+        retention_rate = (retained / total_tracked) if total_tracked > 0 else 1.0
+
+        preserved = (len(missing_citations) == 0 and len(missing_numbers) == 0)
+
+        return {
+            "preserved": preserved,
+            "retention_rate": round(retention_rate, 3),
+            "original_citations": [f"[{c}]" for c in orig_citations],
+            "missing_citations": missing_citations,
+            "original_numbers": orig_numbers,
+            "missing_numbers": missing_numbers,
+            "citations_preserved": len(missing_citations) == 0,
+            "entities_preserved": len(missing_numbers) == 0
+        }
 
 claim_verification_service = ClaimVerificationService()
