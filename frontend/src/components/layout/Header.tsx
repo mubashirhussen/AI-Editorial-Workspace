@@ -34,6 +34,9 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
     if (path.startsWith('/writing')) return 'Writing Assistant';
     if (path.startsWith('/editorial')) return 'Editorial Studio';
     if (path.startsWith('/projects')) return 'Research Projects';
+    if (path.startsWith('/organization')) return 'Organization & Workspace';
+    if (path.startsWith('/observability')) return 'AI Observability & Reliability';
+    if (path.startsWith('/profile')) return 'User Profile & Security';
     if (path.startsWith('/settings')) return 'Settings';
     return 'Editorial AI';
   };

@@ -186,8 +186,16 @@ export const ProjectsPage: React.FC = () => {
           {filteredProjects.map((p) => (
             <div
               key={p.id}
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/research?projectId=${p.id}`)}
-              className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(`/research?projectId=${p.id}`);
+                }
+              }}
+              className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">

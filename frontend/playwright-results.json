@@ -4,12 +4,7 @@
       "C:\\Program Files\\nodejs\\node.exe",
       "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "--config",
-      "frontend/playwright.config.ts",
-      "frontend/e2e/editorial-workflow.spec.ts",
-      "frontend/e2e/full-platform-journey.spec.ts",
-      "frontend/e2e/phase25-responsive-and-security.spec.ts",
-      "frontend/e2e/writing-workflow.spec.ts"
+      "e2e/phase28-frontend-integration.spec.ts"
     ],
     "configFile": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\playwright.config.ts",
     "rootDir": "C:/Users/Mubashirhussensk/OneDrive/Desktop/FDE intern/frontend/e2e",
@@ -123,20 +118,20 @@
   },
   "suites": [
     {
-      "title": "editorial-workflow.spec.ts",
-      "file": "editorial-workflow.spec.ts",
+      "title": "phase28-frontend-integration.spec.ts",
+      "file": "phase28-frontend-integration.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "Phase 21 - Editorial Studio End-User Workflow & Journey E2E",
-          "file": "editorial-workflow.spec.ts",
+          "title": "Phase 28: Frontend Implementation & User Interaction Validation",
+          "file": "phase28-frontend-integration.spec.ts",
           "line": 3,
           "column": 6,
           "specs": [
             {
-              "title": "1. Application Navigation & Editorial Studio Initial Load",
+              "title": "1. Breadcrumbs in Header reflect updated navigation titles for all routes",
               "ok": true,
               "tags": [],
               "tests": [
@@ -151,12 +146,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 9068,
+                      "duration": 18137,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:40:57.900Z",
+                      "startTime": "2026-11-18T11:47:31.175Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -164,14 +159,14 @@
                   "status": "expected"
                 }
               ],
-              "id": "dbd3bf28e25cd6c2a936-34bc151662e04eba2d4b",
-              "file": "editorial-workflow.spec.ts",
-              "line": 200,
+              "id": "35961298de03634fe4cb-0baa589ddf3faac77d60",
+              "file": "phase28-frontend-integration.spec.ts",
+              "line": 104,
               "column": 3
             },
             {
-              "title": "2. Project Context & Brief Loading",
-              "ok": true,
+              "title": "2. Projects page renders accessible project cards with role=\"button\" and keyboard support",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -184,28 +179,73 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1865,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 9732,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('div[role=\"button\"][tabindex=\"0\"]')\nExpected: \u001b[32m2\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('div[role=\"button\"][tabindex=\"0\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('div[role=\"button\"][tabindex=\"0\"]')\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('div[role=\"button\"][tabindex=\"0\"]')\nExpected: \u001b[32m2\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('div[role=\"button\"][tabindex=\"0\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('div[role=\"button\"][tabindex=\"0\"]')\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts:136:25",
+                        "location": {
+                          "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                          "column": 25,
+                          "line": 136
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 134 |\u001b[39m     \u001b[90m// Locate project cards\u001b[39m\n \u001b[90m 135 |\u001b[39m     \u001b[36mconst\u001b[39m cards \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'div[role=\"button\"][tabindex=\"0\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 136 |\u001b[39m     \u001b[36mawait\u001b[39m expect(cards)\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m2\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                         \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 137 |\u001b[39m\n \u001b[90m 138 |\u001b[39m     \u001b[90m// Verify content of first card\u001b[39m\n \u001b[90m 139 |\u001b[39m     \u001b[36mawait\u001b[39m expect(cards\u001b[33m.\u001b[39mfirst())\u001b[33m.\u001b[39mtoContainText(\u001b[32m'Phase 28 Quantum Architecture Investigation'\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                            "column": 25,
+                            "line": 136
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('div[role=\"button\"][tabindex=\"0\"]')\nExpected: \u001b[32m2\u001b[39m\nReceived: \u001b[31m0\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('div[role=\"button\"][tabindex=\"0\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('div[role=\"button\"][tabindex=\"0\"]')\u001b[22m\n\u001b[2m    14 × locator resolved to 0 elements\u001b[22m\n\u001b[2m       - unexpected value \"0\"\u001b[22m\n\n\n  134 |     // Locate project cards\n  135 |     const cards = page.locator('div[role=\"button\"][tabindex=\"0\"]');\n> 136 |     await expect(cards).toHaveCount(2);\n      |                         ^\n  137 |\n  138 |     // Verify content of first card\n  139 |     await expect(cards.first()).toContainText('Phase 28 Quantum Architecture Investigation');\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts:136:25"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:41:07.230Z",
+                      "startTime": "2026-11-18T11:47:52.887Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-973cc-button-and-keyboard-support-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-973cc-button-and-keyboard-support-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-973cc-button-and-keyboard-support-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-973cc-button-and-keyboard-support-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                        "column": 25,
+                        "line": 136
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "dbd3bf28e25cd6c2a936-8c8c211a4b587e25d813",
-              "file": "editorial-workflow.spec.ts",
-              "line": 206,
+              "id": "35961298de03634fe4cb-a9fedbea473808a7a75a",
+              "file": "phase28-frontend-integration.spec.ts",
+              "line": 130,
               "column": 3
             },
             {
-              "title": "3. Headline Selection & Parameter Controls",
-              "ok": true,
+              "title": "3. ConfirmDialog modal accessibility, escape dismissal, and backdrop handling",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -216,30 +256,67 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 1,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1890,
-                      "errors": [],
+                      "status": "timedOut",
+                      "duration": 34529,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                            "column": 21,
+                            "line": 159
+                          },
+                          "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button[title=\"Delete project\"]').first()\u001b[22m\n\n\n  157 |     // Trigger delete button on first card\n  158 |     const deleteBtn = page.locator('button[title=\"Delete project\"]').first();\n> 159 |     await deleteBtn.click();\n      |                     ^\n  160 |\n  161 |     // Confirm dialog should be visible\n  162 |     const dialog = page.locator('div[role=\"dialog\"][aria-modal=\"true\"]');\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts:159:21"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:41:09.233Z",
+                      "startTime": "2026-11-18T11:48:19.386Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-41fbf-issal-and-backdrop-handling-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-41fbf-issal-and-backdrop-handling-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-41fbf-issal-and-backdrop-handling-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-41fbf-issal-and-backdrop-handling-chromium\\trace.zip"
+                        }
+                      ]
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "dbd3bf28e25cd6c2a936-584dd9f4e9bf276ffd10",
-              "file": "editorial-workflow.spec.ts",
-              "line": 213,
+              "id": "35961298de03634fe4cb-3e2834920c88deebffc0",
+              "file": "phase28-frontend-integration.spec.ts",
+              "line": 153,
               "column": 3
             },
             {
-              "title": "4. Editorial Generation & Content Display",
-              "ok": true,
+              "title": "4. User Profile Menu renders avatar, organization, role badge and modal navigation",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -250,29 +327,74 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1271,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 12254,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('button[aria-label=\"User Profile Menu\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('button[aria-label=\"User Profile Menu\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button[aria-label=\"User Profile Menu\"]')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('button[aria-label=\"User Profile Menu\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('button[aria-label=\"User Profile Menu\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button[aria-label=\"User Profile Menu\"]')\u001b[22m\n\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts:184:34",
+                        "location": {
+                          "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                          "column": 34,
+                          "line": 184
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 182 |\u001b[39m     \u001b[90m// Find and click profile trigger\u001b[39m\n \u001b[90m 183 |\u001b[39m     \u001b[36mconst\u001b[39m profileTrigger \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mlocator(\u001b[32m'button[aria-label=\"User Profile Menu\"]'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 184 |\u001b[39m     \u001b[36mawait\u001b[39m expect(profileTrigger)\u001b[33m.\u001b[39mtoBeVisible()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 185 |\u001b[39m     \u001b[36mawait\u001b[39m profileTrigger\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m 186 |\u001b[39m\n \u001b[90m 187 |\u001b[39m     \u001b[90m// Verify dropdown menu content\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                            "column": 34,
+                            "line": 184
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('button[aria-label=\"User Profile Menu\"]')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" locator('button[aria-label=\"User Profile Menu\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('button[aria-label=\"User Profile Menu\"]')\u001b[22m\n\n\n  182 |     // Find and click profile trigger\n  183 |     const profileTrigger = page.locator('button[aria-label=\"User Profile Menu\"]');\n> 184 |     await expect(profileTrigger).toBeVisible();\n      |                                  ^\n  185 |     await profileTrigger.click();\n  186 |\n  187 |     // Verify dropdown menu content\n    at C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts:184:34"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:41:11.195Z",
+                      "startTime": "2026-11-18T11:49:06.090Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-5de48--badge-and-modal-navigation-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-5de48--badge-and-modal-navigation-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-5de48--badge-and-modal-navigation-chromium\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\test-results\\phase28-frontend-integrati-5de48--badge-and-modal-navigation-chromium\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Mubashirhussensk\\OneDrive\\Desktop\\FDE intern\\frontend\\e2e\\phase28-frontend-integration.spec.ts",
+                        "column": 34,
+                        "line": 184
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "dbd3bf28e25cd6c2a936-19ff9d5f8171068e2986",
-              "file": "editorial-workflow.spec.ts",
-              "line": 220,
+              "id": "35961298de03634fe4cb-c8e8a4aaf636b7ce6341",
+              "file": "phase28-frontend-integration.spec.ts",
+              "line": 178,
               "column": 3
             },
             {
-              "title": "5. View Mode Switching (Editor, Preview, Review)",
+              "title": "5. ErrorBoundary gracefully surrounds application root and handles module views",
               "ok": true,
               "tags": [],
               "tests": [
@@ -284,15 +406,15 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2452,
+                      "duration": 4149,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-11-18T10:41:12.529Z",
+                      "startTime": "2026-11-18T11:49:22.895Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -300,332 +422,9 @@
                   "status": "expected"
                 }
               ],
-              "id": "dbd3bf28e25cd6c2a936-2ea86db1f8eff287d24e",
-              "file": "editorial-workflow.spec.ts",
-              "line": 229,
-              "column": 3
-            },
-            {
-              "title": "6. Export Menu & Multi-Format Options (MD, TXT, HTML, JSON)",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2625,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:15.054Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "dbd3bf28e25cd6c2a936-4a04ea4f00f4e62686a8",
-              "file": "editorial-workflow.spec.ts",
-              "line": 241,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "full-platform-journey.spec.ts",
-      "file": "full-platform-journey.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Phase 24 - Full-Platform Cross-Module Integration E2E",
-          "file": "full-platform-journey.spec.ts",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "1. Cross-Module Navigation: Editorial Studio and Project Loading",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2167,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:17.816Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e7f9d08c7ab2fbd98347-4a19eee3605975a798cb",
-              "file": "full-platform-journey.spec.ts",
-              "line": 204,
-              "column": 3
-            },
-            {
-              "title": "2. Cross-Module Navigation: Writing Assistant & Deterministic Analysis",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2430,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:20.050Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e7f9d08c7ab2fbd98347-fda480afee17b5313005",
-              "file": "full-platform-journey.spec.ts",
-              "line": 211,
-              "column": 3
-            },
-            {
-              "title": "3. Cross-Module Navigation: Editorial Review and Quality Controls",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1763,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:22.523Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e7f9d08c7ab2fbd98347-2defb678adb267e6946e",
-              "file": "full-platform-journey.spec.ts",
-              "line": 218,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "phase25-responsive-and-security.spec.ts",
-      "file": "phase25-responsive-and-security.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Phase 25 - Independent Responsive & Multi-Device Validation",
-          "file": "phase25-responsive-and-security.spec.ts",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "Desktop Viewport (1280x800): Full layout rendering and navigation",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1491,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:24.339Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "a7e75eb5663acd82a603-2124216b54f47ae8403a",
-              "file": "phase25-responsive-and-security.spec.ts",
-              "line": 95,
-              "column": 3
-            },
-            {
-              "title": "Tablet Viewport (768x1024): Responsive layout and drawer navigation",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1398,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:25.847Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "a7e75eb5663acd82a603-435816c6179c7a7d8313",
-              "file": "phase25-responsive-and-security.spec.ts",
-              "line": 114,
-              "column": 3
-            },
-            {
-              "title": "Mobile Viewport (375x667): Compact UI, collapsible panels, and clean touch targets",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 1347,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:27.264Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "a7e75eb5663acd82a603-463d6fb1068260f80cf0",
-              "file": "phase25-responsive-and-security.spec.ts",
-              "line": 128,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "writing-workflow.spec.ts",
-      "file": "writing-workflow.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "Phase 23 Writing Assistant Workflow & Production Hardening",
-          "file": "writing-workflow.spec.ts",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "completes full end-to-end writing assistant workflow",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3688,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-11-18T10:41:28.665Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "d65e329e2b34bf89abe3-1d5410c54ece1327ae78",
-              "file": "writing-workflow.spec.ts",
-              "line": 219,
+              "id": "35961298de03634fe4cb-e44e4d0eb248b4889b34",
+              "file": "phase28-frontend-integration.spec.ts",
+              "line": 205,
               "column": 3
             }
           ]
@@ -635,11 +434,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-11-18T10:40:51.648Z",
-    "duration": 41483.483,
-    "expected": 13,
+    "startTime": "2026-11-18T11:47:26.310Z",
+    "duration": 123742.79999999999,
+    "expected": 2,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 3,
     "flaky": 0
   }
 }

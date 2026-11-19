@@ -36,6 +36,7 @@ const ProfilePage = lazy(() =>
 );
 import { AuthProvider } from './context/AuthContext';
 import { HealthProvider } from './context/HealthContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const ViewSuspenseFallback: React.FC = () => (
   <div className="flex h-[60vh] w-full items-center justify-center p-8">
@@ -48,7 +49,8 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <HealthProvider>
         <AuthProvider>
-          <Routes>
+          <ErrorBoundary>
+            <Routes>
           <Route
             path="/login"
             element={
@@ -192,6 +194,7 @@ export const App: React.FC = () => {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
+      </ErrorBoundary>
       </AuthProvider>
     </HealthProvider>
   </BrowserRouter>
