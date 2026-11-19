@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.models.base import EditorialOutput, EditorialReview, EditorialComment, User, utc_now
-from backend.app.schemas.auth import OrgPermission
+from backend.app.schemas.auth import OrgPermission, has_permission
 from backend.app.api.deps import get_current_user
 from backend.app.api.v1.endpoints.projects import check_project_tenant_access
 from backend.app.schemas.editorial_review import (
@@ -253,20 +253,27 @@ def approve_editorial(
     if not editorial:
         raise HTTPException(status_code=404, detail="Editorial not found.")
     if editorial.project:
-        membership = check_project_tenant_access(db, editorial.project, current_user, OrgPermission.APPROVE_EDITORIALS)
+        membership = check_project_tenant_access(db, editorial.project, current_user, OrgPermission.VIEW_CONTENT)
         
-        # Self-approval guard: If the user drafted this edition and holds an EDITOR role without OWNER/ADMIN status,
-        # require independent peer review approval
+        # Self-approval guard: Authors cannot approve their own editorial drafts without independent peer review
+        # (Owners retain administrative override if needed, but authors cannot self-approve)
         if (
             editorial.draft 
             and hasattr(editorial.draft, "author_id") 
             and editorial.draft.author_id == current_user.id
             and membership 
-            and membership.role == "EDITOR"
+            and membership.role != "OWNER"
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Authors cannot approve their own editorial drafts without independent peer review."
+            )
+
+        if not membership or not has_permission(membership.role, OrgPermission.APPROVE_EDITORIALS):
+            role_name = membership.role if membership else "UNKNOWN"
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{role_name}' lacks permission 'approve_editorials' for this project's workspace."
             )
 
     authenticated_reviewer = current_user.full_name or current_user.email or req.reviewer_name

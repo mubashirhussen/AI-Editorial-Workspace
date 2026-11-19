@@ -45,6 +45,7 @@ from backend.app.schemas.auth import (
     PasswordStrengthCheckResponse,
 )
 from backend.app.api.deps import get_current_user
+from backend.app.services.audit_service import audit_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -215,6 +216,16 @@ def register_user(
     db.refresh(new_user)
     db.refresh(new_org)
 
+    audit_service.log_event(
+        db=db,
+        event_type="auth.register.success",
+        user=new_user,
+        organization_id=new_org.id,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        metadata={"role": new_user.role, "org_name": new_org.name}
+    )
+
     org_resp = OrganizationResponse(
         id=new_org.id,
         name=new_org.name,
@@ -250,6 +261,14 @@ def login_user(
     # Generic authentication failure (prevents email enumeration)
     if not user or not verify_password(payload.password, user.hashed_password):
         record_login_failure(client_ip)
+        audit_service.log_event(
+            db=db,
+            event_type="auth.login.failure",
+            actor_email=email_clean,
+            ip_address=client_ip,
+            user_agent=request.headers.get("user-agent", "Unknown")[:250],
+            metadata={"reason": "invalid_credentials"}
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password."
@@ -296,6 +315,16 @@ def login_user(
     membership = db.query(OrganizationMembership).filter(
         OrganizationMembership.user_id == user.id
     ).order_by(OrganizationMembership.joined_at.asc()).first()
+
+    audit_service.log_event(
+        db=db,
+        event_type="auth.login.success",
+        user=user,
+        organization_id=membership.organization_id if membership else None,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        metadata={"remember_me": payload.remember_me}
+    )
 
     org_resp = None
     if membership and membership.organization:
@@ -344,6 +373,7 @@ def get_current_user_profile(
 
 @router.post("/logout")
 def logout_user(
+    request: Request,
     authorization: str = Header(...),
     db: Session = Depends(get_db)
 ):
@@ -355,6 +385,17 @@ def logout_user(
         t_hash = hash_token(token)
         db.query(UserSession).filter(UserSession.token_hash == t_hash).update({"is_revoked": True})
         db.commit()
+
+        payload = decode_access_token(token)
+        user_id = payload.get("sub") if payload else None
+        audit_service.log_event(
+            db=db,
+            event_type="auth.logout",
+            actor_email=payload.get("email") if payload else None,
+            ip_address=request.client.host if request.client else "127.0.0.1",
+            user_agent=request.headers.get("user-agent", "Unknown")[:250],
+            metadata={"user_id": user_id}
+        )
     return {"message": "Logged out successfully."}
 
 
@@ -479,6 +520,14 @@ def reset_password(
     db.query(UserSession).filter(UserSession.user_id == user.id).update({"is_revoked": True})
     db.commit()
 
+    audit_service.log_event(
+        db=db,
+        event_type="auth.password_reset.completed",
+        user=user,
+        actor_email=user.email,
+        metadata={"sessions_revoked": True}
+    )
+
     return {"success": True, "message": "Password successfully reset. All previous sessions have been invalidated."}
 
 
@@ -505,6 +554,14 @@ def change_password(
 
     current_user.hashed_password = hash_password(payload.new_password)
     db.commit()
+
+    audit_service.log_event(
+        db=db,
+        event_type="auth.password_change.completed",
+        user=current_user,
+        actor_email=current_user.email,
+        metadata={"success": True}
+    )
     return {"success": True, "message": "Password changed successfully."}
 
 

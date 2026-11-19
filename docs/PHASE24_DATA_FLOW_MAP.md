@@ -82,3 +82,4 @@ This document formalizes the entity relationships, foreign key constraints, casc
   3. Transitions status from `HUMAN_REVIEW_PENDING` $\to$ `APPROVED` $\to$ `FINALIZED`.
   4. Creates version snapshot in `EditorialVersion` documenting transition notes and reviewer identity.
   5. Subsequent write operations are rejected with HTTP 400 (`Cannot revise finalized editorial`).
+
