@@ -9,12 +9,23 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 
-from backend.app.core.database import get_db
-from backend.app.models.base import User, Organization, ProviderUsageRecord
+from backend.app.core.database import get_db, check_db_health
+from backend.app.models.base import (
+    User,
+    Organization,
+    ProviderUsageRecord,
+    ResearchProject,
+    Source,
+    WritingDraft,
+    EditorialOutput,
+    EditorialReview,
+    UserFeedback
+)
 from backend.app.api.deps import get_current_user, get_active_organization
 from backend.app.services.ai.pricing import calculate_estimated_cost
 from backend.app.services.ai.prompt_registry import prompt_registry
 from backend.app.services.ai.claim_verification_service import claim_verification_service
+from backend.app.services.monitoring_service import monitoring_service
 from backend.app.evaluation.runners.runner import EvaluationRunner
 
 router = APIRouter(prefix="/observability", tags=["AI Reliability & Observability"])
@@ -181,3 +192,67 @@ def verify_claim_evidence(
 
     report = claim_verification_service.audit_draft(content, sources)
     return report.model_dump()
+
+
+@router.get("/system-health", summary="Comprehensive operational health & quality overview")
+def get_system_health_overview(
+    current_user: User = Depends(get_current_user),
+    org: Optional[Organization] = Depends(get_active_organization),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns unified health, database metrics, AI operational reliability,
+    workflow throughput, and feedback triage metrics.
+    """
+    db_health = check_db_health()
+    telemetry = monitoring_service.get_telemetry_summary()
+
+    org_id = org.id if org else None
+
+    # Database entity counts
+    project_query = db.query(ResearchProject)
+    source_query = db.query(Source)
+    draft_query = db.query(WritingDraft)
+    editorial_query = db.query(EditorialOutput)
+    feedback_query = db.query(UserFeedback)
+
+    if org_id:
+        project_query = project_query.filter(ResearchProject.organization_id == org_id)
+        source_query = source_query.join(ResearchProject).filter(ResearchProject.organization_id == org_id)
+        draft_query = draft_query.filter(WritingDraft.organization_id == org_id)
+        editorial_query = editorial_query.join(ResearchProject).filter(ResearchProject.organization_id == org_id)
+        feedback_query = feedback_query.filter(UserFeedback.organization_id == org_id)
+
+    total_projects = project_query.count()
+    total_sources = source_query.count()
+    sources_failed = source_query.filter(Source.extraction_status == "failed").count()
+    sources_completed = source_query.filter(Source.extraction_status == "completed").count()
+
+    total_drafts = draft_query.count()
+    total_editorials = editorial_query.count()
+
+    total_feedback = feedback_query.count()
+    open_feedback = feedback_query.filter(UserFeedback.status.in_(["NEW", "TRIAGED", "IN_PROGRESS"])).count()
+    resolved_feedback = feedback_query.filter(UserFeedback.status == "RESOLVED").count()
+
+    return {
+        "status": "healthy" if db_health.get("status") == "healthy" else "degraded",
+        "database": {
+            "status": db_health.get("status", "unknown"),
+            "latency_ms": db_health.get("latency_ms", 0.0),
+            "total_projects": total_projects,
+            "total_sources": total_sources,
+            "sources_completed": sources_completed,
+            "sources_failed": sources_failed,
+            "total_drafts": total_drafts,
+            "total_editorials": total_editorials
+        },
+        "ai_telemetry": telemetry.get("ai_telemetry", {}),
+        "feedback_triage": {
+            "total_feedback": total_feedback,
+            "open_feedback": open_feedback,
+            "resolved_feedback": resolved_feedback
+        },
+        "recent_events": telemetry.get("recent_events", [])
+    }
+

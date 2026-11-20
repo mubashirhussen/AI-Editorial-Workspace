@@ -178,3 +178,18 @@ def require_permission(permission: OrgPermission):
             )
         return org
     return permission_checker
+
+
+def get_current_user_optional(
+    request: Request,
+    db: Session = Depends(get_db),
+    authorization: Optional[str] = Header(None)
+) -> Optional[User]:
+    """
+    Attempts to extract and authenticate user from Bearer JWT.
+    Returns None if no token or invalid credentials provided (non-blocking).
+    """
+    try:
+        return get_current_user(request, db, authorization)
+    except Exception:
+        return None

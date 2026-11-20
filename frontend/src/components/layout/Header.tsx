@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Moon, Sun, Menu, AlertCircle, AlertTriangle, CheckCircle2, RefreshCw, Lock } from 'lucide-react';
+import { Search, Moon, Sun, Menu, AlertCircle, AlertTriangle, CheckCircle2, RefreshCw, Lock, MessageSquarePlus } from 'lucide-react';
 import { useHealth } from '../../context/HealthContext';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { UserProfileMenu } from './UserProfileMenu';
+import { FeedbackModal } from '../common/FeedbackModal';
 
 interface HeaderProps {
   currentProjectTitle?: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMobileNav }) => {
   const [isDark, setIsDark] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { status, health, recheckHealth, isBackendHealthy } = useHealth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -139,6 +141,16 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
           />
         </div>
 
+        {/* Feedback Button */}
+        <button
+          onClick={() => setIsFeedbackOpen(true)}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-xl transition-colors"
+          title="Report defect or submit feedback"
+        >
+          <MessageSquarePlus className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Feedback</span>
+        </button>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -151,6 +163,12 @@ export const Header: React.FC<HeaderProps> = ({ currentProjectTitle, onToggleMob
         {/* User Profile on the top-right corner */}
         <UserProfileMenu />
       </div>
+
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        defaultModule={location.pathname.replace('/', '') || 'dashboard'}
+      />
     </header>
   );
 };
