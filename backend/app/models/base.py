@@ -861,3 +861,121 @@ class AnalyticsPrivacyPreference(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
 
+class ProductIntelligenceInsight(Base):
+    __tablename__ = "product_intelligence_insights"
+    __table_args__ = (
+        Index("ix_intel_insight_org_cat", "organization_id", "category"),
+        Index("ix_intel_insight_org_status", "organization_id", "status"),
+        Index("ix_intel_insight_created", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    category = Column(String(50), nullable=False, index=True)
+    severity = Column(String(20), default="medium", nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    detected_pattern = Column(String(255), nullable=False)
+    evidence_json = Column(JSON, default=dict, nullable=False)
+    metrics_json = Column(JSON, default=dict, nullable=False)
+    confidence_score = Column(Float, default=0.85, nullable=False)
+    status = Column(String(30), default="ACTIVE", nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    recommendations = relationship("ProductIntelligenceRecommendation", back_populates="insight", cascade="all, delete-orphan")
+
+
+class ProductIntelligenceRecommendation(Base):
+    __tablename__ = "product_intelligence_recommendations"
+    __table_args__ = (
+        Index("ix_intel_rec_org_priority", "organization_id", "priority"),
+        Index("ix_intel_rec_org_status", "organization_id", "status"),
+        Index("ix_intel_rec_category", "category"),
+        Index("ix_intel_rec_created", "created_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    insight_id = Column(String(36), ForeignKey("product_intelligence_insights.id", ondelete="CASCADE"), nullable=True, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    category = Column(String(50), nullable=False, index=True)
+    priority = Column(String(20), default="MEDIUM", nullable=False, index=True)  # CRITICAL, HIGH, MEDIUM, LOW
+    severity = Column(String(20), default="medium", nullable=False)  # low, medium, high, critical
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    proposed_action = Column(Text, nullable=False)
+    expected_benefit = Column(Text, nullable=False)
+    estimated_effort = Column(String(20), default="MEDIUM", nullable=False)  # LOW, MEDIUM, HIGH
+    risk_level = Column(String(20), default="LOW", nullable=False)  # LOW, MEDIUM, HIGH
+    confidence_score = Column(Float, default=0.85, nullable=False)
+    status = Column(String(30), default="READY", nullable=False, index=True)
+    assigned_to = Column(String(255), nullable=True)
+    implementation_notes = Column(Text, nullable=True)
+    is_automated = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    insight = relationship("ProductIntelligenceInsight", back_populates="recommendations")
+    evaluations = relationship("RecommendationImpactEvaluation", back_populates="recommendation", cascade="all, delete-orphan")
+    feedback_entries = relationship("RecommendationFeedback", back_populates="recommendation", cascade="all, delete-orphan")
+    actions = relationship("ProductIntelligenceAction", back_populates="recommendation", cascade="all, delete-orphan")
+
+
+class ProductIntelligenceAction(Base):
+    __tablename__ = "product_intelligence_actions"
+    __table_args__ = (
+        Index("ix_intel_action_org_rec", "organization_id", "recommendation_id"),
+        Index("ix_intel_action_status", "status"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    recommendation_id = Column(String(36), ForeignKey("product_intelligence_recommendations.id", ondelete="CASCADE"), nullable=True, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    action_type = Column(String(100), nullable=False)
+    action_payload = Column(JSON, default=dict, nullable=False)
+    status = Column(String(30), default="PENDING", nullable=False)  # PENDING, EXECUTED, FAILED, ROLLED_BACK
+    executed_by = Column(String(255), nullable=True)
+    audit_trail_json = Column(JSON, default=list, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    recommendation = relationship("ProductIntelligenceRecommendation", back_populates="actions")
+
+
+class RecommendationImpactEvaluation(Base):
+    __tablename__ = "recommendation_impact_evaluations"
+    __table_args__ = (
+        Index("ix_rec_eval_rec", "recommendation_id"),
+        Index("ix_rec_eval_org_status", "organization_id", "evaluation_status"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    recommendation_id = Column(String(36), ForeignKey("product_intelligence_recommendations.id", ondelete="CASCADE"), nullable=False, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    baseline_metrics_json = Column(JSON, default=dict, nullable=False)
+    current_metrics_json = Column(JSON, default=dict, nullable=False)
+    metric_delta_json = Column(JSON, default=dict, nullable=False)
+    evaluation_status = Column(String(30), default="NOT_EVALUATED", nullable=False)
+    notes = Column(Text, nullable=True)
+    evaluated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    recommendation = relationship("ProductIntelligenceRecommendation", back_populates="evaluations")
+
+
+class RecommendationFeedback(Base):
+    __tablename__ = "recommendation_feedback"
+    __table_args__ = (
+        Index("ix_rec_feedback_rec_user", "recommendation_id", "user_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    recommendation_id = Column(String(36), ForeignKey("product_intelligence_recommendations.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    feedback_type = Column(String(50), nullable=False)  # helpful, irrelevant, inaccurate_evidence, implemented, difficult
+    rating = Column(Integer, default=5, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    recommendation = relationship("ProductIntelligenceRecommendation", back_populates="feedback_entries")
+
+
+

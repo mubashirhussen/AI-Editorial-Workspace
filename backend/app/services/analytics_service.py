@@ -178,6 +178,7 @@ class AnalyticsService:
         properties: Optional[Dict[str, Any]] = None,
         client_event_id: Optional[str] = None,
         occurred_at: Optional[datetime] = None,
+        skip_dedup: bool = False,
     ) -> Optional[AnalyticsEvent]:
         """
         Authoritative event recorder.
@@ -206,21 +207,24 @@ class AnalyticsService:
             now = occurred_at or datetime.now(timezone.utc)
 
             # 5. Deduplication check (within 2-minute time window for identical actions)
-            minute_bucket = now.strftime("%Y%m%d%H%M")
-            dedup_payload = f"{organization_id or 'anon'}:{event_name}:{workflow_id or 'none'}:{session_id or 'none'}:{minute_bucket}"
-            dedup_hash = hashlib.sha256(dedup_payload.encode("utf-8")).hexdigest()
+            if not skip_dedup:
+                minute_bucket = now.strftime("%Y%m%d%H%M")
+                dedup_payload = f"{organization_id or 'anon'}:{event_name}:{workflow_id or 'none'}:{session_id or 'none'}:{minute_bucket}"
+                dedup_hash = hashlib.sha256(dedup_payload.encode("utf-8")).hexdigest()
 
-            # Check if this deduplication hash was recorded in the last 5 minutes
-            five_min_ago = now - timedelta(minutes=5)
-            existing = db.query(AnalyticsEvent.id).filter(
-                AnalyticsEvent.dedup_hash == dedup_hash,
-                AnalyticsEvent.created_at >= five_min_ago
-            ).first()
+                # Check if this deduplication hash was recorded in the last 5 minutes
+                five_min_ago = now - timedelta(minutes=5)
+                existing = db.query(AnalyticsEvent.id).filter(
+                    AnalyticsEvent.dedup_hash == dedup_hash,
+                    AnalyticsEvent.created_at >= five_min_ago
+                ).first()
 
-            if existing:
-                cls._deduplicated_count += 1
-                logger.debug(f"Analytics event '{event_name}' deduplicated by hash {dedup_hash[:8]}")
-                return None
+                if existing:
+                    cls._deduplicated_count += 1
+                    logger.debug(f"Analytics event '{event_name}' deduplicated by hash {dedup_hash[:8]}")
+                    return None
+            else:
+                dedup_hash = str(uuid.uuid4())
 
             # 6. Create and persist AnalyticsEvent
             event = AnalyticsEvent(
@@ -273,16 +277,77 @@ class AnalyticsService:
     ) -> Optional[UsageEvent]:
         """Legacy helper maintained for backward compatibility with earlier tests."""
         status = "completed" if metric_value > 0 else "failed"
+        clean_meta, _ = cls.sanitize_properties(metadata)
         event = cls.record_event(
             db=db,
             event_name=metric_name,
             organization_id=organization_id,
             status=status,
-            properties=metadata
+            properties=clean_meta,
+            skip_dedup=True,
         )
-        if event:
-            return db.query(UsageEvent).filter(UsageEvent.organization_id == organization_id).order_by(desc(UsageEvent.timestamp)).first()
-        return None
+        usage = UsageEvent(
+            id=str(uuid.uuid4()),
+            organization_id=organization_id,
+            metric_name=metric_name,
+            metric_value=metric_value,
+            tags_json=clean_meta,
+        )
+        db.add(usage)
+        db.commit()
+        return usage
+
+    @classmethod
+    def get_funnel_summary(cls, db: Session, organization_id: Optional[str] = None) -> Dict[str, Any]:
+        """Provides funnel counters and synthesis/generation conversion rates for legacy analytics callers."""
+        q = db.query(AnalyticsEvent)
+        if organization_id:
+            q = q.filter((AnalyticsEvent.organization_id == organization_id) | (AnalyticsEvent.organization_id == None))
+        events = q.all()
+
+        sources = sum(1 for e in events if e.event_name in ("source_processed", "research_source_added", "research_source_processing_completed"))
+        briefs = sum(1 for e in events if e.event_name in ("brief_generated", "research_brief_generation_completed"))
+        drafts = sum(1 for e in events if e.event_name in ("draft_created", "writing_draft_created"))
+        improved = sum(1 for e in events if e.event_name in ("writing_improved", "writing_assistance_completed"))
+        exports = sum(1 for e in events if e.event_name in ("export_executed", "research_brief_exported", "writing_draft_exported", "editorial_exported"))
+        failures = sum(1 for e in events if e.event_name in ("workflow_failed", "research_source_processing_failed", "research_brief_generation_failed", "writing_assistance_failed", "editorial_generation_failed"))
+        total = len(events)
+
+        research_synthesis_rate = round((briefs / max(sources, 1)) * 100.0, 1) if sources > 0 else 0.0
+        draft_generation_rate = round((drafts / max(briefs, 1)) * 100.0, 1) if briefs > 0 else 0.0
+
+        return {
+            "sources_processed": sources,
+            "briefs_generated": briefs,
+            "drafts_created": drafts,
+            "writing_improved": improved,
+            "exports_executed": exports,
+            "workflow_failures": failures,
+            "total_events": total,
+            "research_synthesis_rate": research_synthesis_rate,
+            "draft_generation_rate": draft_generation_rate,
+        }
+
+    @classmethod
+    def get_recent_events(cls, db: Session, organization_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+        """Returns recent events formatted for legacy consumers."""
+        q = db.query(AnalyticsEvent)
+        if organization_id:
+            q = q.filter((AnalyticsEvent.organization_id == organization_id) | (AnalyticsEvent.organization_id == None))
+        events = q.order_by(desc(AnalyticsEvent.occurred_at)).limit(limit).all()
+
+        results = []
+        for e in events:
+            results.append({
+                "id": e.id,
+                "metric_name": e.event_name,
+                "event_name": e.event_name,
+                "workflow_type": e.workflow_type,
+                "status": e.status,
+                "metadata": e.properties_json or {},
+                "created_at": e.occurred_at.isoformat() if e.occurred_at else None,
+            })
+        return results
 
     # Aggregations & Query Services
     @classmethod

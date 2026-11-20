@@ -31,6 +31,9 @@ const ObservabilityPage = lazy(() =>
 const AnalyticsPage = lazy(() =>
   import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
 );
+const IntelligencePage = lazy(() =>
+  import('./pages/IntelligencePage').then((m) => ({ default: m.IntelligencePage }))
+);
 const AuthPage = lazy(() =>
   import('./pages/AuthPage').then((m) => ({ default: m.AuthPage }))
 );
@@ -181,6 +184,14 @@ export const App: React.FC = () => {
               element={
                 <Suspense fallback={<ViewSuspenseFallback />}>
                   <AnalyticsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/intelligence"
+              element={
+                <Suspense fallback={<ViewSuspenseFallback />}>
+                  <IntelligencePage />
                 </Suspense>
               }
             />

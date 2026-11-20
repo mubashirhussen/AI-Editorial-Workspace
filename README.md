@@ -4,11 +4,11 @@
 
 Developed for the **Forward Deployed Engineer (FDE) Intern** technical evaluation at *This Week in AI*.
 
-[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-318%2F318%20Passed%20(100%25)-emerald)](docs/PHASE_37_IMPLEMENTATION_REPORT.md)
+[![Automated Regression Suite](https://img.shields.io/badge/Backend%20Tests-326%2F326%20Passed%20(100%25)-emerald)](docs/PHASE_38_IMPLEMENTATION_REPORT.md)
 [![Offline AI Benchmarks](https://img.shields.io/badge/AI%20Benchmarks-100%25%20Verified%20(8%2F8)-blue)](docs/PHASE_31_AI_EVALUATION_REPORT.md)
 [![Frontend Production Build](https://img.shields.io/badge/Vite%20Build-Clean%20(0%20Errors)-brightgreen)](frontend/dist)
-[![Phase 37 Product Analytics](https://img.shields.io/badge/Status-Product%20Analytics%20%26%20User%20Journeys%20Active-brightgreen)](docs/PHASE_37_IMPLEMENTATION_REPORT.md)
-[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase37--product--analytics--user--journeys-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
+[![Phase 38 AI Product Intelligence](https://img.shields.io/badge/Status-AI%20Product%20Intelligence%20Active-brightgreen)](docs/PHASE_38_IMPLEMENTATION_REPORT.md)
+[![Branch](https://img.shields.io/badge/Branch-feat%2Fphase38--ai--product--intelligence-indigo)](https://github.com/mubashirhussen/AI-Editorial-Workspace)
 
 ---
 
@@ -505,7 +505,13 @@ All automated test suites, quality gates, and static analysis checks execute wit
 $env:PYTHONPATH="."
 backend\venv\Scripts\pytest.exe backend/tests/ -q
 ```
-*Output: `318 passed, 11 warnings in 298.42s (0:04:58)`*
+*Output: `326 passed, 12 warnings in 126.82s (0:02:06)`*
+
+### Running Phase 38 AI Product Intelligence Tests:
+```powershell
+backend\venv\Scripts\pytest.exe backend/tests/test_phase38_product_intelligence.py -v
+```
+*Output: `8 passed in 4.25s (100.0%)`*
 
 ### Running Phase 37 Product Analytics Tests:
 ```powershell
@@ -523,7 +529,7 @@ backend\venv\Scripts\pytest.exe backend/tests/test_phase33_evaluator_defense.py 
 ```powershell
 npm --prefix frontend run build
 ```
-*Output: `✓ built in 10.50s (0 errors)`*
+*Output: `✓ built in 10.15s (0 errors)`*
 
 ---
 
@@ -554,6 +560,13 @@ The repository includes the complete, production-hardened assessment package und
 | **Phase 37 User Journey Analysis** | [`docs/PHASE_37_USER_JOURNEY_ANALYSIS.md`](docs/PHASE_37_USER_JOURNEY_ANALYSIS.md) | Quantitative journey analysis across research, writing, and editorial pipelines with bottleneck detection. |
 | **Phase 37 Analytics Security Audit** | [`docs/PHASE_37_ANALYTICS_SECURITY_AUDIT.md`](docs/PHASE_37_ANALYTICS_SECURITY_AUDIT.md) | Threat modeling, tenant isolation guarantees, deduplication, and non-blocking failure resilience. |
 | **Phase 37 Implementation Report** | [`docs/PHASE_37_IMPLEMENTATION_REPORT.md`](docs/PHASE_37_IMPLEMENTATION_REPORT.md) | Master Phase 37 engineering report, acceptance criteria verification, and test results. |
+| **Phase 38 Initial Audit** | [`docs/PHASE_38_INITIAL_AUDIT.md`](docs/PHASE_38_INITIAL_AUDIT.md) | Pre-implementation evaluation of Phase 37 analytics telemetry, sample size readiness, and baseline gaps. |
+| **Phase 38 Intelligence Architecture** | [`docs/PHASE_38_INTELLIGENCE_ARCHITECTURE.md`](docs/PHASE_38_INTELLIGENCE_ARCHITECTURE.md) | End-to-end intelligence system architecture, pipeline data flow, components, and multi-tenant isolation. |
+| **Phase 38 Insight Rules Specification** | [`docs/PHASE_38_INSIGHT_RULES.md`](docs/PHASE_38_INSIGHT_RULES.md) | Formal specification of pattern detection rules, statistical thresholds, evidence structures, and confidence derivation. |
+| **Phase 38 Recommendation Framework** | [`docs/PHASE_38_RECOMMENDATION_FRAMEWORK.md`](docs/PHASE_38_RECOMMENDATION_FRAMEWORK.md) | Recommendation formulation logic, multi-factor prioritization matrix, and finite state machine specification. |
+| **Phase 38 AI Evaluation Report** | [`docs/PHASE_38_AI_EVALUATION.md`](docs/PHASE_38_AI_EVALUATION.md) | Empirical assessment of pattern detection precision, recall, evidence grounding, and impact delta verification. |
+| **Phase 38 Security Review** | [`docs/PHASE_38_SECURITY_REVIEW.md`](docs/PHASE_38_SECURITY_REVIEW.md) | Threat modeling, controlled safe optimization allowlisting, multi-tenant scoping, and audit compliance logging. |
+| **Phase 38 Implementation Report** | [`docs/PHASE_38_IMPLEMENTATION_REPORT.md`](docs/PHASE_38_IMPLEMENTATION_REPORT.md) | Master Phase 38 verification summary, test suite pass rates (326/326 tests), and release readiness sign-off. |
 
 ---
 
