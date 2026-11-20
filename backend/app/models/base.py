@@ -149,6 +149,7 @@ class Source(Base):
 
     project = relationship("ResearchProject", back_populates="sources")
     analyses = relationship("SourceAnalysis", back_populates="source", cascade="all, delete-orphan", lazy="selectin", uselist=False)
+    credibility_assessment = relationship("SourceCredibilityAssessment", back_populates="source", cascade="all, delete-orphan", uselist=False, lazy="selectin")
 
     def __init__(self, **kwargs):
         if "original_url" in kwargs and "url" not in kwargs:
@@ -234,6 +235,9 @@ class ResearchBrief(Base):
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False, index=True)
 
     project = relationship("ResearchProject", back_populates="briefs")
+    quality_reports = relationship("ResearchQualityReport", back_populates="brief", cascade="all, delete-orphan", lazy="selectin")
+    citations = relationship("CitationValidation", back_populates="brief", cascade="all, delete-orphan", lazy="selectin")
+    revisions = relationship("ResearchRevision", back_populates="brief", cascade="all, delete-orphan", lazy="selectin")
 
 class WritingDraft(Base):
     __tablename__ = "writing_drafts"
@@ -976,6 +980,123 @@ class RecommendationFeedback(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
 
     recommendation = relationship("ProductIntelligenceRecommendation", back_populates="feedback_entries")
+
+
+# ===========================================================================
+# Phase 39: AI Research Reliability, Source Intelligence & Citation Verification
+# ===========================================================================
+
+class SourceCredibilityAssessment(Base):
+    __tablename__ = "source_credibility_assessments"
+    __table_args__ = (
+        Index("ix_credibility_source_proj", "source_id", "project_id"),
+        Index("ix_credibility_tier", "credibility_tier"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    source_id = Column(String(36), ForeignKey("sources.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    credibility_tier = Column(String(50), default="UNKNOWN", nullable=False)  # PRIMARY_SOURCE, OFFICIAL_SOURCE, PEER_REVIEWED, INSTITUTIONAL, NEWS_REPORTING, SECONDARY_ANALYSIS, OPINION, COMMERCIAL, UNKNOWN
+    publisher_type = Column(String(100), nullable=True)
+    publisher_name = Column(String(255), nullable=True)
+    author_name = Column(String(255), nullable=True)
+    publication_date = Column(String(100), nullable=True)
+    retrieved_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    freshness_status = Column(String(50), default="CURRENT", nullable=False)  # CURRENT, RECENT, AGED, HISTORICAL, UNKNOWN
+    freshness_criteria = Column(Text, nullable=True)
+    accessibility_status = Column(String(50), default="ACCESSIBLE", nullable=False)  # ACCESSIBLE, RETRIABLE_ERROR, PERMANENT_ERROR, TIMEOUT, RESTRICTED
+    is_primary_source = Column(Boolean, default=False, nullable=False)
+    methodological_transparency = Column(String(50), default="STANDARD", nullable=False)  # HIGH, STANDARD, LOW, NONE
+    criteria_breakdown_json = Column(JSON, default=dict, nullable=False)
+    limitations = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    source = relationship("Source", back_populates="credibility_assessment")
+    project = relationship("ResearchProject")
+
+
+class CitationValidation(Base):
+    __tablename__ = "citation_validations"
+    __table_args__ = (
+        Index("ix_citation_proj_status", "project_id", "status"),
+        Index("ix_citation_brief", "brief_id"),
+        Index("ix_citation_source", "source_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    brief_id = Column(String(36), ForeignKey("research_briefs.id", ondelete="CASCADE"), nullable=True, index=True)
+    source_id = Column(String(36), ForeignKey("sources.id", ondelete="CASCADE"), nullable=True, index=True)
+    claim_id = Column(String(36), ForeignKey("research_claims.id", ondelete="SET NULL"), nullable=True, index=True)
+    citation_text = Column(Text, nullable=False)
+    citation_url = Column(String(1024), nullable=True)
+    citation_number = Column(Integer, nullable=True)
+    status = Column(String(50), default="UNVERIFIED", nullable=False)  # VALID, INVALID, BROKEN, INACCESSIBLE, UNVERIFIED, NEEDS_REVIEW
+    validation_details_json = Column(JSON, default=dict, nullable=False)
+    is_fabricated = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    project = relationship("ResearchProject")
+    brief = relationship("ResearchBrief", back_populates="citations")
+    source = relationship("Source")
+    claim = relationship("ResearchClaim")
+
+
+class ResearchQualityReport(Base):
+    __tablename__ = "research_quality_reports"
+    __table_args__ = (
+        Index("ix_quality_report_proj_brief", "project_id", "brief_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    brief_id = Column(String(36), ForeignKey("research_briefs.id", ondelete="CASCADE"), nullable=True, index=True)
+    total_claims = Column(Integer, default=0, nullable=False)
+    claims_requiring_evidence = Column(Integer, default=0, nullable=False)
+    supported_claims = Column(Integer, default=0, nullable=False)
+    partially_supported_claims = Column(Integer, default=0, nullable=False)
+    unsupported_claims = Column(Integer, default=0, nullable=False)
+    contradicted_claims = Column(Integer, default=0, nullable=False)
+    unverified_claims = Column(Integer, default=0, nullable=False)
+    not_applicable_claims = Column(Integer, default=0, nullable=False)
+    evidence_coverage_score = Column(Float, default=0.0, nullable=False)  # 0.0 to 100.0
+    citation_health_score = Column(Float, default=0.0, nullable=False)    # 0.0 to 100.0
+    source_diversity_score = Column(Float, default=0.0, nullable=False)
+    overall_quality_grade = Column(String(10), default="B", nullable=False)  # A, B, C, D, F
+    source_quality_summary_json = Column(JSON, default=dict, nullable=False)
+    corroboration_summary_json = Column(JSON, default=dict, nullable=False)
+    contradictions_count = Column(Integer, default=0, nullable=False)
+    limitations_summary = Column(Text, nullable=True)
+    audit_findings_json = Column(JSON, default=list, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    project = relationship("ResearchProject")
+    brief = relationship("ResearchBrief", back_populates="quality_reports")
+
+
+class ResearchRevision(Base):
+    __tablename__ = "research_revisions"
+    __table_args__ = (
+        Index("ix_revisions_brief_section", "brief_id", "section_key"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    brief_id = Column(String(36), ForeignKey("research_briefs.id", ondelete="CASCADE"), nullable=False, index=True)
+    section_key = Column(String(100), nullable=False)
+    original_text = Column(Text, nullable=False)
+    regenerated_text = Column(Text, nullable=False)
+    diff_summary = Column(Text, nullable=True)
+    supporting_evidence_ids_json = Column(JSON, default=list, nullable=False)
+    status = Column(String(50), default="PENDING", nullable=False)  # PENDING, ACCEPTED, REJECTED
+    user_notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    project = relationship("ResearchProject")
+    brief = relationship("ResearchBrief", back_populates="revisions")
+
 
 
 

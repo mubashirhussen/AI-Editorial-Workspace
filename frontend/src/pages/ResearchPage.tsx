@@ -45,6 +45,7 @@ import { Button } from '../components/common/Button';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ResearchIntelligenceDashboard } from '../components/research/ResearchIntelligenceDashboard';
 import { LocalLibraryView } from '../components/research/LocalLibraryView';
+import { ResearchReliabilityPanel } from '../components/research/ResearchReliabilityPanel';
 
 export const ResearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -108,7 +109,7 @@ export const ResearchPage: React.FC = () => {
   const [sourceText, setSourceText] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [isGeneratingBrief, setIsGeneratingBrief] = useState(false);
-  const [activeTab, setActiveTab] = useState<'brief' | 'sources' | 'evidence' | 'facts' | 'intelligence'>('brief');
+  const [activeTab, setActiveTab] = useState<'brief' | 'sources' | 'evidence' | 'facts' | 'intelligence' | 'reliability'>('brief');
   const [deleteSourceId, setDeleteSourceId] = useState<string | null>(null);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [manualText, setManualText] = useState<string>('');
@@ -932,6 +933,15 @@ export const ResearchPage: React.FC = () => {
                 <Network className="w-3.5 h-3.5" />
                 <span>Knowledge Graph</span>
               </button>
+              <button
+                onClick={() => setActiveTab('reliability')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 font-bold ${
+                  activeTab === 'reliability' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Reliability & Citations</span>
+              </button>
             </div>
 
             {brief && activeTab === 'brief' && (
@@ -977,7 +987,15 @@ export const ResearchPage: React.FC = () => {
           </div>
 
           {/* TAB CONTENTS */}
-          {activeTab === 'intelligence' ? (
+          {activeTab === 'reliability' ? (
+            activeProject ? (
+              <ResearchReliabilityPanel
+                projectId={activeProject.id}
+                briefId={brief?.id}
+                sourceCount={sources.length}
+              />
+            ) : null
+          ) : activeTab === 'intelligence' ? (
             activeProject ? (
               <ResearchIntelligenceDashboard projectId={activeProject.id} sourceCount={sources.length} />
             ) : null
