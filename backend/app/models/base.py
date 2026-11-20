@@ -790,3 +790,29 @@ class UsageEvent(Base):
     metric_value = Column(Float, default=1.0, nullable=False)
     tags_json = Column(JSON, default=dict, nullable=False)
     timestamp = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class UserFeedback(Base):
+    __tablename__ = "user_feedbacks"
+    __table_args__ = (
+        Index("ix_feedback_org_status", "organization_id", "status"),
+        Index("ix_feedback_user_created", "user_id", "created_at"),
+        Index("ix_feedback_category", "category"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_email = Column(String(255), nullable=True)
+    category = Column(String(50), nullable=False, index=True)  # bug_report, feature_request, ux_improvement, ai_output_quality, research_accuracy, citation_issue, writing_quality, editorial_workflow, general
+    severity = Column(String(20), default="medium", nullable=False)  # low, medium, high, critical
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    module_reference = Column(String(100), nullable=True)  # research, writing, editorial, dashboard, settings, auth
+    status = Column(String(30), default="NEW", nullable=False, index=True)  # NEW, TRIAGED, IN_PROGRESS, RESOLVED, CLOSED, REJECTED
+    admin_notes = Column(Text, nullable=True)
+    assigned_to = Column(String(255), nullable=True)
+    resolution_summary = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
