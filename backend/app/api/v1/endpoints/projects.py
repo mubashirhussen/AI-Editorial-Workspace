@@ -45,10 +45,25 @@ def check_project_tenant_access(
 def create_project(
     payload: ProjectCreate,
     org: Organization = Depends(require_permission(OrgPermission.CREATE_PROJECTS)),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create a new research project strictly bound to the active organization."""
-    return crud_project.create_project(db, payload, organization_id=org.id)
+    proj = crud_project.create_project(db, payload, organization_id=org.id)
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="project_created",
+            user_id=current_user.id,
+            organization_id=org.id,
+            project_id=proj.id,
+            workflow_type="project",
+            status="completed"
+        )
+    except Exception:
+        pass
+    return proj
 
 
 @router.get("", response_model=List[ProjectResponse])

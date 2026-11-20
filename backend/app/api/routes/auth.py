@@ -326,6 +326,20 @@ def login_user(
         metadata={"remember_me": payload.remember_me}
     )
 
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="login_completed",
+            user_id=user.id,
+            organization_id=membership.organization_id if membership else None,
+            session_id=session_entry.id,
+            status="completed",
+            properties={"format": "jwt_bearer"}
+        )
+    except Exception:
+        pass
+
     org_resp = None
     if membership and membership.organization:
         org_resp = OrganizationResponse(

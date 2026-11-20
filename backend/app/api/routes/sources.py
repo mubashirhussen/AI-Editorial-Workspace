@@ -113,8 +113,34 @@ async def add_source(
     org_id = getattr(project, "organization_id", None)
     if status_label == "success":
         analytics_service.track_event(db, org_id, "source_processed", metadata={"status": "success"})
+        try:
+            analytics_service.record_event(
+                db=db,
+                event_name="research_source_added",
+                user_id=current_user.id,
+                organization_id=org_id,
+                project_id=project_id,
+                workflow_type="research",
+                status="completed",
+                properties={"source_type": getattr(source, "source_type", "URL")}
+            )
+        except Exception:
+            pass
     else:
         analytics_service.track_event(db, org_id, "workflow_failed", metadata={"category": "source_extraction"})
+        try:
+            analytics_service.record_event(
+                db=db,
+                event_name="research_source_processing_failed",
+                user_id=current_user.id,
+                organization_id=org_id,
+                project_id=project_id,
+                workflow_type="research",
+                status="failed",
+                properties={"error_code": "EXTRACTION_FAILURE"}
+            )
+        except Exception:
+            pass
     return source
 
 @router.get("/research/projects/{project_id}/sources", response_model=List[SourceResponse], summary="List sources for project")

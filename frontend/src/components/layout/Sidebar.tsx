@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Users,
-  Activity
+  Activity,
+  BarChart3
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Writing Assistant', to: '/writing', icon: PenTool },
     { name: 'Editorial Studio', to: '/editorial', icon: Newspaper },
     { name: 'Research Projects', to: '/projects', icon: FolderKanban },
+    { name: 'Product Analytics', to: '/analytics', icon: BarChart3 },
     { name: 'Organization', to: '/organization', icon: Users },
     { name: 'AI Observability', to: '/observability', icon: Activity },
     { name: 'Settings', to: '/settings', icon: Settings },

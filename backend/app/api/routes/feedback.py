@@ -96,6 +96,23 @@ def submit_feedback(
         f"severity={feedback.severity}, org={org_id}, user={user_email}"
     )
 
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="feedback_submitted",
+            user_id=user_id,
+            organization_id=org_id,
+            status="completed",
+            properties={
+                "category": req.category,
+                "severity": req.severity,
+                "feature_id": req.module_reference or "general"
+            }
+        )
+    except Exception:
+        pass
+
     return feedback
 
 @router.get("", response_model=FeedbackListResponse, summary="List feedback items with filters")

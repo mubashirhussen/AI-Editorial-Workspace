@@ -80,6 +80,18 @@ def create_draft(
     user_id = current_user.id if current_user else None
     draft = writing_service.create_draft(db, data, organization_id=org_id, user_id=user_id)
     analytics_service.track_event(db, org_id, "draft_created")
+    try:
+        analytics_service.record_event(
+            db=db,
+            event_name="writing_draft_created",
+            user_id=user_id,
+            organization_id=org_id,
+            project_id=getattr(draft, "project_id", None),
+            workflow_type="writing",
+            status="completed"
+        )
+    except Exception:
+        pass
     return draft
 
 @router.post("/drafts/generate", response_model=DraftGenerateResponse, status_code=status.HTTP_201_CREATED, summary="AI Generate editorial draft from research")
@@ -98,6 +110,17 @@ async def generate_draft(
     user_id = current_user.id if current_user else None
     res = await writing_service.generate_editorial_draft(db, req, organization_id=org_id, user_id=user_id)
     analytics_service.track_event(db, org_id, "draft_created", metadata={"status": "success"})
+    try:
+        analytics_service.record_event(
+            db=db,
+            event_name="writing_assistance_completed",
+            user_id=user_id,
+            organization_id=org_id,
+            workflow_type="writing",
+            status="completed"
+        )
+    except Exception:
+        pass
     return res
 
 @router.post("/drafts/{draft_id}/duplicate", response_model=DraftResponse, status_code=status.HTTP_201_CREATED, summary="Duplicate draft")

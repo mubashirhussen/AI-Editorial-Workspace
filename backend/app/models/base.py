@@ -816,3 +816,48 @@ class UserFeedback(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
+
+class AnalyticsEvent(Base):
+    __tablename__ = "analytics_events"
+    __table_args__ = (
+        Index("ix_analytics_org_occurred", "organization_id", "occurred_at"),
+        Index("ix_analytics_org_workflow", "organization_id", "workflow_type", "status"),
+        Index("ix_analytics_event_name_occurred", "event_name", "occurred_at"),
+        Index("ix_analytics_dedup", "dedup_hash"),
+        Index("ix_analytics_pseudonym_time", "user_pseudonym", "occurred_at"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    event_id = Column(String(64), nullable=True, index=True)
+    event_name = Column(String(100), nullable=False, index=True)
+    event_version = Column(Integer, default=1, nullable=False)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_pseudonym = Column(String(64), nullable=True, index=True)
+    project_id = Column(String(36), ForeignKey("research_projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    workflow_type = Column(String(50), nullable=True, index=True)  # research, writing, editorial, project, auth
+    workflow_id = Column(String(64), nullable=True, index=True)
+    session_id = Column(String(64), nullable=True, index=True)
+    source = Column(String(20), default="backend", nullable=False)  # backend, frontend
+    status = Column(String(20), default="completed", nullable=False)  # started, completed, failed, abandoned
+    duration_ms = Column(Integer, nullable=True)
+    properties_json = Column(JSON, default=dict, nullable=False)
+    dedup_hash = Column(String(64), nullable=True, index=True)
+    occurred_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+
+class AnalyticsPrivacyPreference(Base):
+    __tablename__ = "analytics_privacy_preferences"
+    __table_args__ = (
+        Index("ix_analytics_privacy_user", "user_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    analytics_opt_out = Column(Boolean, default=False, nullable=False)
+    do_not_track = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+

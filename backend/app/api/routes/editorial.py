@@ -44,7 +44,21 @@ async def generate_editorial(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{req.project_id}' not found.")
     check_project_tenant_access(db, project, current_user, OrgPermission.CREATE_PROJECTS)
-    return await editorial_service.generate_editorial(db, req)
+    res = await editorial_service.generate_editorial(db, req)
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="editorial_generation_completed",
+            user_id=current_user.id,
+            organization_id=getattr(project, "organization_id", None),
+            project_id=req.project_id,
+            workflow_type="editorial",
+            status="completed"
+        )
+    except Exception:
+        pass
+    return res
 
 @router.post("", response_model=EditorialResponse, status_code=status.HTTP_201_CREATED)
 def create_editorial(
@@ -139,4 +153,19 @@ def export_editorial(
     editorial = editorial_service.get_editorial(db, editorial_id)
     if editorial.project:
         check_project_tenant_access(db, editorial.project, current_user, OrgPermission.VIEW_CONTENT)
-    return editorial_service.export_editorial(db, editorial_id, format_type=format)
+    res = editorial_service.export_editorial(db, editorial_id, format_type=format)
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="editorial_exported",
+            user_id=current_user.id,
+            organization_id=getattr(editorial.project, "organization_id", None) if editorial.project else None,
+            project_id=editorial.project_id,
+            workflow_type="editorial",
+            status="completed",
+            properties={"format": format}
+        )
+    except Exception:
+        pass
+    return res

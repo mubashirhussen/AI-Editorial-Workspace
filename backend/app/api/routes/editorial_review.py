@@ -280,6 +280,20 @@ def approve_editorial(
     req.reviewer_name = authenticated_reviewer
 
     updated = review_workflow_service.approve_editorial(db, editorial_id, req)
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="editorial_approved",
+            user_id=current_user.id,
+            organization_id=getattr(editorial.project, "organization_id", None) if editorial.project else None,
+            project_id=editorial.project_id,
+            workflow_type="editorial",
+            status="completed"
+        )
+    except Exception:
+        pass
+
     return {
         "message": "Editorial approved successfully.",
         "status": updated.status,
@@ -307,6 +321,20 @@ def finalize_editorial(
     req.finalized_by = authenticated_finalizer
 
     updated = review_workflow_service.finalize_editorial(db, editorial_id, req)
+    try:
+        from backend.app.services.analytics_service import analytics_service
+        analytics_service.record_event(
+            db=db,
+            event_name="editorial_finalized",
+            user_id=current_user.id,
+            organization_id=getattr(editorial.project, "organization_id", None) if editorial.project else None,
+            project_id=editorial.project_id,
+            workflow_type="editorial",
+            status="completed"
+        )
+    except Exception:
+        pass
+
     return {
         "message": "Editorial finalized and locked.",
         "status": updated.status,

@@ -182,6 +182,19 @@ async def generate_brief(
     check_project_tenant_access(db, project, current_user)
     brief = await research_service.generate_research_brief(db, project_id)
     analytics_service.track_event(db, getattr(project, "organization_id", None), "brief_generated")
+    try:
+        analytics_service.record_event(
+            db=db,
+            event_name="research_brief_generation_completed",
+            user_id=current_user.id,
+            organization_id=getattr(project, "organization_id", None),
+            project_id=project_id,
+            workflow_type="research",
+            status="completed",
+            properties={"sources_count": len(project.sources) if project.sources else 0}
+        )
+    except Exception:
+        pass
     return brief
 
 @router.get("/projects/{project_id}/brief", response_model=ResearchBriefResponse)
@@ -227,7 +240,21 @@ def export_brief(
     """Exports structured research brief into Markdown (.md), Plain Text (.txt), or JSON (.json)."""
     project = research_service.get_project(db, project_id)
     check_project_tenant_access(db, project, current_user)
-    return research_service.export_brief(db, project_id, format=format)
+    result = research_service.export_brief(db, project_id, format=format)
+    try:
+        analytics_service.record_event(
+            db=db,
+            event_name="research_brief_exported",
+            user_id=current_user.id,
+            organization_id=getattr(project, "organization_id", None),
+            project_id=project_id,
+            workflow_type="research",
+            status="completed",
+            properties={"format": format}
+        )
+    except Exception:
+        pass
+    return result
 
 @router.post("/projects/{project_id}/archive", response_model=ProjectResponse)
 def archive_project(
